@@ -1,6 +1,7 @@
 import copy
 import random
 from typing import Optional
+from game.statistic import Statistic
 from game.session import SessionObject
 from global_modules.models.cells import Cells
 from global_modules.db.baseclass import BaseClass
@@ -8,6 +9,7 @@ from modules.db import just_db
 from global_modules.load_config import ALL_CONFIGS, Resources, Improvements, Settings, Capital, Reputation
 from modules.function_way import determine_city_branch
 from modules.websocket_manager import websocket_manager
+from modules.logs import game_logger
 
 RESOURCES: Resources = ALL_CONFIGS["resources"]
 CELLS: Cells = ALL_CONFIGS['cells']
@@ -17,56 +19,26 @@ CAPITAL: Capital = ALL_CONFIGS['capital']
 REPUTATION: Reputation = ALL_CONFIGS['reputation']
 
 NAMES = [
-    "Золотогорск",
-    "Лесной Град",
-    "Речной Край",
-    "Горный Хребет",
-    "Солнечный Берег",
-    "Тёмный Лес",
-    "Светлый Путь",
-    "Железный Город",
-    "Кристалльный Остров",
-    "Огненная Долина",
-    "Ледяной Пик",
-    "Морской Ветер",
-    "Пустынный Оазис",
-    "Небесный Город",
-    "Земляной Вал",
-    "Водный Мир",
-    "Воздушный Замок",
-    "Каменный Щит",
-    "Деревянный Лабиринт",
-    "Металлический Гигант",
-    "Хлопковый Рай",
-    "Нефтяной Клад",
-    "Дубовый Лес",
-    "Стальной Пик",
-    "Шелковый Путь",
-    "Угольный Бассейн",
-    "Рубиновый Город",
-    "Изумрудный Остров",
-    "Сапфировый Берег",
-    "Алмазный Край",
-    "Бриллиантовый Вал",
-    "Жемчужный Мир",
-    "Янтарный Замок",
-    "Ониксовый Щит",
-    "Малахитовый Лабиринт",
-    "Обсидиановый Гигант",
-    "Топазовый Рай",
-    "Аметистовый Клад",
-    "Гранатовый Лес",
-    "Аквамариновый Пик",
-    "Лазуритовый Ветер",
-    "Турмалиновый Оазис",
-    "Опаловый Город",
-    "Гелиодоровый Долина",
-    "Цирконовый Пик",
-    "Корундовый Ветер",
-    "Спинелевый Оазис",
-    "Танзанитовый Город",
-    "Александритовый Край",
-    "Берилловый Вал"
+    "Эльдория",
+    "Мистия",
+    "Дракония",
+    "Аркания",
+    "Фэнтария",
+    "Неотрон",
+    "Киберия",
+    "Нексус",
+    "Виртус",
+    "Квантия",
+    "Галаксия",
+    "Технория",
+    "Андроид",
+    "Лазерия",
+    "Синтия",
+    "Космония",
+    "Роботия",
+    "Футурия",
+    "Нанобург",
+    "Гиперон"
 ]
 
 class Citie(BaseClass, SessionObject):
@@ -252,6 +224,7 @@ class Citie(BaseClass, SessionObject):
             dict с результатом операции
         """
         from game.logistics import Logistics
+        from game.item_price import ItemPrice
 
         await Logistics().create(
             session_id=self.session_id,
@@ -277,6 +250,28 @@ class Citie(BaseClass, SessionObject):
                 "amount": amount
             }
         })
+
+        try:
+            item_price = await ItemPrice().create(
+                session_id=self.session_id,
+                item_id=resource_id
+            )
+            await item_price.add_popularity(amount)
+        except Exception as e:
+            game_logger.error(f"Ошибка при увеличении популярности товара {resource_id}: {e}")
+
+        st = await Statistic.get_latest_by_company(
+            session_id=self.session_id,
+            company_id=company_id
+        )
+        if st:
+            session = await self.get_session_or_error()
+            await Statistic.update_me(
+                company_id=company_id,
+                session_id=self.session_id,
+                step=session.step,
+                total_products_produced=amount
+            )
 
         return True
 
