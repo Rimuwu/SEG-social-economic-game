@@ -53,6 +53,12 @@ async def handle_get_session(client_id: str, message: dict):
     doc="Обработчик создания сессии. Отправляет ответ на request_id. Требуется пароль для взаимодействия.",
     datatypes=[
         "session_id: Optional[str]",
+        
+        "map_pattern: Optional[str]",
+        "size: Optional[int]",
+        "max_steps: Optional[int]",
+        "session_group_url: Optional[str]",
+
         "password: str",
         "request_id: str"
     ]
@@ -63,10 +69,22 @@ async def handle_create_session(client_id: str, message: dict):
     session_id = message.get("session_id", "")
     password = message.get("password", "")
 
+    map_pattern = message.get('map_pattern', 'random')
+    size = message.get('size', 6)
+    max_steps = message.get('max_steps', 15)
+    session_group_url = message.get(
+        'session_group_url', '')
+
     try:
         check_password(password)
 
-        session = await session_manager.create_session(session_id=session_id)
+        session = await session_manager.create_session(
+            session_id=session_id,
+            map_pattern=map_pattern,
+            size=size,
+            max_steps=max_steps,
+            session_group_url=session_group_url
+        )
     except ValueError as e:
         return {"error": str(e)}
 

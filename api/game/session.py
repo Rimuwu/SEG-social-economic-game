@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from enum import Enum
 import random
 from typing import Optional
+import uuid
 from api.modules.websocket_manager import websocket_manager
 from game.statistic import Statistic
 
@@ -47,7 +48,7 @@ class Session(BaseClass):
                  map_pattern: str = "random",
                  map_size: Optional[dict] = None,
                  max_steps: int = 15,
-                 bots_count: int = 2
+                 session_group_url: str = ''
                  ): 
         self.session_id = session_id
         self.cells: list[str] = []
@@ -59,7 +60,7 @@ class Session(BaseClass):
         self.step: int = 0
         self.max_steps: int = max_steps
         self.change_turn_schedule_id: int = 0
-        self.bots_count: int = bots_count
+        self.session_group_url: str = session_group_url
 
         self.event_type: Optional[str] = None
         self.event_start: Optional[int] = None
@@ -149,7 +150,7 @@ class Session(BaseClass):
                     await Statistic().create(
                         company_id=company.id,
                         session_id=self.session_id,
-                        stage=self.step,
+                        step=self.step,
                         data={}
                     )
 
@@ -162,6 +163,10 @@ class Session(BaseClass):
                                           to_class=Logistics, session_id=self.session_id) # type: ignore
             for logistics in logistics_list:
                 await logistics.on_new_turn()
+
+            items_prices: list[ItemPrice] = await self.item_prices
+            for item_price in items_prices:
+                await item_price.on_new_game_step()
 
             # Генерируем события каждые 5 этапов
             await self.events_generator()
@@ -179,7 +184,7 @@ class Session(BaseClass):
                 await Statistic().update_me(
                     company_id=company.id,
                     session_id=self.session_id,
-                    stage=self.step,
+                    step=self.step,
                     **{
                         "balance": company.balance,
                         "reputation": company.reputation,
@@ -195,8 +200,8 @@ class Session(BaseClass):
                             await company.exchanges),
                         "contracnts": len(
                             await company.get_contracts()),
-                        "warehouse": 
-                            await company.get_max_warehouse_size()
+                        "free_warehouse": 
+                            await company.get_warehouse_free_size()
                     }
                 )
 
@@ -541,6 +546,9 @@ class Session(BaseClass):
 
         await just_db.delete("step_schedule", 
                        session_id=self.session_id)
+        
+        await just_db.delete("statistic", 
+                       session_id=self.session_id)
 
         await just_db.delete(self.__tablename__, session_id=self.session_id)
         await session_manager.remove_session(self.session_id)
@@ -854,8 +862,8 @@ class Session(BaseClass):
                 "start": self.event_start,
                 "end": self.event_end
             },
-            
-            "bots_count": self.bots_count
+
+            "session_group_url": self.session_group_url
         }
 
 class SessionObject:
@@ -877,8 +885,19 @@ class SessionsManager():
     def __init__(self):
         self.sessions = {}
 
-    async def create_session(self, session_id: str = ""):
-        session = await Session(session_id=session_id).start()
+    async def create_session(self, session_id: str,
+                             map_pattern: str = 'random',
+                             size=6,
+                             max_steps=15,
+                             session_group_url=''
+                             ):
+        session = await Session(session_id=session_id,
+                                map_pattern=map_pattern,
+                                map_size={"rows": size, "cols": size},
+                                max_steps=max_steps,
+                                session_group_url=session_group_url
+                                ).start()
+
         if session.session_id in self.sessions:
             game_logger.error(f"Попытка создать сессию с уже существующим ID: {session.session_id}")
             raise ValueError("Сессия с этим ID уже существует в памяти.")
