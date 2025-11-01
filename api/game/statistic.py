@@ -13,7 +13,7 @@ class Statistic(BaseClass, SessionObject):
 
         self.session_id: str = ""
         self.company_id: int = 0
-        self.stage: int = 0
+        self.step: int = 0
         
         self.balance: int = 0 # Баланс компании
         self.reputation: int = 0 # Репутация компании
@@ -27,7 +27,7 @@ class Statistic(BaseClass, SessionObject):
         self.factories: int = 0 # Количество фабрик компании
         self.exchanges: int = 0 # Количество бирж компании
         self.contracnts: int = 0 # Количество контрактов компании
-        self.warehouse: int = 0 # Размер склада компании
+        self.free_warehouse: int = 0 # Размер свободного места на складе компании
 
         self.product_count: int = 0 # Объем производства продуктов компанией
         self.sell_to_city: int = 0 # Объем продаж в город компанией
@@ -35,18 +35,18 @@ class Statistic(BaseClass, SessionObject):
     async def create(self, 
                      company_id: int, 
                      session_id: str,
-                     stage: int,
+                     step: int,
                      data: dict = {}
                      ):
 
         self.company_id = company_id
         self.session_id = session_id
-        self.stage = stage
+        self.step = step
 
         find_res: dict = await just_db.find_one(self.__tablename__,
                                   company_id=company_id,
                                   session_id=session_id,
-                                  stage=stage
+                                  step=step
                                   ) # type: ignore
 
         if find_res is not None:
@@ -64,7 +64,7 @@ class Statistic(BaseClass, SessionObject):
             "id": self.id,
             "session_id": self.session_id,
             "company_id": self.company_id,
-            "stage": self.stage,
+            "step": self.step,
             "balance": self.balance,
             "reputation": self.reputation,
             "economic_power": self.economic_power,
@@ -95,19 +95,51 @@ class Statistic(BaseClass, SessionObject):
             statistics.append(stat)
 
         return statistics
+    
+    @classmethod
+    async def get_all_by_session(cls, session_id: str) -> list['Statistic']:
+        rows: list[dict] = await just_db.find(cls.__tablename__, 
+                                  session_id=session_id) # type: ignore
+        statistics = []
+
+        for row in rows:
+            stat = cls()
+            stat = stat.load_from_base(row)
+            statistics.append(stat)
+
+        return statistics
+    
+    @classmethod
+    async def get_latest_by_company(cls, session_id: str, company_id: int) -> 'Statistic | None':
+
+        session: Optional[dict] = await just_db.find_one("sessions", id=session_id)  # type: ignore
+        if session is None: return None
+
+        step = session.get("step", 0)
+
+        row: dict = await just_db.find_one(cls.__tablename__,
+                                  session_id=session_id,
+                                  company_id=company_id,
+                                  step=step
+                                  ) # type: ignore
+        if row is None: return None
+
+        stat = cls()
+        stat = stat.load_from_base(row)
+        return stat
 
     @classmethod
     async def update_me(cls,
                         company_id: int,
                         session_id: str,
-                        stage: int,
+                        step: int,
                         **kwargs
                         ):
 
         stat: Statistic = await just_db.find_one(cls.__tablename__,
                                      company_id=company_id,
                                      session_id=session_id,
-                                     stage=stage,
+                                     step=step,
                                      to_class=Statistic
                                      ) # type: ignore
 
