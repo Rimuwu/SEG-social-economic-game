@@ -89,6 +89,16 @@ class Exchange(BaseClass, SessionObject):
         if offer_type == 'money':
             if price <= 0:
                 raise ValueError("Цена должна быть положительным целым числом.")
+            from game.item_price import ItemPrice
+
+            item_price = await ItemPrice().create(
+                session_id=self.session_id,
+                item_id=sell_resource
+            )
+            average_price = item_price.get_effective_price()
+
+            if abs(price - average_price) / average_price > 0.5:
+                raise ValueError(f"Цена отличается от средней более чем на 50%. Средняя цена: {average_price}, выставленная цена: {price}")
 
         elif offer_type == 'barter':
             if not barter_resource or barter_amount <= 0:
@@ -156,6 +166,18 @@ class Exchange(BaseClass, SessionObject):
         if self.offer_type == 'money' and price is not None:
             if price <= 0:
                 raise ValueError("Цена должна быть положительной.")
+
+            from game.item_price import ItemPrice
+
+            item_price = await ItemPrice().create(
+                session_id=self.session_id,
+                item_id=self.sell_resource
+            )
+            average_price = item_price.get_effective_price()
+
+            if abs(price - average_price) / average_price > 0.5:
+                raise ValueError(f"Цена отличается от средней более чем на 50%. Средняя цена: {average_price}, выставленная цена: {price}")
+
             self.price = price
 
         if self.offer_type == \
@@ -220,6 +242,7 @@ class Exchange(BaseClass, SessionObject):
         """
         from game.company import Company
         from game.logistics import Logistics
+        from game.item_price import ItemPrice
 
         if quantity <= 0:
             raise ValueError("Количество должно быть положительным.")
@@ -268,9 +291,10 @@ class Exchange(BaseClass, SessionObject):
             if buyer.warehouses.get(self.barter_resource, 0) < total_barter_amount:
                 raise ValueError(f"Недостаточно '{self.barter_resource}' для бартера. Требуется: {total_barter_amount}")
 
-            # Для бартера вычисляем условную цену на основе текущих цен предметов
-            barter_resource_price = await session.get_item_price(self.barter_resource)
-            unit_price = (barter_resource_price * self.barter_amount) // self.sell_amount_per_trade
+            # # Для бартера вычисляем условную цену на основе текущих цен предметов
+            # barter_resource_price = await session.get_item_price(self.barter_resource)
+            # unit_price = (barter_resource_price * self.barter_amount) // self.sell_amount_per_trade
+            unit_price = 0  # Для бартерных сделок цена за единицу не учитывается
 
             await Logistics().create(
                 from_company_id=buyer.id,
@@ -288,6 +312,12 @@ class Exchange(BaseClass, SessionObject):
             amount=total_sell_amount,
             session_id=self.session_id
         )
+
+        item_price = await ItemPrice().create(
+            session_id=self.session_id,
+            item_id=self.sell_resource
+        )
+        await item_price.add_popularity(quantity)
 
         if unit_price > 0:
             await session.update_item_price(self.sell_resource, unit_price)
