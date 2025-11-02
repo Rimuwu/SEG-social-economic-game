@@ -4,6 +4,7 @@ from modules.check_password import check_password
 from modules.ws_hadnler import message_handler
 from modules.db import just_db
 from game.company import Company
+from game.statistic import Statistic
 
 @message_handler(
     "get-companies", 
@@ -684,17 +685,401 @@ async def handle_notforgame_to_prison(
         if i is None: 
             return {"error": "Missing required fields."}
 
-
     try:
         check_password(password)
 
-        company = Company(_id=company_id).reupdate()
+        company = await Company(id=company_id).reupdate()
         if not company: raise ValueError("Компания не найдена.")
 
-        company.to_prison()
+        await company.to_prison()
+
+    except ValueError as e:
+        return {"error": str(e)}
+
+@message_handler(
+    "company-get-statistics", 
+    doc="Обработчик получения статистики компании. Отправляет ответ на request_id",
+    datatypes=[
+        "company_id: int",
+        "session_id: str",
+        "request_id: str"
+    ],
+    messages=[]
+)
+async def handle_company_get_statistics(client_id: str, message: dict):
+    """Обработчик получения статистики компании"""
+
+    company_id = message.get("company_id", 0)
+    session_id = message.get("session_id", '')
+
+    for i in [company_id, session_id]:
+        if i is None: return {"error": "Missing required fields."}
+
+    try:
+        st = await Statistic.get_all_by_company(session_id, company_id)
+        data_list = [s.to_dict() for s in st]
+
+        return data_list
 
     except ValueError as e:
         return {"error": str(e)}
 
 
+@message_handler(
+    "get-company-balance", 
+    doc="Обработчик получения баланса компании. Отправляет ответ на request_id", 
+    datatypes=[
+        "company_id: int", 
+        "request_id: str"
+        ])
+async def handle_get_company_balance(client_id: str, message: dict):
+    """Обработчик получения баланса компании"""
 
+    company_id = message.get("company_id")
+
+    if company_id is None: 
+        return {"error": "Missing required fields."}
+
+    company = await Company(id=company_id).reupdate()
+    if not company: 
+        return {"error": "Company not found."}
+
+    return {
+        "balance": company.balance,
+        "last_turn_income": company.last_turn_income,
+        "this_turn_income": company.this_turn_income
+    }
+
+
+@message_handler(
+    "get-company-reputation", 
+    doc="Обработчик получения репутации компании. Отправляет ответ на request_id", 
+    datatypes=[
+        "company_id: int", 
+        "request_id: str"
+        ])
+async def handle_get_company_reputation(client_id: str, message: dict):
+    """Обработчик получения репутации компании"""
+
+    company_id = message.get("company_id")
+
+    if company_id is None: 
+        return {"error": "Missing required fields."}
+
+    company = await Company(id=company_id).reupdate()
+    if not company: 
+        return {"error": "Company not found."}
+
+    return {
+        "reputation": company.reputation,
+        "economic_power": company.economic_power
+    }
+
+
+@message_handler(
+    "get-company-warehouse", 
+    doc="Обработчик получения данных склада компании. Отправляет ответ на request_id", 
+    datatypes=[
+        "company_id: int", 
+        "request_id: str"
+        ])
+async def handle_get_company_warehouse(client_id: str, message: dict):
+    """Обработчик получения данных склада компании"""
+
+    company_id = message.get("company_id")
+
+    if company_id is None: 
+        return {"error": "Missing required fields."}
+
+    company = await Company(id=company_id).reupdate()
+    if not company: 
+        return {"error": "Company not found."}
+
+    return {
+        "warehouses": company.warehouses,
+        "max_warehouse_size": await company.get_max_warehouse_size(),
+        "warehouse_free_size": await company.get_warehouse_free_size(),
+        "resources_amount": company.get_resources_amount()
+    }
+
+
+@message_handler(
+    "get-company-credits", 
+    doc="Обработчик получения данных по кредитам компании. Отправляет ответ на request_id", 
+    datatypes=[
+        "company_id: int", 
+        "request_id: str"
+        ])
+async def handle_get_company_credits(client_id: str, message: dict):
+    """Обработчик получения данных по кредитам компании"""
+
+    company_id = message.get("company_id")
+
+    if company_id is None: 
+        return {"error": "Missing required fields."}
+
+    company = await Company(id=company_id).reupdate()
+    if not company: 
+        return {"error": "Company not found."}
+
+    return {
+        "credits": company.credits
+    }
+
+
+@message_handler(
+    "get-company-deposits", 
+    doc="Обработчик получения данных по депозитам компании. Отправляет ответ на request_id", 
+    datatypes=[
+        "company_id: int", 
+        "request_id: str"
+        ])
+async def handle_get_company_deposits(client_id: str, message: dict):
+    """Обработчик получения данных по депозитам компании"""
+
+    company_id = message.get("company_id")
+
+    if company_id is None: 
+        return {"error": "Missing required fields."}
+
+    company = await Company(id=company_id).reupdate()
+    if not company: 
+        return {"error": "Company not found."}
+
+    return {
+        "deposits": company.deposits
+    }
+
+
+@message_handler(
+    "get-company-taxes", 
+    doc="Обработчик получения данных по налогам компании. Отправляет ответ на request_id", 
+    datatypes=[
+        "company_id: int", 
+        "request_id: str"
+        ])
+async def handle_get_company_taxes(client_id: str, message: dict):
+    """Обработчик получения данных по налогам компании"""
+
+    company_id = message.get("company_id")
+
+    if company_id is None: 
+        return {"error": "Missing required fields."}
+
+    company = await Company(id=company_id).reupdate()
+    if not company: 
+        return {"error": "Company not found."}
+
+    return {
+        "tax_debt": company.tax_debt,
+        "overdue_steps": company.overdue_steps,
+        "business_type": company.business_type,
+        "tax_rate": await company.business_tax()
+    }
+
+
+@message_handler(
+    "get-company-position", 
+    doc="Обработчик получения позиции компании на карте. Отправляет ответ на request_id", 
+    datatypes=[
+        "company_id: int", 
+        "request_id: str"
+        ])
+async def handle_get_company_position(client_id: str, message: dict):
+    """Обработчик получения позиции компании на карте"""
+
+    company_id = message.get("company_id")
+
+    if company_id is None: 
+        return {"error": "Missing required fields."}
+
+    company = await Company(id=company_id).reupdate()
+    if not company: 
+        return {"error": "Company not found."}
+
+    return {
+        "cell_position": company.cell_position,
+        "position": company.get_position(),
+        "cell_type": await company.get_cell_type()
+    }
+
+
+@message_handler(
+    "get-company-prison-status", 
+    doc="Обработчик получения статуса тюрьмы компании. Отправляет ответ на request_id", 
+    datatypes=[
+        "company_id: int", 
+        "request_id: str"
+        ])
+async def handle_get_company_prison_status(client_id: str, message: dict):
+    """Обработчик получения статуса тюрьмы компании"""
+
+    company_id = message.get("company_id")
+
+    if company_id is None: 
+        return {"error": "Missing required fields."}
+
+    company = await Company(id=company_id).reupdate()
+    if not company: 
+        return {"error": "Company not found."}
+
+    return {
+        "in_prison": company.in_prison,
+        "prison_end_step": company.prison_end_step
+    }
+
+
+@message_handler(
+    "get-company-basic-info", 
+    doc="Обработчик получения базовой информации о компании. Отправляет ответ на request_id", 
+    datatypes=[
+        "company_id: int", 
+        "request_id: str"
+        ])
+async def handle_get_company_basic_info(client_id: str, message: dict):
+    """Обработчик получения базовой информации о компании"""
+
+    company_id = message.get("company_id")
+
+    if company_id is None: 
+        return {"error": "Missing required fields."}
+
+    company = await Company(id=company_id).reupdate()
+    if not company: 
+        return {"error": "Company not found."}
+
+    return {
+        "id": company.id,
+        "name": company.name,
+        "session_id": company.session_id,
+        "secret_code": company.secret_code,
+        "owner": company.owner
+    }
+
+
+@message_handler(
+    "get-company-users", 
+    doc="Обработчик получения пользователей компании. Отправляет ответ на request_id", 
+    datatypes=[
+        "company_id: int", 
+        "request_id: str"
+        ])
+async def handle_get_company_users(client_id: str, message: dict):
+    """Обработчик получения пользователей компании"""
+
+    company_id = message.get("company_id")
+
+    if company_id is None: 
+        return {"error": "Missing required fields."}
+
+    company = await Company(id=company_id).reupdate()
+    if not company: 
+        return {"error": "Company not found."}
+
+    return {
+        "users": [user.to_dict() for user in await company.users],
+        "can_user_enter": await company.can_user_enter()
+    }
+
+
+@message_handler(
+    "get-company-factories", 
+    doc="Обработчик получения фабрик компании. Отправляет ответ на request_id", 
+    datatypes=[
+        "company_id: int", 
+        "request_id: str"
+        ])
+async def handle_get_company_factories(client_id: str, message: dict):
+    """Обработчик получения фабрик компании"""
+
+    company_id = message.get("company_id")
+
+    if company_id is None: 
+        return {"error": "Missing required fields."}
+
+    company = await Company(id=company_id).reupdate()
+    if not company: 
+        return {"error": "Company not found."}
+
+    factories = await company.get_factories()
+    return {
+        "factories": [await factory.to_dict() for factory in factories],
+        "factories_count": len(factories)
+    }
+
+
+@message_handler(
+    "get-company-exchanges", 
+    doc="Обработчик получения бирж компании. Отправляет ответ на request_id", 
+    datatypes=[
+        "company_id: int", 
+        "request_id: str"
+        ])
+async def handle_get_company_exchanges(client_id: str, message: dict):
+    """Обработчик получения бирж компании"""
+
+    company_id = message.get("company_id")
+
+    if company_id is None: 
+        return {"error": "Missing required fields."}
+
+    company = await Company(id=company_id).reupdate()
+    if not company: 
+        return {"error": "Company not found."}
+
+    return {
+        "exchanges": [exchange.to_dict() for exchange in await company.exchanges]
+    }
+
+
+@message_handler(
+    "get-company-contracts", 
+    doc="Обработчик получения контрактов компании. Отправляет ответ на request_id", 
+    datatypes=[
+        "company_id: int", 
+        "request_id: str"
+        ])
+async def handle_get_company_contracts(client_id: str, message: dict):
+    """Обработчик получения контрактов компании"""
+
+    company_id = message.get("company_id")
+
+    if company_id is None: 
+        return {"error": "Missing required fields."}
+
+    company = await Company(id=company_id).reupdate()
+    if not company: 
+        return {"error": "Company not found."}
+
+    contracts = await company.get_contracts()
+    return {
+        "contracts": [contract.to_dict() for contract in contracts],
+        "max_contracts": await company.get_max_contracts(),
+        "can_create_contract": await company.can_create_contract()
+    }
+
+
+@message_handler(
+    "get-company-production", 
+    doc="Обработчик получения производственной информации компании. Отправляет ответ на request_id", 
+    datatypes=[
+        "company_id: int", 
+        "request_id: str"
+        ])
+async def handle_get_company_production(client_id: str, message: dict):
+    """Обработчик получения производственной информации компании"""
+
+    company_id = message.get("company_id")
+
+    if company_id is None: 
+        return {"error": "Missing required fields."}
+
+    company = await Company(id=company_id).reupdate()
+    if not company: 
+        return {"error": "Company not found."}
+
+    return {
+        "raw_per_turn": await company.raw_in_step(),
+        "improvements": company.improvements,
+        "improvements_data": await company.get_improvements()
+    }
