@@ -8,13 +8,12 @@ class Statistic(BaseClass, SessionObject):
     __unique_id__ = "id"
     __db_object__ = just_db
 
-    def __init__(self, id: int = 0):
-        self.id: int = id
-
+    def __init__(self):
+        self.id = 0
         self.session_id: str = ""
         self.company_id: int = 0
         self.step: int = 0
-        
+
         self.balance: int = 0 # Баланс компании
         self.reputation: int = 0 # Репутация компании
         self.economic_power: int = 0 # Экономическая мощь компании
@@ -76,26 +75,23 @@ class Statistic(BaseClass, SessionObject):
             "factories": self.factories,
             "exchanges": self.exchanges,
             "contracnts": self.contracnts,
-            "warehouse": self.warehouse
+            "warehouse": self.free_warehouse
         }
 
     async def delete(self):
-        await just_db.delete(self.__tablename__, id=self.id, session_id=self.session_id)
+        await just_db.delete(self.__tablename__, 
+                             _id=self._id, session_id=self.session_id)
         return True
 
     @classmethod
     async def get_all_by_company(cls, session_id: str, company_id: int) -> list['Statistic']:
-        rows: list[dict] = await just_db.find(cls.__tablename__, 
-                                  session_id=session_id, company_id=company_id) # type: ignore
-        statistics = []
+        rows: list[Statistic] = await just_db.find(cls.__tablename__, 
+                                  session_id=session_id, company_id=company_id,
+                                  to_class=Statistic
+                                  ) # type: ignore
 
-        for row in rows:
-            stat = cls()
-            stat = stat.load_from_base(row)
-            statistics.append(stat)
+        return rows
 
-        return statistics
-    
     @classmethod
     async def get_all_by_session(cls, session_id: str) -> list['Statistic']:
         rows: list[dict] = await just_db.find(cls.__tablename__, 
@@ -142,6 +138,13 @@ class Statistic(BaseClass, SessionObject):
                                      step=step,
                                      to_class=Statistic
                                      ) # type: ignore
+
+        # if not stat:
+        #     stat = await Statistic().create(
+        #         company_id=company_id,
+        #         session_id=session_id,
+        #         step=step
+        #     )
 
         for key, value in kwargs.items():
 
