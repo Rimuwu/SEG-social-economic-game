@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 from modules.validation import validate_username
 from game.stages import leave_from_prison
 from global_modules.models.cells import Cells
@@ -11,6 +11,11 @@ from global_modules.load_config import ALL_CONFIGS, Resources, Improvements, Set
 from global_modules.bank import calc_credit, get_credit_conditions, check_max_credit_steps, calc_deposit, get_deposit_conditions, check_max_deposit_steps
 from game.factory import Factory
 from modules.logs import game_logger
+
+if TYPE_CHECKING:
+    from game.user import User
+    from game.contract import Contract
+    from game.exchange import Exchange
 
 RESOURCES: Resources = ALL_CONFIGS["resources"]
 CELLS: Cells = ALL_CONFIGS['cells']
@@ -117,7 +122,7 @@ class Company(BaseClass, SessionObject):
         if not session or session.stage != "FreeUserConnect":
             return False
 
-        if len(await self.users) >= SETTINGS.max_players_in_company:
+        if len(await self.users) >= session.max_players_in_company:
             return False
         return True
 
@@ -125,13 +130,14 @@ class Company(BaseClass, SessionObject):
     async def users(self) -> list['User']:
         from game.user import User
 
-        users = await just_db.find(
+        users: list[User] = await just_db.find(
             User.__tablename__, to_class=User, 
             company_id=self.id
-        )
+        ) # type: ignore
         return users
 
-    async def set_position(self, x: int, y: int):
+    async def set_position(self, x: int, y: int, 
+                           from_updater: bool = False):
         if isinstance(x, int) is False or isinstance(y, int) is False:
             raise ValueError("Координаты должны быть целыми числами.")
 
@@ -149,7 +155,7 @@ class Company(BaseClass, SessionObject):
 
         # Если все компании выбрали клетки, переходим к следующему этапу
         await session.reupdate()
-        if await session.all_companies_have_cells():
+        if await session.all_companies_have_cells() and not from_updater:
             await session.update_stage(SessionStages.Game)
             await session.save_to_base()
 
@@ -1151,11 +1157,11 @@ class Company(BaseClass, SessionObject):
     async def exchanges(self) -> list['Exchange']:
         from game.exchange import Exchange
 
-        exchanges = await just_db.find(
+        exchanges: list[Exchange] = await just_db.find(
             Exchange.__tablename__, to_class=Exchange,
             company_id = self.id,
-            session_id=self.session_id
-        )
+            session_id = self.session_id
+        ) # type: ignore
 
         return exchanges
 
