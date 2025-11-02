@@ -2,6 +2,7 @@ from modules.sheduler import scheduler
 from datetime import datetime, timedelta
 from global_modules.load_config import ALL_CONFIGS, Settings
 from modules.logs import game_logger
+from modules.db import just_db
 
 settings: Settings = ALL_CONFIGS['settings']
 
@@ -15,6 +16,12 @@ async def stage_game_updater(session_id: str):
     session = await session_manager.get_session(session_id)
 
     if not session: return 0
+
+    if session.change_turn_schedule_id:
+        await just_db.delete(
+            'time_schedule', 
+            id=session.change_turn_schedule_id)
+
     if session.stage != SessionStages.Game.value:
         await session.update_stage(SessionStages.Game)
         sh_id = await scheduler.schedule_task(
@@ -22,6 +29,8 @@ async def stage_game_updater(session_id: str):
             datetime.now() + timedelta(seconds=GAME_TIME),
             kwargs={"session_id": session_id}
         )
+
+        await session.reupdate()
         session.change_turn_schedule_id = sh_id
         await session.save_to_base()
 
@@ -36,6 +45,8 @@ async def stage_game_updater(session_id: str):
             datetime.now() + timedelta(seconds=CHANGETURN_TIME),
             kwargs={"session_id": session_id}
         )
+
+        await session.reupdate()
         session.change_turn_schedule_id = sh_id
         await session.save_to_base()
 

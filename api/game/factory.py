@@ -7,6 +7,7 @@ from modules.db import just_db
 from global_modules.load_config import ALL_CONFIGS, Resources, Improvements, Settings, Capital, Reputation
 from modules.function_way import *
 from modules.websocket_manager import websocket_manager
+from game.statistic import Statistic
 
 RESOURCES: Resources = ALL_CONFIGS["resources"]
 CELLS: Cells = ALL_CONFIGS['cells']
@@ -34,6 +35,8 @@ class Factory(BaseClass, SessionObject):
         self.complectation_stages = 0  # Сколько ходов осталось до завершения комплектации
 
         self.produced: int = 0  # Сколько всего произведено продукции
+        
+        self.event_stack: list[dict] = []  # Стэк событий фабрики за этап
 
     async def create(self, 
                      company_id: int, 
@@ -134,6 +137,9 @@ class Factory(BaseClass, SessionObject):
         session = await Session(company.session_id).reupdate()
         if not session:
             return False
+        
+        self.event_stack = []  # Очищаем стэк событий компании
+        await self.save_to_base()
 
         # Этап комплектации
         if self.complectation_stages > 0:
@@ -149,6 +155,22 @@ class Factory(BaseClass, SessionObject):
                     }
                 })
 
+                self.event_stack.append({
+                    "type": "complectation_completed",
+                })
+                await self.save_to_base()
+                return True
+
+            else:
+                self.event_stack.append({
+                    "type": "complectation_progress",
+                    "data": {
+                        "stages_left": self.complectation_stages
+                    }
+                })
+                await self.save_to_base()
+                return True
+
         # Этап производства
         elif await self.is_working:
             resource = RESOURCES.get_resource(self.complectation) # type: ignore
@@ -161,6 +183,15 @@ class Factory(BaseClass, SessionObject):
                     try:
                         await company.remove_resource(mat, qty)
                     except Exception as e:
+                        self.event_stack.append({
+                            "type": "material_removal_failed",
+                            "data": {
+                                "material": mat,
+                                "quantity": qty,
+                                "error": str(e)
+                            }
+                        })
+                        await self.save_to_base()
                         return False
 
             tasks_speed = session.get_event_effects().get(
@@ -174,24 +205,66 @@ class Factory(BaseClass, SessionObject):
 
                 # Добавляем продукцию на склад компании
                 if self.complectation:
+                    free_space = await company.get_warehouse_free_size()
+                    add_min = min(output, free_space)
                     await company.add_resource(
-                            self.complectation, output,
-                            max_space=True)
-                    self.produced += output
+                            self.complectation, add_min,
+                            )
+
+                    self.produced += add_min
+                    self.event_stack.append({
+                        "type": "production_completed",
+                        "data": {
+                            "product": self.complectation,
+                            "added": add_min,
+                            "output": output
+                        }
+                    })
+
+                    st = await Statistic.get_latest_by_company(
+                        session_id=company.session_id,
+                        company_id=company.id
+                    )
+                    if st:
+                        await Statistic.update_me(
+                            company_id=company.id,
+                            session_id=company.session_id,
+                            step=session.step,
+                            total_products_produced=add_min
+                        )
 
                 self.progress[0] = 0
 
                 # Если авто, то проверяем материалы и продолжаем производство, если есть материалы
                 if self.is_auto and await self.check_materials():
                     self.produce = True
+
+                    self.event_stack.append({
+                        "type": "production_continued",
+                    })
+
                 else:
                     self.produce = False
+                    self.is_auto = False
+
+                    self.event_stack.append({
+                        "type": "production_stopped",
+                    })
 
                 await websocket_manager.broadcast({
                     "type": "api-factory-end-production",
                     "data": {
                         'factory_id': self.id,
                         'company_id': self.company_id
+                    }
+                })
+
+            else:
+                self.event_stack.append({
+                    "type": "production_progress",
+                    "data": {
+                        "progress": self.progress[0],
+                        "required": self.progress[1]
                     }
                 })
 
@@ -247,7 +320,9 @@ class Factory(BaseClass, SessionObject):
             "is_auto": self.is_auto,
             "complectation_stages": self.complectation_stages,
             "is_working": await self.is_working,
-            "check_materials": await self.check_materials() if self.complectation else False
+            "check_materials": await self.check_materials() if self.complectation else False,
+            "event_stack": self.event_stack,
+            "produced": self.produced
         }
 
     async def delete(self):

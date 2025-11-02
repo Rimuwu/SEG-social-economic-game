@@ -112,7 +112,8 @@ async def handle_get_city_demands(client_id: str, message: dict):
     if city_id is None:
         return {"error": "Missing city_id"}
 
-    city = await just_db.find_one('cities', to_class=Citie, id=city_id)
+    city = await just_db.find_one(
+        'cities', to_class=Citie, id=city_id)
 
     if not city:
         return {"error": "City not found"}
