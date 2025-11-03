@@ -88,6 +88,8 @@ class Factory(BaseClass, SessionObject):
     async def pere_complete(self, new_complectation: str):
         """ Перекомплектация фабрики
         """
+        from game.company import Company
+        
         if new_complectation not in RESOURCES.resources:
             raise ValueError("Неверный тип комплектации.")
 
@@ -111,6 +113,15 @@ class Factory(BaseClass, SessionObject):
             self.complectation_stages = new_level - old_level
         else:
             self.complectation_stages = new_level
+
+        company = await Company(self.company_id).reupdate()
+        mod_speed = 1.0
+        if company:
+            if company.fast_complectation:
+                mod_speed = SETTINGS.fast_complectation
+
+        self.complectation_stages = max(1, 
+                int(self.complectation_stages // mod_speed))
 
         self.complectation = new_complectation
         production: Production = new_resource.production # type: ignore
