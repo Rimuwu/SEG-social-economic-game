@@ -3,8 +3,6 @@
 from modules.websocket_manager import websocket_manager
 from modules.ws_hadnler import message_handler
 from modules.logs import websocket_logger
-from game.session import Session
-from modules.json_database import just_db
 
 @message_handler(
     "ping", 

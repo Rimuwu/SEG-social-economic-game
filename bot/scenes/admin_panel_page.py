@@ -1106,12 +1106,9 @@ class AdminPanelPage(Page):
             # Вернуться в меню сессий
             scene_data['admin_substate'] = None
             
-            if result and 'session' in result:
-                session_id = result['session']['id']
-                scene_data['admin_temp_data']['last_message'] = f"✅ Сессия создана: {session_id}"
-            else:
-                error_msg = result.get('error', 'Неизвестная ошибка') if result else 'Нет ответа'
-                scene_data['admin_temp_data']['last_message'] = f"❌ Ошибка: {error_msg}"
+            # if result and 'session' in result:
+            session_id = result['id']
+            scene_data['admin_temp_data']['last_message'] = f"✅ Сессия создана: {session_id}"
             
             await self.scene.set_data('scene', scene_data)
             await self.scene.update_message()

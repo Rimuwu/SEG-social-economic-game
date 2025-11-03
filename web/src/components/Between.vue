@@ -126,7 +126,9 @@ const formatNumber = (num) => {
 
 // Event computed property
 const currentEvent = computed(() => {
-  return wsManager?.gameState?.getEvent() || null
+  const event = wsManager?.gameState?.getEvent() || null
+  console.log('[Between.vue] Current event:', event)
+  return event
 })
 
 // Helper to get event status text

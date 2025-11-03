@@ -53,7 +53,6 @@ class GameManager(AdminScene):
         BankPage,
         BankCreditPage,
         BankDepositPage,
-        ContractMainPage,
         UpgradeMenu,
         LogisticsMenu,
         FactoryMenu,
@@ -74,20 +73,20 @@ class GameManager(AdminScene):
     
     @staticmethod
     async def insert_to_db(user_id: int, data: dict):
-        db.insert('scenes', data)
+        await db.insert('scenes', data)
 
     @staticmethod
     async def load_from_db(user_id: int) -> dict:
-        data = db.find_one('scenes', user_id=user_id) or {}
+        data = await db.find_one('scenes', user_id=user_id) or {}
         return data
 
     @staticmethod
     async def update_to_db(user_id: int, data: dict):
-        db.update('scenes', {'user_id': user_id}, data)
+        await db.update('scenes', {'user_id': user_id}, data)
 
     @staticmethod
     async def delete_from_db(user_id: int):
-        db.delete('scenes', user_id=user_id)
+        await db.delete('scenes', user_id=user_id)
     
     # Функция для вставки сцены в БД
     # В функцию передаёт user_id: int, data: dict

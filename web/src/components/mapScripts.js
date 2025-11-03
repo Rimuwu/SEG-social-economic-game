@@ -80,6 +80,9 @@ function setTile(row, col, tileType, text) {
     tile.style.color = tileStyles[tileType].fontColor
   }
   
+  // Remove any previous special classes
+  tile.classList.remove('company-tile')
+  
   // Handle icon display for CITY and BANK tiles
   if (tileType === TileTypes.CITY || tileType === TileTypes.BANK) {
     // Clear existing content
@@ -98,6 +101,11 @@ function setTile(row, col, tileType, text) {
   } else if (text !== undefined) {
     // For other tiles with custom text (like companies)
     tile.textContent = text
+    
+    // If this is a company tile, add the company-tile class for special styling
+    if (tileType === TileTypes.COMPANY) {
+      tile.classList.add('company-tile')
+    }
   }
   // Otherwise, keep the default coordinate label
 }

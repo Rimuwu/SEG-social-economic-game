@@ -2,7 +2,7 @@ from game.citie import Citie
 from modules.websocket_manager import websocket_manager
 from modules.check_password import check_password
 from modules.ws_hadnler import message_handler
-from modules.json_database import just_db
+from modules.db import just_db
 
 @message_handler(
     "get-cities", 
@@ -19,7 +19,7 @@ async def handle_get_cities(client_id: str, message: dict):
     }
 
     # Получаем список городов из базы данных
-    cities = just_db.find('cities',
+    cities = await just_db.find('cities',
                           to_class=Citie,
                          **{k: v for k, v in conditions.items() if v is not None})
 
@@ -46,7 +46,7 @@ async def handle_get_city(client_id: str, message: dict):
     }
 
     # Получаем город из базы данных
-    city = just_db.find_one('cities', to_class=Citie,
+    city = await just_db.find_one('cities', to_class=Citie,
                          **{k: v for k, v in conditions.items() if v is not None})
 
     if not city:
@@ -83,11 +83,11 @@ async def handle_sell_to_city(client_id: str, message: dict):
     try:
         check_password(password)
         
-        city = Citie(city_id).reupdate()
+        city = await Citie(city_id).reupdate()
         if not city:
             raise ValueError("Город не найден.")
 
-        result = city.sell_resource(company_id, 
+        result = await city.sell_resource(company_id, 
                                     resource_id, 
                                     amount
                 )
@@ -112,7 +112,8 @@ async def handle_get_city_demands(client_id: str, message: dict):
     if city_id is None:
         return {"error": "Missing city_id"}
 
-    city = just_db.find_one('cities', to_class=Citie, id=city_id)
+    city = await just_db.find_one(
+        'cities', to_class=Citie, id=city_id)
 
     if not city:
         return {"error": "City not found"}

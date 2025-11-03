@@ -1,5 +1,27 @@
 services:
 
+  mongodb:
+    image: mongo:latest
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD}
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - ./logs:/var/log/mongodb:rw
+    restart: always
+    command: mongod --quiet --logpath /dev/null
+    stop_signal: SIGINT
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.runCommand('ping').ok", "--quiet"]
+      interval: 5s
+      timeout: 2s
+      retries: 5
+      start_period: 20s
+    networks:
+      - seg_network
+
   api:
     build: 
       context: .
@@ -7,12 +29,22 @@ services:
     environment:
       - DEBUG=${DEBUG}
       - UPDATE_PASSWORD=${UPDATE_PASSWORD}
+      - MONGODB_URL=mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@mongodb:27017
     ports:
       - "81:81"
     restart: unless-stopped
     volumes:
       - ./logs:/logs:rw
       - ./data:/data:rw
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:81/ping')"]
+      interval: 5s
+      timeout: 1s
+      retries: 10
+      start_period: 10s
     networks:
       - seg_network
 
@@ -26,15 +58,37 @@ services:
       - WS_SERVER_URI=${WS_SERVER_URI}
       - UPDATE_PASSWORD=${UPDATE_PASSWORD}
       - ADMIN_IDS=${ADMIN_IDS}
+      - MONGODB_URL=mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@mongodb:27017
     restart: unless-stopped
     volumes:
       - ./logs:/logs:rw
       - ./data:/data:rw
     depends_on:
-      - api
+      mongodb:
+        condition: service_healthy
+      api:
+        condition: service_healthy
     networks:
       - seg_network
+
+  mongo-express:
+    image: mongo-express:latest
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      - ME_CONFIG_MONGODB_ADMINUSERNAME=${MONGO_USERNAME}
+      - ME_CONFIG_MONGODB_ADMINPASSWORD=${MONGO_PASSWORD}
+      - ME_CONFIG_MONGODB_URL=mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@mongodb:27017
   
+      - ME_CONFIG_BASICAUTH_USERNAME=${MONGO_EXPRESS_USERNAME}
+      - ME_CONFIG_BASICAUTH_PASSWORD=${MONGO_EXPRESS_PASSWORD}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - seg_network
+
   web:
     build:
       context: .
@@ -45,11 +99,17 @@ services:
       - seg_network
     restart: unless-stopped
     environment:
-      VITE_API_URL: ${VITE_API_URL}
       VITE_DEBUG: ${DEBUG}
       VITE_AUTHORS: ${VITE_AUTHORS}
+    depends_on:
+      api:
+        condition: service_healthy
 
 
 networks:
   seg_network:
     driver: bridge
+
+volumes:
+  mongodb_data:
+    driver: local

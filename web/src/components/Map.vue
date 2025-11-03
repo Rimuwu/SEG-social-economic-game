@@ -122,4 +122,17 @@ if (wsManager) {
     font-size: 3rem;
     font-family: "Ubuntu Mono", monospace;
 }
+
+/* Company tiles need smaller text and ellipsis for overflow */
+.tile.company-tile {
+    font-size: 2.5rem;
+    white-space: wrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: normal;
+}
 </style>

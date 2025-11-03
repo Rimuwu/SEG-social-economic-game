@@ -15,7 +15,7 @@ class BankDepositPage(Page):
     async def content_worker(self):
         scene_data = self.scene.get_data('scene')
         company_id = scene_data.get('company_id')
-        session_id = scene_data.get('session_id')
+        session_id = scene_data.get('session')
         
         if not company_id:
             return "❌ Ошибка: компания не найдена"
@@ -257,7 +257,7 @@ _Вклад можно забрать через 3 хода после откр�
         """Генерация кнопок"""
         scene_data = self.scene.get_data('scene')
         company_id = scene_data.get('company_id')
-        session_id = scene_data.get('session_id')
+        session_id = scene_data.get('session')
         deposit_state = scene_data.get('deposit_state', 'main')
         
         buttons = []
@@ -404,7 +404,7 @@ _Вклад можно забрать через 3 хода после откр�
         """Начало процесса открытия вклада - запрос суммы"""
         scene_data = self.scene.get_data('scene')
         company_id = scene_data.get('company_id')
-        session_id = scene_data.get('session_id')
+        session_id = scene_data.get('session')
         
         # Проверяем репутацию и время до конца игры
         company_data = await get_company(id=company_id)
@@ -501,7 +501,7 @@ _Вклад можно забрать через 3 хода после откр�
         
         scene_data = self.scene.get_data('scene')
         company_id = scene_data.get('company_id')
-        session_id = scene_data.get('session_id')
+        session_id = scene_data.get('session')
         
         if not company_id:
             await callback.answer("❌ Ошибка: компания не найдена", show_alert=True)
@@ -645,7 +645,7 @@ _Вклад можно забрать через 3 хода после откр�
         scene_data = self.scene.get_data('scene')
         deposit_state = scene_data.get('deposit_state', 'main')
         company_id = scene_data.get('company_id')
-        session_id = scene_data.get('session_id')
+        session_id = scene_data.get('session')
         
         # Ввод суммы вклада
         if deposit_state == 'input_amount':

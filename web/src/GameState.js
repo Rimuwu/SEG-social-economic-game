@@ -40,6 +40,9 @@ export class GameState {
       // Item prices data
       itemPrices: {},
 
+      // Recent upgrades/improvements
+      recentUpgrades: [],
+
       // Event data
       event: {
         id: null,
@@ -98,6 +101,9 @@ export class GameState {
     this._countdownInterval = setInterval(() => {
       if (this.state.timeToNextStage !== null && this.state.timeToNextStage > 0) {
         this.state.timeToNextStage--;
+      } else if (this.state.timeToNextStage !== null && this.state.timeToNextStage < 0) {
+        // Prevent negative values, set to 0
+        this.state.timeToNextStage = 0;
       }
     }, 1000);
   }
@@ -344,6 +350,15 @@ export class GameState {
     }
     this.state.cities = cities;
     console.log('[GameState] Cities updated:', cities.length);
+    
+    // Log demands for debugging
+    cities.forEach(city => {
+      console.log(`[GameState] City ${city.id} (${city.name}):`, 
+        city.demands ? Object.keys(city.demands).length + ' demands' : 'NO DEMANDS');
+      if (city.demands) {
+        console.log(`[GameState] City ${city.id} demands:`, city.demands);
+      }
+    });
   }
 
   /**
@@ -663,7 +678,17 @@ export class GameState {
    * @param {number} seconds
    */
   updateTimeToNextStage(seconds) {
-    this.state.timeToNextStage = seconds;
+    console.log('[GameState] updateTimeToNextStage called with:', seconds);
+    // Ensure we have a valid number
+    if (typeof seconds === 'number' && !isNaN(seconds)) {
+      this.state.timeToNextStage = Math.max(0, seconds);
+      console.log('[GameState] Time updated to:', this.state.timeToNextStage);
+    } else if (seconds === null || seconds === undefined) {
+      this.state.timeToNextStage = null;
+      console.log('[GameState] Time set to null');
+    } else {
+      console.warn('[GameState] Invalid time value:', seconds);
+    }
   }
 
   /**
@@ -675,6 +700,51 @@ export class GameState {
     const minutes = Math.floor(this.state.timeToNextStage / 60);
     const seconds = this.state.timeToNextStage % 60;
     return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  }
+
+  // ==================== UPGRADE METHODS ====================
+
+  /**
+   * Add a recent upgrade to the list
+   * @param {Object} upgradeData - Upgrade information
+   */
+  addUpgrade(upgradeData) {
+    if (!upgradeData) return;
+    
+    const upgrade = {
+      id: `upgrade_${Date.now()}_${Math.random()}`,
+      companyId: upgradeData.company_id,
+      companyName: upgradeData.company_name,
+      improvementType: upgradeData.improvement_type,
+      level: upgradeData.new_1level,
+      timestamp: Date.now()
+    };
+    
+    // Add to beginning of array
+    this.state.recentUpgrades.unshift(upgrade);
+    
+    // Keep only last 10 upgrades
+    if (this.state.recentUpgrades.length > 10) {
+      this.state.recentUpgrades = this.state.recentUpgrades.slice(0, 10);
+    }
+    
+    console.log('[GameState] Upgrade added:', upgrade);
+  }
+
+  /**
+   * Get recent upgrades (limited to specified count)
+   * @param {number} limit - Maximum number of upgrades to return
+   * @returns {Array}
+   */
+  getRecentUpgrades(limit = 4) {
+    return this.state.recentUpgrades.slice(0, limit);
+  }
+
+  /**
+   * Clear all upgrades
+   */
+  clearUpgrades() {
+    this.state.recentUpgrades = [];
   }
 
   // ==================== WINNER METHODS ====================
@@ -806,6 +876,48 @@ export class GameState {
   }
 
   /**
+   * Get localized improvement display name
+   * @param {string} improvementType - Improvement type
+   * @returns {string} - Localized display name
+   */
+  getImprovementName(improvementType) {
+    const names = {
+      // Company-wide improvements
+      'warehouse': 'Склад',
+      'contracts': 'Контракты',
+      
+      // Mountain improvements
+      'mountain.station': 'Горная станция добычи',
+      'mountain.factory': 'Горная фабрика',
+      'mountain_station': 'Горная станция добычи',
+      'mountain_factory': 'Горная фабрика',
+      
+      // Forest improvements
+      'forest.station': 'Лесная станция добычи',
+      'forest.factory': 'Лесная фабрика',
+      'forest_station': 'Лесная станция добычи',
+      'forest_factory': 'Лесная фабрика',
+      
+      // Water improvements
+      'water.station': 'Водная станция добычи',
+      'water.factory': 'Водная фабрика',
+      'water_station': 'Водная станция добычи',
+      'water_factory': 'Водная фабрика',
+      
+      // Field improvements
+      'field.station': 'Полевая станция добычи',
+      'field.factory': 'Полевая фабрика',
+      'field_station': 'Полевая станция добычи',
+      'field_factory': 'Полевая фабрика',
+      
+      // Generic terms
+      'station': 'Станция добычи',
+      'factory': 'Фабрика',
+    };
+    return names[improvementType] || improvementType;
+  }
+
+  /**
    * Reset all state
    */
   reset() {
@@ -817,6 +929,7 @@ export class GameState {
     this.state.cities = [];
     this.state.contracts = [];
     this.state.itemPrices = {};
+    this.state.recentUpgrades = [];
     this.clearEvent();
     this.state.map = {
       cells: [],

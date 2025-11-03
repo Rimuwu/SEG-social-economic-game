@@ -44,8 +44,10 @@ def get_neighboring_cells(x: int, y: int, radius: int, map_size: dict) -> list[t
     return neighbors
 
 
-def determine_city_branch(x: int, y: int, session_id: str, cells: list[str], 
-                          map_size: dict, cells_config) -> str:
+async def determine_city_branch(
+    x: int, y: int, 
+    session_id: str, cells: list[str], 
+    map_size: dict) -> str:
     """Определяет приоритетную ветку ресурсов для города на основе соседних клеток.
     
     Args:
@@ -54,12 +56,11 @@ def determine_city_branch(x: int, y: int, session_id: str, cells: list[str],
         session_id: ID сессии
         cells: список клеток карты
         map_size: размер карты
-        cells_config: конфигурация типов клеток
     
     Returns:
         Название ветки ('oil', 'metal', 'wood', 'cotton')
     """
-    from modules.json_database import just_db
+    from modules.db import just_db
     
     # Маппинг типов клеток на ветки ресурсов
     cell_to_branch = {
@@ -70,7 +71,8 @@ def determine_city_branch(x: int, y: int, session_id: str, cells: list[str],
     }
     
     # Получаем все города в сессии
-    cities = just_db.find("cities", session_id=session_id)
+    cities: list[dict] = await just_db.find(
+        "cities", session_id=session_id) # type: ignore
     occupied_branches = {}
     
     for city in cities:

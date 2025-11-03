@@ -23,11 +23,6 @@ Page = OneUserPage
 class UpgradeMenu(Page):
     __page_name__ = "upgrade-menu"
 
-    def __after_init__(self):
-        self._company_cache: Optional[dict] = None
-        self._company_cache_id: Optional[int] = None
-        self._cell_type_cache: Optional[str] = None
-
     async def data_preparate(self):
         page_data = self.scene.get_data(self.__page_name__)
         if page_data is None:
@@ -55,7 +50,7 @@ class UpgradeMenu(Page):
         if not company_id:
             return "❌ Компания не выбрана"
 
-        company_data = await self._get_company(company_id)
+        company_data = await get_company(id=company_id)
         if not isinstance(company_data, dict):
             return "❌ Не удалось получить данные компании"
 
@@ -111,7 +106,7 @@ class UpgradeMenu(Page):
             if selected_type:
                 upgrade_available = False
                 if company_id:
-                    company_data = await self._get_company(company_id)
+                    company_data = await get_company(id=company_id)
                     if isinstance(company_data, dict):
                         state = await self._get_improvement_state(company_data, selected_type)
                         upgrade_available = state.get("next_config") is not None
@@ -169,7 +164,7 @@ class UpgradeMenu(Page):
             await callback.answer("❌ Компания не найдена", show_alert=True)
             return
 
-        company_data = await self._get_company(company_id)
+        company_data = await get_company(id=company_id)
         if not isinstance(company_data, dict):
             await self._set_status("Не удалось загрузить данные компании", level="error")
             await self.scene.update_message()
@@ -204,7 +199,6 @@ class UpgradeMenu(Page):
 
         new_level = state.get("next_level")
         await self._set_status(f"Улучшение повышено до уровня {new_level}", level="success")
-        self._clear_cache()
         await self.scene.update_message()
         await callback.answer("Готово")
 
@@ -271,33 +265,11 @@ class UpgradeMenu(Page):
             "cell_type": cell_type,
         }
 
-    async def _get_company(self, company_id: int) -> Optional[dict]:
-        if self._company_cache_id == company_id and self._company_cache is not None:
-            return self._company_cache
-
-        data = await get_company(id=company_id)
-        if isinstance(data, dict):
-            if self._company_cache_id != company_id:
-                self._cell_type_cache = None
-            self._company_cache = data
-            self._company_cache_id = company_id
-        else:
-            self._company_cache = None
-            self._company_cache_id = None
-            self._cell_type_cache = None
-        return data
-
     async def _get_cell_type(self, company_id: int) -> Optional[str]:
-        if self._company_cache_id == company_id and self._cell_type_cache:
-            return self._cell_type_cache
-
         response = await get_company_cell_info(company_id=company_id)
         cell_type = None
         if isinstance(response, dict):
             cell_type = response.get("type")
-
-        self._cell_type_cache = cell_type
-        self._company_cache_id = company_id if self._company_cache_id is None else self._company_cache_id
         return cell_type
 
     def _format_stats(self, config: Optional[ImprovementLevel], improvement_type: str, title: Optional[str] = None) -> list[str]:
@@ -341,10 +313,5 @@ class UpgradeMenu(Page):
     async def _set_status(self, message: Optional[str] = None, level: str = "info") -> None:
         await self.scene.update_key(self.__page_name__, "status_message", message)
         await self.scene.update_key(self.__page_name__, "status_level", level)
-
-    def _clear_cache(self) -> None:
-        self._company_cache = None
-        self._company_cache_id = None
-        self._cell_type_cache = None
     
     

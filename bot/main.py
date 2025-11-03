@@ -6,10 +6,8 @@ from global_modules.logs import Logger
 from modules.db import db
 from modules.ws_client import ws_client
 from bot_instance import bot, dp
-from modules.load_scenes import load_scenes_from_db
 
-from oms import register_handlers, scene_manager
-import handlers
+from oms import register_handlers
 from handlers.errors import error_handler
 
 # Настройка логирования
@@ -21,16 +19,14 @@ async def main():
     """Главная функция для запуска бота"""
     bot_logger.info("Запуск бота...")
 
+    await db.connect()  # Подключаемся к базе данных
+    await db.create_table('scenes')
+
+    # Регистрируем обработчик ошибок
+    dp.error.register(error_handler)
+    register_handlers(dp)
+
     try:
-        # db.drop_all()
-        db.create_table('messages')
-        db.create_table('scenes')
-
-        # Регистрируем обработчик ошибок
-        dp.error.register(error_handler)
-        
-        register_handlers(dp)
-
         await ws_client.connect() # Подключаемся к WebSocket серверу
         await dp.start_polling(bot)
     finally:

@@ -1,8 +1,8 @@
 import asyncio
 from global_modules.models.cells import Cells
 from global_modules.db.baseclass import BaseClass
-from modules.json_database import just_db
-from game.session import session_manager
+from modules.db import just_db
+from game.session import SessionObject
 from global_modules.load_config import ALL_CONFIGS, Resources, Improvements, Settings, Capital, Reputation
 from modules.function_way import *
 
@@ -13,22 +13,22 @@ SETTINGS: Settings = ALL_CONFIGS['settings']
 CAPITAL: Capital = ALL_CONFIGS['capital']
 REPUTATION: Reputation = ALL_CONFIGS['reputation']
 
-class StepSchedule(BaseClass):
+class StepSchedule(BaseClass, SessionObject):
 
     __tablename__ = "step_schedule"
     __unique_id__ = "id"
     __db_object__ = just_db
 
-    def __init__(self, _id: int = 0):
-        self.id: int = _id
+    def __init__(self, id: int = 0):
+        self.id: int = id
 
         self.session_id: str = ""
         self.in_step: int = 0
         self.functions: list = [
             ]  # Список функций для выполнения в этом шаге
 
-    def create(self, session_id: str, in_step: int) -> 'StepSchedule':
-        if schedule := just_db.find_one(
+    async def create(self, session_id: str, in_step: int) -> 'StepSchedule':
+        if schedule := await just_db.find_one(
             self.__tablename__, 
             session_id=session_id, in_step=in_step,
             to_class=StepSchedule
@@ -37,13 +37,11 @@ class StepSchedule(BaseClass):
 
         self.session_id = session_id
         self.in_step = in_step
-        self.id = just_db.max_id_in_table(self.__tablename__) + 1
 
-        self.save_to_base()
-        self.reupdate()
+        await self.insert()
         return self
 
-    def add_function(self, function, **kwargs):
+    async def add_function(self, function, **kwargs):
         """ Добавляет функцию в расписание шага
         """
         if not function or not callable(function):
@@ -52,9 +50,9 @@ class StepSchedule(BaseClass):
         if not self.id:
             raise ValueError("Расписание должно быть сохранено перед добавлением функций.")
 
-        session = session_manager.get_session(self.session_id)
+        session = await self.get_session()
         if not session:
-            just_db.delete(self.__tablename__, id=self.id)
+            await just_db.delete(self.__tablename__, id=self.id)
             raise ValueError("Неверная сессия для добавления функции.")
 
         if not session.step <= self.in_step:
@@ -64,17 +62,17 @@ class StepSchedule(BaseClass):
             "function": func_to_str(function),
             "args": kwargs
         })
-        self.save_to_base()
-        self.reupdate()
+        await self.save_to_base()
+        await self.reupdate()
         return True
 
     async def execute(self):
         """ Выполняет все функции в расписании шага
         """
-        session = session_manager.get_session(self.session_id)
+        session = await self.get_session()
 
         if not session:
-            just_db.delete(self.__tablename__, id=self.id)
+            await just_db.delete(self.__tablename__, id=self.id)
             print(f'Session {self.session_id} not found. Deleting schedule {self.id}.')
             return False
 
@@ -105,5 +103,5 @@ class StepSchedule(BaseClass):
             except Exception as e:
                 print(f"Error executing function {func_name}: {e}")
 
-        just_db.delete(self.__tablename__, id=self.id)
+        await just_db.delete(self.__tablename__, id=self.id)
         return True

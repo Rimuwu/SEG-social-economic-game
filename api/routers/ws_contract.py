@@ -2,7 +2,7 @@ from game.contract import Contract
 from modules.websocket_manager import websocket_manager
 from modules.check_password import check_password
 from modules.ws_hadnler import message_handler
-from modules.json_database import just_db
+from modules.db import just_db
 
 @message_handler(
     "get-contracts", 
@@ -27,8 +27,8 @@ async def handle_get_contracts(client_id: str, message: dict):
     }
 
     # Получаем список контрактов из базы данных
-    contracts_data = just_db.find('contracts',
-                         **{k: v for k, v in conditions.items() if v is not None})
+    contracts_data: list[dict] = await just_db.find('contracts',
+                         **{k: v for k, v in conditions.items() if v is not None}) # type: ignore
 
     contracts = []
     for contract_data in contracts_data:
@@ -63,7 +63,7 @@ async def handle_get_contract(client_id: str, message: dict):
     }
 
     # Получаем контракт из базы данных
-    contract_data = just_db.find_one('contracts',
+    contract_data = await just_db.find_one('contracts',
                          **{k: v for k, v in conditions.items() if v is not None})
 
     if contract_data:
@@ -137,7 +137,7 @@ async def handle_create_contract(client_id: str, message: dict):
         check_password(password)
 
         contract = Contract()
-        contract.create(
+        await contract.create(
             supplier_company_id=supplier_company_id,
             customer_company_id=customer_company_id,
             session_id=session_id,
@@ -185,10 +185,10 @@ async def handle_accept_contract(client_id: str, message: dict):
 
         check_password(password)
 
-        contract = Contract(id=contract_id).reupdate()
+        contract = await Contract(id=contract_id).reupdate()
         if not contract: raise ValueError("Контракт не найден.")
 
-        contract.accept_contract(who_accepter)
+        await contract.accept_contract(who_accepter)
 
     except ValueError as e:
         return {"error": str(e)}
@@ -224,10 +224,10 @@ async def handle_decline_contract(client_id: str, message: dict):
 
         check_password(password)
 
-        contract = Contract(id=contract_id).reupdate()
+        contract = await Contract(id=contract_id).reupdate()
         if not contract: raise ValueError("Контракт не найден.")
 
-        contract.decline_contract(who_decliner)
+        await contract.decline_contract(who_decliner)
 
     except ValueError as e:
         return {"error": str(e)}
@@ -262,10 +262,10 @@ async def handle_execute_contract(client_id: str, message: dict):
 
         check_password(password)
 
-        contract = Contract(id=contract_id).reupdate()
+        contract = await Contract(id=contract_id).reupdate()
         if not contract: raise ValueError("Контракт не найден.")
 
-        success = contract.execute_turn()
+        success = await contract.execute_turn()
 
     except ValueError as e:
         return {"error": str(e)}
@@ -304,10 +304,10 @@ async def handle_cancel_contract(client_id: str, message: dict):
 
         check_password(password)
 
-        contract = Contract(id=contract_id).reupdate()
+        contract = await Contract(id=contract_id).reupdate()
         if not contract: raise ValueError("Контракт не найден.")
 
-        contract.cancel_with_refund(who_canceller)
+        await contract.cancel_with_refund(who_canceller)
 
     except ValueError as e:
         return {"error": str(e)}
@@ -343,7 +343,7 @@ async def handle_get_company_contracts(client_id: str, message: dict):
     
     # Получаем контракты где компания выступает поставщиком
     if as_supplier:
-        supplier_contracts_data = just_db.find('contracts',
+        supplier_contracts_data = await just_db.find('contracts',
                                         supplier_company_id=company_id, **conditions)
         for contract_data in supplier_contracts_data:
             contract = Contract(id=contract_data.get('id', 0))
@@ -352,7 +352,7 @@ async def handle_get_company_contracts(client_id: str, message: dict):
     
     # Получаем контракты где компания выступает заказчиком
     if as_customer:
-        customer_contracts_data = just_db.find('contracts',
+        customer_contracts_data = await just_db.find('contracts',
                                         customer_company_id=company_id, **conditions)
         for contract_data in customer_contracts_data:
             contract = Contract(id=contract_data.get('id', 0))

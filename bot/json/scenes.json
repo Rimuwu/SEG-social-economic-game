@@ -133,13 +133,6 @@
                 "image": "img/exchange.png",
                 "content": ""
             },
-            "contract-main-page": {
-                "image": "img/contract.png",
-                "content": "",
-                "to_pages": {
-                    "main-page": "↪️ Назад"
-                }
-            },
             "upgrade-menu": {
                 "image": "img/upgrade.png",
                 "content": "",
@@ -156,6 +149,13 @@
                 "content": "",
                 "to_pages": {
                     "main-page": "↪️ Назад"
+                }
+            },
+            "contract-view-page": {
+                "title": "",
+                "content": "",
+                "to_pages": {
+                    "contract-main-page": "↪️ Назад"
                 }
             },
             "factory-change-mode": {

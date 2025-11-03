@@ -35,26 +35,37 @@ const city4 = computed(() => {
 
 // Helper function to format city demands
 const formatCityDemands = (city) => {
-  if (!city || !city.demands) return []
+  console.log('[Game.vue] formatCityDemands called for city:', city);
+  
+  if (!city || !city.demands) {
+    console.log('[Game.vue] No city or no demands:', { city: !!city, demands: !!city?.demands });
+    return []
+  }
+  
+  console.log('[Game.vue] City demands object:', city.demands);
   
   // Filter demands with amount > 0 and get only 2
-  return Object.entries(city.demands)
+  const formatted = Object.entries(city.demands)
     .filter(([_, demand]) => demand.amount > 0)
     .slice(0, 2)
     .map(([resourceId, demand]) => ({
       resourceId,
       amount: demand.amount,
       price: demand.price
-    }))
+    }));
+  
+  console.log('[Game.vue] Formatted demands:', formatted);
+  return formatted;
 }
 
-// Computed property for exchanges (latest 4)
+// Computed property for exchanges (latest 4, newest first)
 const latestExchanges = computed(() => {
   const exchanges = wsManager?.gameState?.state?.exchanges || []
   const sessionExchanges = exchanges.filter(e => 
     e.session_id === wsManager?.gameState?.state?.session?.id
   )
-  return sessionExchanges.slice(0, 4)
+  // Get the last 4 exchanges (most recent) and reverse to show newest first
+  return sessionExchanges.slice(-4).reverse()
 })
 
 // Helper function to get company name by ID
@@ -77,7 +88,7 @@ const formatExchangeText = (exchange) => {
   return `${companyName} выставила на продажу ${resourceName}`
 }
 
-// Computed property for contracts (latest 2)
+// Computed property for contracts (latest 2, newest first)
 const latestContracts = computed(() => {
   const contracts = wsManager?.gameState?.state?.contracts || []
   const sessionContracts = contracts.filter(c => 
@@ -85,7 +96,8 @@ const latestContracts = computed(() => {
   )
   // Show pending contracts first (not yet accepted)
   const pendingContracts = sessionContracts.filter(c => !c.accepted)
-  return pendingContracts.slice(0, 2)
+  // Get the last 2 contracts (most recent) and reverse to show newest first
+  return pendingContracts.slice(-2).reverse()
 })
 
 // Helper function to format contract text (matching the existing format)
@@ -102,6 +114,41 @@ const formatContractText = (contract) => {
     return `${customerName} создала контракт с ${supplierName} на ${resourceName} на ${contract.duration_turns} ходов`
   }
 }
+
+// Computed property for recent upgrades (latest 4)
+const recentUpgrades = computed(() => {
+  return wsManager?.gameState?.getRecentUpgrades(4) || []
+})
+
+// Helper function to format upgrade text
+const formatUpgradeText = (upgrade) => {
+  const companyName = upgrade.companyName || getCompanyName(upgrade.companyId)
+  const improvementName = wsManager?.gameState?.getImprovementName(upgrade.improvementType)
+  return `${companyName} улучшила ${improvementName} до уровня ${upgrade.level}`
+}
+
+// Event computed property
+const currentEvent = computed(() => {
+  const event = wsManager?.gameState?.getEvent() || null
+  console.log('[Game.vue] Current event:', event)
+  return event
+})
+
+// Helper to get event status text
+const eventStatusText = computed(() => {
+  const event = currentEvent.value
+  if (!event || !event.id) return null
+  
+  if (event.is_active) {
+    return 'Действует сейчас'
+  } else if (event.starts_next_turn) {
+    return 'Начнётся на следующем ходу'
+  } else if (event.predictable) {
+    const stepsUntil = event.start_step - wsManager?.gameState?.state?.session?.step
+    return `Начнётся через ${stepsUntil} ход${stepsUntil === 1 ? '' : stepsUntil < 5 ? 'а' : 'ов'}`
+  }
+  return null
+})
 
 onMounted(() => {
   // Component mounted
@@ -197,10 +244,14 @@ onMounted(() => {
         <div class="upgrades grid-item">
           <p class="title">УЛУЧШЕНИЯ</p>
           <div class="content">
-            <span>Компания А улучшила своё хранилище до уровня 2</span>
-            <span>Компания А улучшила своё хранилище до уровня 2</span>
-            <span>Компания А улучшила своё хранилище до уровня 2</span>
-            <span>Компания А улучшила своё хранилище до уровня 2</span>
+            <template v-if="recentUpgrades.length > 0">
+              <span v-for="upgrade in recentUpgrades" :key="upgrade.id">
+                {{ formatUpgradeText(upgrade) }}
+              </span>
+            </template>
+            <template v-else>
+              <span>Никаких улучшений за последнее время не происходило</span>
+            </template>
           </div>
         </div>
         <div class="contracts grid-item">
@@ -216,7 +267,6 @@ onMounted(() => {
             </template>
           </div>
         </div>
-
 
       </div>
     </div>
@@ -313,6 +363,45 @@ onMounted(() => {
 .stock span, .upgrades span, .contracts span {
   background: #3D8C00;
   padding: 5px 10px;
+}
+
+.events {
+  font-size: 5rem;
+  text-transform: uppercase;
+
+  text-align: center;
+  justify-content: center;
+
+  padding: 40px 0;
+  margin-top: 40px;
+
+  background-color: #3D8C00;
+
+  color: white;
+  font-family: "Ubuntu Mono", monospace;
+}
+
+.event-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.event-name {
+  font-size: 5rem;
+  font-weight: bold;
+}
+
+.event-status {
+  font-size: 2.5rem;
+  opacity: 0.8;
+  font-style: italic;
+}
+
+.event-description {
+  font-size: 3rem;
+  opacity: 0.9;
+  margin-top: 10px;
 }
 
 .footer {

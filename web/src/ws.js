@@ -452,6 +452,9 @@ export class WebSocketManager {
     if (callback && typeof callback === "function") {
       this.pendingCallbacks.set(request_id, callback);
     }
+    
+    console.log('[WS] Sending get-session-time-to-next-stage request');
+    
     this.socket.send(
       JSON.stringify({
         type: "get-session-time-to-next-stage",
@@ -479,10 +482,10 @@ export class WebSocketManager {
    * Fetch all necessary game data in the correct order
    */
   fetchAllGameData() {
-    // 1. Session state and map
+    // 1. Session state and map (includes time_to_next_stage)
     this.get_session();
     
-    // 2. Time to next stage
+    // 2. Explicitly fetch time to ensure it's always fresh
     this.get_time_to_next_stage();
     
     // 3. Event data
@@ -592,6 +595,11 @@ export class WebSocketManager {
       // Update game state with session data
       this.gameState.updateSession(message.data);
       
+      // Update time to next stage if provided in session data
+      if (message.data.time_to_next_stage !== undefined) {
+        this.gameState.updateTimeToNextStage(message.data.time_to_next_stage);
+      }
+      
       // Load map if available
       if (message.data.cells && message.data.map_size) {
         this.loadMapToDOM();
@@ -610,9 +618,7 @@ export class WebSocketManager {
     if (callback) {
       this.pendingCallbacks.delete(requestId);
     }
-  }
-
-  handleSessionsListResponse(message) {
+  }  handleSessionsListResponse(message) {
     const requestId = message.request_id;
     const callback = this.pendingCallbacks.get(requestId);
     
@@ -630,15 +636,32 @@ export class WebSocketManager {
     const requestId = message.request_id;
     const callback = this.pendingCallbacks.get(requestId);
     
-    if (message.success && message.data && message.data.event) {
-      // Update event in game state
-      this.gameState.updateEvent(message.data.event);
+    console.log('[WS] Event response received:', message);
+    
+    if (message.data && message.data.event !== undefined) {
+      // Check if event has data
+      const eventData = message.data.event;
       
-      if (callback) {
-        callback({ success: true, data: message.data.event });
+      if (eventData && Object.keys(eventData).length > 0) {
+        // Update event in game state
+        console.log('[WS] Updating event:', eventData);
+        this.gameState.updateEvent(eventData);
+        
+        if (callback) {
+          callback({ success: true, data: eventData });
+        }
+      } else {
+        // Empty event object - clear it
+        console.log('[WS] Empty event data, clearing event');
+        this.gameState.clearEvent();
+        
+        if (callback) {
+          callback({ success: true, data: null });
+        }
       }
     } else {
-      // No event or empty event data - clear it
+      // No event data - clear it
+      console.log('[WS] No event data in response, clearing event');
       this.gameState.clearEvent();
       
       if (callback) {
@@ -912,9 +935,11 @@ export class WebSocketManager {
   handleTimeResponse(message) {
     const requestId = message.request_id;
     const callback = this.pendingCallbacks.get(requestId);
+    console.log('[WS] Time response received:', message);
     
     if (message.data && message.data.time_to_next_stage !== undefined) {
       this.gameState.updateTimeToNextStage(message.data.time_to_next_stage);
+      console.log('[WS] Time updated:', message.data.time_to_next_stage);
       
       // Also update session step if provided
       if (message.data.step !== undefined) {
@@ -1018,7 +1043,15 @@ export class WebSocketManager {
       case 'api-user_added_to_company':
       case 'api-user_left_company':
       case 'api-company_set_position':
+        // Refresh companies
+        this.get_companies();
+        break;
+      
       case 'api-company_improvement_upgraded':
+        // Add upgrade to recent upgrades list
+        if (message.data) {
+          this.gameState.addUpgrade(message.data);
+        }
         // Refresh companies
         this.get_companies();
         break;
@@ -1031,9 +1064,12 @@ export class WebSocketManager {
         break;
         
       case 'api-update_session_stage':
-        // Refresh session
+        // Refresh session (includes time_to_next_stage)
         this.get_session();
         
+        // Refresh event data (might have changed)
+        this.get_session_event();
+
         // If stage changed, reload map
         if (message.data && message.data.new_stage) {
           this.loadMapToDOM();
@@ -1102,6 +1138,11 @@ export class WebSocketManager {
         // Refresh contracts and companies
         this.get_contracts();
         this.get_companies();
+        break;
+      
+      case 'api-event_generated':
+        // Refresh event data when a new event is generated
+        this.get_session_event();
         break;
     }
     

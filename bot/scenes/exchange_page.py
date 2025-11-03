@@ -1,6 +1,6 @@
 from oms import Page
 from aiogram.types import CallbackQuery, Message
-from modules.ws_client import get_exchanges, get_exchange, buy_exchange_offer, get_company, create_exchange_offer
+from modules.ws_client import get_exchanges, get_exchange, buy_exchange_offer, get_company, create_exchange_offer, get_item_price
 from oms.utils import callback_generator
 from global_modules.load_config import ALL_CONFIGS, Resources
 from .filters.item_filter import ItemFilter
@@ -316,9 +316,18 @@ class ExchangePage(OneUserPage):
                 text += f"Товар: {resource.emoji} {resource.label}\n"
                 text += f"За сделку: {sell_amount} шт.\n"
                 text += f"Количество сделок: {count_offers}\n\n"
-        
+
         text += "💬 *Введите цену за одну сделку*\n\n"
         text += "Пример: `1000` - покупатель заплатит 1000 монет за одну сделку"
+
+        if sell_resource:
+            item_price = await get_item_price(
+                scene_data.get('session', ''),
+                sell_resource
+            )
+            if item_price:
+                text += f"\nСредняя цена за 1 товар: {item_price['price']}"
+
         return text
     
     async def _create_select_barter_resource_screen(self, scene_data: dict):
@@ -401,7 +410,7 @@ class ExchangePage(OneUserPage):
         """Генерация кнопок"""
         scene_data = self.scene.get_data('scene')
         company_id = scene_data.get('company_id')
-        session_id = scene_data.get('session_id')
+        session_id = scene_data.get('session')
         exchange_state = scene_data.get('exchange_state', 'list')
         
         buttons = []
@@ -853,7 +862,7 @@ class ExchangePage(OneUserPage):
         
         resource_id = args[1]
         scene_data = self.scene.get_data('scene')
-        session_id = scene_data.get('session_id')
+        session_id = scene_data.get('session')
         
         # Проверяем существование ресурса
         if not self.item_filter.resource_exists(resource_id):

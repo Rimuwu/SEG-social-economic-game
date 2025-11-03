@@ -12,7 +12,7 @@ class BankCreditPage(Page):
     async def content_worker(self):
         scene_data = self.scene.get_data('scene')
         company_id = scene_data.get('company_id')
-        session_id = scene_data.get('session_id')
+        session_id = scene_data.get('session')
         
         if not company_id:
             return "❌ Ошибка: компания не найдена"
@@ -127,7 +127,7 @@ class BankCreditPage(Page):
 *Шаг 1: Введите срок кредита*
 
 На какое количество ходов хотите взять кредит?
-Минимум: 1 ход
+Минимум: 2 ход
 Максимум: {max_period} ход(ов)
 (Текущий ход: {current_step}, до конца игры: {max_period})"""
         
@@ -485,15 +485,15 @@ class BankCreditPage(Page):
         scene_data = self.scene.get_data('scene')
         credit_state = scene_data.get('credit_state', 'main')
         company_id = scene_data.get('company_id')
-        session_id = scene_data.get('session_id')
+        session_id = scene_data.get('session')
         
         # Ввод срока кредита
         if credit_state == 'input_period':
             # Очищаем предыдущую ошибку
             scene_data['error_message'] = ''
             
-            if value < 1:
-                scene_data['error_message'] = 'Срок должен быть не менее 1 хода'
+            if value < 2:
+                scene_data['error_message'] = 'Срок должен быть не менее 2 хода'
                 await self.scene.set_data('scene', scene_data)
                 await self.scene.update_message()
                 return
