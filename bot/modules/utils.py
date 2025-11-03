@@ -74,10 +74,10 @@ def cell_into_xy(cell):
     return x, y
 
 
-def create_buttons(text: str, callback_data: str, *args, ignore_row=False, next_line=False):
+def create_buttons(scene_name, text: str, callback_data: str, *args, ignore_row=False, next_line=False):
     return {
         "text": text,
-        "callback_data": callback_generator(callback_data, *args),
+        "callback_data": callback_generator(scene_name, callback_data, *args),
         "ignore_row": ignore_row,
         "next_line": next_line
     }
