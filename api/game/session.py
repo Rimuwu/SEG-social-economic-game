@@ -113,6 +113,12 @@ class Session(BaseClass):
             new_stage = SessionStages.End
 
         elif new_stage == SessionStages.CellSelect:
+
+            # Удаление юзеров из сесси без компании
+            for user in await self.users:
+                if not user.company_id:
+                    await user.delete()
+
             await self.generate_cells()
 
         elif new_stage == SessionStages.Game:
@@ -465,10 +471,10 @@ class Session(BaseClass):
 
                     game_logger.info(f"В сессии {self.session_id} создан город в позиции {x}.{y} с отраслью {city.branch}.")
 
-    async def can_select_cell(self, x: int, y: int):
+    async def can_select_cell(self, x: int, y: int, ignore_stage: bool = False) -> bool:
         """ Проверяет, можно ли выбрать клетку с координатами (x, y) для компании.
         """
-        if not self.can_select_cells():
+        if not ignore_stage and not self.can_select_cells():
             raise ValueError("Текущая стадия сессии не позволяет выбирать клетки.")
 
         index = x * self.map_size["cols"] + y
