@@ -90,3 +90,8 @@ class ExchangeCreate(OneUserPage):
         buttons.append({"text": "Назад",
                         "callback_data": callback_generator(self.scene.__scene_name__, "to_page", "exchange-main-page")})
         return buttons
+
+
+    @OneUserPage.on_callback("set_sell_resource")
+    async def set_sell_resource(self, call: CallbackQuery):
+        await self.scene.update_page("")

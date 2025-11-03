@@ -163,6 +163,13 @@
                     "main-page": "↪️ Назад"
                 }
             },
+            "contract-main-page": {
+                "title": "",
+                "content": "На данной странице вы можете принять, создать или выполнить контракт.",
+                "to_pages": {
+                    "main-page": "↪️ Назад"
+                }
+            },
             "contract-view-page": {
                 "title": "",
                 "content": "",
