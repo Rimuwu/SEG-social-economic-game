@@ -20,5 +20,16 @@
         "forest": "boards",
         "field": "fabric"
     },
-    "logistics_speed": 3 // Скорость логистики (клеток в ход)
+    "logistics_speed": 3, // Скорость логистики (клеток в ход)
+
+    "fast_logistic_price": 25000, // Цена улучшения логистики
+    "fast_logistic": 2.0, // Множитель за улучшение логистики
+
+    "fast_complectation_price": 15000, // Цена улучшения комплектации
+    "fast_complectation": 2.0, // Множитель улучшения
+
+    "change_location_price": { // Цена смены клетки
+        "small": 100000,
+        "big": 250000
+    }
 }

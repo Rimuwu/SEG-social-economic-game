@@ -27,21 +27,17 @@ class Settings:
     start_complectation: Dict[str, str]  # Начальная комплектация
     logistics_speed: int  # Скорость логистики (чем больше, тем быстрее)
 
+    fast_logistic: float 
+    fast_complectation: float
+
+    fast_logistic_price: int 
+    fast_complectation_price: int
+
+    change_location_price: dict[str, int] # Ключи big & small с ценой
+
     @classmethod
     def load_from_json(cls, data: dict):
         start_improvements = StartImprovementsLevel(**data["start_improvements_level"])
 
-        return cls(
-            players_wait_minutes=data["players_wait_minutes"],
-            max_companies=data["max_companies"],
-            map_side=data["map_side"],
-            turn_cell_time_minutes=data["turn_cell_time_minutes"],
-            cell_on_company=data["cell_on_company"],
-            time_on_game_stage=data["time_on_game_stage"],
-            time_on_change_stage=data["time_on_change_stage"],
-            max_players_in_company=data["max_players_in_company"],
-            start_improvements_level=start_improvements,
-            max_credits_per_company=data['max_credits_per_company'],
-            start_complectation=data['start_complectation'],
-            logistics_speed=data['logistics_speed']
-        )
+        data['start_improvements_level'] = start_improvements
+        return cls(**data)
