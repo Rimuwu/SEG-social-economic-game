@@ -1083,3 +1083,116 @@ async def handle_get_company_production(client_id: str, message: dict):
         "improvements": company.improvements,
         "improvements_data": await company.get_improvements()
     }
+
+
+@message_handler(
+    "set-fast-logistic", 
+    doc="Обработчик установки быстрой логистики. Требуется пароль для взаимодействия. Отправляет ответ на request_id",
+    datatypes=[
+        "company_id: int",
+        "password: str",
+        "request_id: str"
+    ],
+    messages=["api-company_fast_logistic_set (broadcast)"]
+)
+async def handle_set_fast_logistic(client_id: str, message: dict):
+    """Обработчик установки быстрой логистики"""
+
+    password = message.get("password")
+    company_id = message.get("company_id")
+
+    for i in [company_id, password]:
+        if i is None: 
+            return {"error": "Missing required fields."}
+
+    try:
+        check_password(password)
+
+        company = await Company(id=company_id).reupdate()
+        if not company:
+            return {"error": "Company not found."}
+
+        await company.set_fast_logistic()
+        return {"success": True}
+
+    except ValueError as e:
+        return {"error": str(e)}
+
+
+@message_handler(
+    "set-fast-complectation", 
+    doc="Обработчик установки быстрой комплектации. Требуется пароль для взаимодействия. Отправляет ответ на request_id",
+    datatypes=[
+        "company_id: int",
+        "password: str",
+        "request_id: str"
+    ],
+    messages=["api-company_fast_complectation_set (broadcast)"]
+)
+async def handle_set_fast_complectation(client_id: str, message: dict):
+    """Обработчик установки быстрой комплектации"""
+
+    password = message.get("password")
+    company_id = message.get("company_id")
+
+    for i in [company_id, password]:
+        if i is None: 
+            return {"error": "Missing required fields."}
+
+    try:
+        check_password(password)
+
+        company = await Company(id=company_id).reupdate()
+        if not company:
+            return {"error": "Company not found."}
+
+        await company.set_fast_complectation()
+        return {"success": True}
+
+    except ValueError as e:
+        return {"error": str(e)}
+
+
+@message_handler(
+    "change-position", 
+    doc="Обработчик изменения позиции компании на карте (платная услуга). Требуется пароль для взаимодействия. Отправляет ответ на request_id",
+    datatypes=[
+        "company_id: int",
+        "x: int",
+        "y: int",
+        "password: str",
+        "request_id: str"
+    ],
+    messages=["api-company_position_changed (broadcast)"]
+)
+async def handle_change_position(
+    client_id: str, message: dict
+    ):
+    """Обработчик изменения позиции компании"""
+
+    password = message.get("password")
+    company_id = message.get("company_id")
+    x = message.get("x")
+    y = message.get("y")
+
+    for i in [company_id, x, y, password]:
+        if i is None: 
+            return {"error": "Missing required fields."}
+
+    try:
+        check_password(password)
+
+        company = await Company(id=company_id).reupdate()
+        if not company:
+            return {"error": "Company not found."}
+
+        await company.change_position(x=x, y=y)
+
+        return {
+            "success": True,
+            "new_position": company.cell_position
+        }
+
+    except ValueError as e:
+        return {"error": str(e)}
+
