@@ -18,7 +18,7 @@ class WebSocketClient:
         self.client_id = client_id
         self.websocket: Optional[websockets.WebSocketServerProtocol] = None
         self.connected = False
-        self.message_handlers: Dict[str, Callable] = {}
+        self.message_handlers: Dict[str, list[Callable]] = {}
         self.logger = logger or logging.getLogger(__name__)
 
         self._on_connect: Optional[Callable] = None
@@ -47,7 +47,10 @@ class WebSocketClient:
             print(f"Получено broadcast: {data['content']}")
         """
         def decorator(func: Callable):
-            self.message_handlers[message_type] = func
+            if message_type in self.message_handlers:
+                self.message_handlers[message_type].append(func)
+            else:
+                self.message_handlers[message_type] = [func]
             return func
         return decorator
 
@@ -146,11 +149,12 @@ class WebSocketClient:
 
             # Обычная обработка сообщений
             if message_type in self.message_handlers:
-                handler = self.message_handlers[message_type]
-                if asyncio.iscoroutinefunction(handler):
-                    asyncio.create_task(handler(data))
-                else:
-                    asyncio.create_task(asyncio.to_thread(handler, data))
+                handlers = self.message_handlers[message_type]
+                for handler in handlers:
+                    if asyncio.iscoroutinefunction(handler):
+                        asyncio.create_task(handler(data))
+                    else:
+                        asyncio.create_task(asyncio.to_thread(handler, data))
             else:
                 self.logger.debug(f"Нет обработчика для типа '{message_type}': {data}")
 

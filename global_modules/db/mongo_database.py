@@ -57,6 +57,7 @@ class MongoDatabase:
         """Получает коллекцию по имени таблицы"""
         if self.db is None:
             raise RuntimeError("Database not connected")
+
         if table_name not in self._collections:
             self._collections[table_name] = self.db[table_name]
         return self._collections[table_name]
