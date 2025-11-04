@@ -64,6 +64,8 @@ async def handle_get_session(client_id: str, message: dict):
         "session_group_url: Optional[str]",
         "max_companies: Optional[int]",
         "max_players_in_company: Optional[int]",
+        "time_on_game_stage: Optional[int]",
+        "time_on_change_stage: Optional[int]",
 
         "password: str",
         "request_id: str"
@@ -82,7 +84,12 @@ async def handle_create_session(client_id: str, message: dict):
         'session_group_url', '')
     max_companies = message.get('max_companies', 
                                 settings.max_companies)
-    max_players_in_company = message.get('max_players_in_company', settings.max_players_in_company)
+    max_players_in_company = message.get('max_players_in_company', 
+                                         settings.max_players_in_company)
+    time_on_game_stage = message.get('time_on_game_stage', 
+                                    settings.time_on_game_stage)
+    time_on_change_stage = message.get('time_on_change_stage', 
+                                    settings.time_on_change_stage)
 
     try:
         check_password(password)
@@ -94,7 +101,9 @@ async def handle_create_session(client_id: str, message: dict):
             max_steps=max_steps,
             session_group_url=session_group_url,
             max_companies=max_companies,
-            max_players_in_company=max_players_in_company
+            max_players_in_company=max_players_in_company,
+            time_on_game_stage=time_on_game_stage,
+            time_on_change_stage=time_on_change_stage
         )
     except ValueError as e:
         return {"error": str(e)}
