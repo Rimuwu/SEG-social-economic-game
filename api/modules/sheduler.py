@@ -1,10 +1,11 @@
+import traceback
 from typing import Callable, Optional
 from modules.db import just_db
-from modules.function_way import *
+from modules.utils import *
 import asyncio
 from datetime import datetime
 import json
-
+from modules.logs import game_logger
 
 class TaskScheduler:
 
@@ -60,7 +61,7 @@ class TaskScheduler:
             else:
                 func(*args, **kwargs)
         except Exception as e:
-            print(f"Ошибка при выполнении задачи {task['function_path']}: {e.with_traceback(e.__traceback__)}")
+            game_logger.error(f"Ошибка при выполнении запланированной задачи {task['id']}: {traceback.format_exc()}")
 
         if repeat:
             interval = execute_at - add_at

@@ -1,4 +1,4 @@
-from modules import websocket_manager
+from modules.websocket_manager import websocket_manager
 from modules.ws_hadnler import message_handler
 from modules.db import just_db
 from game.session import session_manager, Session, SessionStages
@@ -64,6 +64,8 @@ async def handle_get_session(client_id: str, message: dict):
         "session_group_url: Optional[str]",
         "max_companies: Optional[int]",
         "max_players_in_company: Optional[int]",
+        "time_on_game_stage: Optional[int]",
+        "time_on_change_stage: Optional[int]",
 
         "password: str",
         "request_id: str"
@@ -82,7 +84,12 @@ async def handle_create_session(client_id: str, message: dict):
         'session_group_url', '')
     max_companies = message.get('max_companies', 
                                 settings.max_companies)
-    max_players_in_company = message.get('max_players_in_company', settings.max_players_in_company)
+    max_players_in_company = message.get('max_players_in_company', 
+                                         settings.max_players_in_company)
+    time_on_game_stage = message.get('time_on_game_stage', 
+                                    settings.time_on_game_stage)
+    time_on_change_stage = message.get('time_on_change_stage', 
+                                    settings.time_on_change_stage)
 
     try:
         check_password(password)
@@ -94,7 +101,9 @@ async def handle_create_session(client_id: str, message: dict):
             max_steps=max_steps,
             session_group_url=session_group_url,
             max_companies=max_companies,
-            max_players_in_company=max_players_in_company
+            max_players_in_company=max_players_in_company,
+            time_on_game_stage=time_on_game_stage,
+            time_on_change_stage=time_on_change_stage
         )
     except ValueError as e:
         return {"error": str(e)}
@@ -509,6 +518,60 @@ async def handle_get_session_cities(client_id: str, message: dict):
         cities = await session.cities
         return {
             "cities": [city.to_dict() for city in cities]
+        }
+
+    except ValueError as e:
+        return {"error": str(e)}
+
+
+@message_handler(
+    "notforgame-update-session-max-steps", 
+    doc="Обработчик обновления максимального количества этапов сессии. Требуется пароль для взаимодействия. НЕ ИСПОЛЬЗОВАТЬ В ИГРОВОМ ПРОЦЕССЕ!",
+    datatypes=[
+        "session_id: str",
+        "max_steps: int",
+        "password: str"
+    ],
+    messages=[]
+)
+async def handle_notforgame_update_session_max_steps(client_id: str, message: dict):
+    """Обработчик обновления максимального количества этапов сессии"""
+
+    session_id = message.get("session_id", "")
+    max_steps = message.get("max_steps", 0)
+    password = message.get("password", "")
+
+    for i in [session_id, max_steps, password]:
+        if i is None or (isinstance(i, str) and not i):
+            return {"error": "Missing required fields."}
+
+    try:
+        check_password(password)
+
+        session = await session_manager.get_session(session_id=session_id)
+        if not session:
+            return {"error": "Session not found."}
+
+        if not isinstance(max_steps, int) or max_steps <= 0:
+            return {"error": "max_steps must be a positive integer."}
+
+        old_max_steps = session.max_steps
+        session.max_steps = max_steps
+        await session.save_to_base()
+
+        await websocket_manager.broadcast({
+            "type": "api-session_max_steps_updated",
+            "data": {
+                "session_id": session.session_id,
+                "old_max_steps": old_max_steps,
+                "new_max_steps": session.max_steps
+            }
+        })
+
+        return {
+            "success": True,
+            "old_max_steps": old_max_steps,
+            "new_max_steps": session.max_steps
         }
 
     except ValueError as e:

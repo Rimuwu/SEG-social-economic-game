@@ -2,7 +2,7 @@ from game.session import SessionObject
 from global_modules.db.baseclass import BaseClass
 from modules.db import just_db
 from global_modules.load_config import ALL_CONFIGS, Resources, Improvements, Reputation
-from modules.function_way import *
+from modules.utils import *
 from modules.websocket_manager import websocket_manager
 from modules.logs import game_logger
 

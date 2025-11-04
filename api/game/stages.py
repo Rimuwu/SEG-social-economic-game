@@ -2,12 +2,9 @@ from modules.sheduler import scheduler
 from datetime import datetime, timedelta
 from global_modules.load_config import ALL_CONFIGS, Settings
 from modules.logs import game_logger
-from modules.db import just_db
 
 settings: Settings = ALL_CONFIGS['settings']
 
-GAME_TIME = settings.time_on_game_stage * 60
-CHANGETURN_TIME = settings.time_on_change_stage * 60
 
 async def stage_game_updater(session_id: str):
     """ Фнукция для цикличного обновления стадии игры
@@ -17,16 +14,11 @@ async def stage_game_updater(session_id: str):
 
     if not session: return 0
 
-    if session.change_turn_schedule_id:
-        await just_db.delete(
-            'time_schedule', 
-            id=session.change_turn_schedule_id)
-
     if session.stage != SessionStages.Game.value:
         await session.update_stage(SessionStages.Game)
         sh_id = await scheduler.schedule_task(
             stage_game_updater, 
-            datetime.now() + timedelta(seconds=GAME_TIME),
+            datetime.now() + timedelta(seconds=session.time_on_game_stage * 60),
             kwargs={"session_id": session_id}
         )
 
@@ -42,7 +34,7 @@ async def stage_game_updater(session_id: str):
         await session.update_stage(SessionStages.ChangeTurn)
         sh_id = await scheduler.schedule_task(
             stage_game_updater, 
-            datetime.now() + timedelta(seconds=CHANGETURN_TIME),
+            datetime.now() + timedelta(seconds=session.time_on_change_stage * 60),
             kwargs={"session_id": session_id}
         )
 
@@ -78,6 +70,6 @@ async def clear_session_event(session_id: str):
     session.event_start = None
     session.event_end = None
     await session.save_to_base()
-    
-    game_logger.info(f"Event cleared for session {session_id}")
+
+    game_logger.info(f"Ивент очищен для сессии {session_id}")
     return 1

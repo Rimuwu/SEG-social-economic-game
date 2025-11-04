@@ -139,12 +139,12 @@ class Statistic(BaseClass, SessionObject):
                                      to_class=Statistic
                                      ) # type: ignore
 
-        # if not stat:
-        #     stat = await Statistic().create(
-        #         company_id=company_id,
-        #         session_id=session_id,
-        #         step=step
-        #     )
+        if not stat:
+            stat = await Statistic().create(
+                company_id=company_id,
+                session_id=session_id,
+                step=step
+            )
 
         for key, value in kwargs.items():
 
