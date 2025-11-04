@@ -1,5 +1,5 @@
 import asyncio
-from typing import Any, Dict, List, Optional, Union, TYPE_CHECKING, Type
+from typing import Any, Dict, List, Optional, Union, TYPE_CHECKING, Type, overload, TypeVar
 from datetime import datetime
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase, AsyncIOMotorCollection
 from pymongo import IndexModel
@@ -8,6 +8,8 @@ from copy import deepcopy
 
 if TYPE_CHECKING:
     from global_modules.db.baseclass import BaseClass
+
+T = TypeVar('T', bound='BaseClass')
 
 class MongoDatabase:
     """MongoDB база данных с использованием motor для асинхронных операций"""
@@ -55,6 +57,7 @@ class MongoDatabase:
         """Получает коллекцию по имени таблицы"""
         if self.db is None:
             raise RuntimeError("Database not connected")
+
         if table_name not in self._collections:
             self._collections[table_name] = self.db[table_name]
         return self._collections[table_name]
@@ -88,13 +91,33 @@ class MongoDatabase:
         result = await collection.insert_one(record)
         return record['id']
 
+    @overload
     async def find(self, 
-                   table_name: str, 
-                   to_class: Optional[Type['BaseClass']] = None,
+                   table_name: str,
+                   to_class: None = None,
                    limit: Optional[int] = None,
                    skip: Optional[int] = None,
                    sort: Optional[List[tuple]] = None,
-                   **conditions) -> List[Union[Dict[str, Any], 'BaseClass']]:
+                   **conditions) -> List[Dict[str, Any]]:
+        ...
+
+    @overload
+    async def find(self, 
+                   table_name: str,
+                   to_class: Type[T],
+                   limit: Optional[int] = None,
+                   skip: Optional[int] = None,
+                   sort: Optional[List[tuple]] = None,
+                   **conditions) -> List[T]:
+        ...
+
+    async def find(self, 
+                   table_name: str, 
+                   to_class: Optional[Type[T]] = None,
+                   limit: Optional[int] = None,
+                   skip: Optional[int] = None,
+                   sort: Optional[List[tuple]] = None,
+                   **conditions) -> Union[List[Dict[str, Any]], List[T]]:
         """Находит записи по условиям"""
         if self.db is None:
             await self.connect()
@@ -130,10 +153,24 @@ class MongoDatabase:
 
         return results
 
+    @overload
+    async def find_one(self, 
+                       table_name: str,
+                       to_class: None = None,
+                       **conditions) -> Optional[Dict[str, Any]]:
+        ...
+
+    @overload
+    async def find_one(self, 
+                       table_name: str,
+                       to_class: Type[T],
+                       **conditions) -> Optional[T]:
+        ...
+
     async def find_one(self, 
                        table_name: str, 
-                       to_class: Optional[Type['BaseClass']] = None,
-                       **conditions) -> Optional[Union[Dict[str, Any], 'BaseClass']]:
+                       to_class: Optional[Type[T]] = None,
+                       **conditions) -> Union[Optional[Dict[str, Any]], Optional[T]]:
         """Находит одну запись"""
         if self.db is None:
             await self.connect()

@@ -88,7 +88,8 @@ class Logistics(BaseClass, SessionObject):
         from game.company import Company
         from game.citie import Citie
 
-        sender_company = cast(Company, just_db.find_one("companies", id=from_company_id, to_class=Company))
+        sender_company = await just_db.find_one(
+            "companies", id=from_company_id, to_class=Company)
         if not sender_company:
             raise ValueError("Компания отправитель не найдена")
 
