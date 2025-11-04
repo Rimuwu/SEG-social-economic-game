@@ -4,7 +4,7 @@ from modules.ws_client import get_company, update_company_improve, get_company_c
 from oms.utils import callback_generator
 from global_modules.load_config import ALL_CONFIGS, Improvements, Cells
 from global_modules.models.improvements import ImprovementLevel
-from .utils.oneuser_page import OneUserPage
+from ..utils.oneuser_page import OneUserPage
 
 
 IMPROVEMENTS: Improvements = ALL_CONFIGS["improvements"]

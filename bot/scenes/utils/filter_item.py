@@ -8,7 +8,7 @@ RESOURCES: Resources = ALL_CONFIGS["resources"]
 class ItemFilter(OneUserPage):    
     
     async def data_preparate(self):
-        self.scene.update_key("scene", "page_filter_item", 0)
+        await self.scene.update_key("scene", "page_filter_item", 0)
     
     async def content_worker(self):
         page = self.scene.get_key("scene", "page_filter_item")
@@ -65,9 +65,9 @@ class ItemFilter(OneUserPage):
     async def next_page(self):
         cur_page = self.scene.get_key("scene", "page_filter_item")
         if cur_page + 1 > 3:
-            self.scene.update_key("scene", "page_filter_item", 0)
+            await self.scene.update_key("scene", "page_filter_item", 0)
         else:
-            self.scene.update_key("scene", "page_filter_item", cur_page + 1)
+            await self.scene.update_key("scene", "page_filter_item", cur_page + 1)
         await self.scene.update_message()
     
     
@@ -75,7 +75,7 @@ class ItemFilter(OneUserPage):
     async def back_page(self):
         cur_page = self.scene.get_key("scene", "page_filter_item")
         if cur_page - 1 < 0:
-            self.scene.update_key("scene", "page_filter_item", 3)
+            await self.scene.update_key("scene", "page_filter_item", 3)
         else:
-            self.scene.update_key("scene", "page_filter_item", cur_page - 1)
+            await self.scene.update_key("scene", "page_filter_item", cur_page - 1)
         await self.scene.update_message()

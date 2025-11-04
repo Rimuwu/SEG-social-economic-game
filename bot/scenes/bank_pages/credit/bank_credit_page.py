@@ -425,7 +425,7 @@ class BankCreditPage(Page):
         
         # Берем кредит
         result = await company_take_credit(
-            company_id=str(company_id),
+            company_id=company_id,
             amount=credit_amount,
             period=credit_period
         )
@@ -606,7 +606,7 @@ class BankCreditPage(Page):
             
             # Оплачиваем кредит
             result = await company_pay_credit(
-                company_id=str(company_id),
+                company_id=company_id,
                 credit_index=pay_credit_index,
                 amount=value
             )

@@ -1,5 +1,5 @@
 from scenes.game_info_page import GameInfo
-from scenes.admin_panel_page import AdminPanelPage
+from bot.scenes.admin.admin_panel_page import AdminPanelPage
 from scenes.base_scene import AdminScene
 from modules.db import db
 

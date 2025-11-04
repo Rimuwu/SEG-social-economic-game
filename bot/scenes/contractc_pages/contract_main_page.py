@@ -1,6 +1,6 @@
-from utils.oneuser_page import OneUserPage
+from scenes.utils.oneuser_page import OneUserPage
 from modules.ws_client import get_contracts
-from global_modules import Resources, ALL_CONFIGS
+from global_modules.load_config import Resources, ALL_CONFIGS
 from oms.utils import callback_generator
 from aiogram.types import CallbackQuery
 import json
@@ -15,10 +15,10 @@ class ContractMain(OneUserPage):
     async def buttons_worker(self):
         self.row_width = 2
         buttons = [
-            {"text": "📄 Просмотреть все контракты", "callback_data": callback_generator("to_page", "contract-view-page"), "next_line": True},
-            {"text": "✍️ Создать", "callback_data": callback_generator("to_page", "contract-create-page")},
-            {"text": "✍️ Изменить ваши", "callback_data": callback_generator("to_page", "contract-update-page")},
-            {"text": "📄 Выполнить ваши контракты", "callback_data": callback_generator("to_page", "contract-execute-page")},
+            {"text": "📄 Просмотреть все контракты", "callback_data": callback_generator(self.scene.__scene_name__, "to_page", "contract-view-page"), "ignore_row": True},
+            {"text": "✍️ Создать", "callback_data": callback_generator(self.scene.__scene_name__, "to_page", "contract-create-page")},
+            {"text": "✍️ Изменить ваши", "callback_data": callback_generator(self.scene.__scene_name__, "to_page", "contract-update-page")},
+            {"text": "📄 Выполнить ваши контракты", "callback_data": callback_generator(self.scene.__scene_name__, "to_page", "contract-execute-page")},
         ]
         return buttons
     

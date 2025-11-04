@@ -63,7 +63,8 @@
                 "content": "Меню управления компанией",
                 "to_pages": {
                     "bank-menu": "🏦 Банк",
-                    "exchange-page": "📈 Биржа",
+                    "exchange-main-page": "📈 Биржа",
+                    "contract-main-page": "📃 Контракты",
                     "factory-menu": "🏭 Управление заводами",
                     "upgrade-menu": "🔧 Улучшения",
                     "about-info-menu": "👥 Общая информация",
@@ -129,6 +130,10 @@
                 "image": "img/bank.png",
                 "content": ""
             },
+            "exchange-page": {
+                "image": "img/exchange.png",
+                "content": ""
+            },
             "exchange-main-page": {
                 "image": "img/exchange.png",
                 "content": "На данной странице вы можете посмотреть текущие предожения на биржу или создать сообственные.",
@@ -144,6 +149,18 @@
             "exchange-create-page": {
                 "image": "img/exchange.png",
                 "content": "МЕНЮ СОЗДАНИЯ ПРЕДЛОЖЕНИЯ НА БИРЖЕ\n\nТип предложения: {offer_type}\nРесурс на продажу: {sell_resource}\nКоличество ресурса за одну сделку: {sell_amount_per_trade}\nКоличество предложений: {count_offers}"
+            },
+            "exchange-create-set-barter-page": {
+                "image": "img/exchange.png",
+                "content": ""
+            },
+            "exchange-create-set-sell-page": {
+                "image": "img/exchange.png",
+                "content": ""
+            },
+            "exchange-filter-page": {
+                "image": "img/exchange.png",
+                "content": ""
             },
             "upgrade-menu": {
                 "image": "img/upgrade.png",
@@ -171,6 +188,13 @@
                 }
             },
             "contract-view-page": {
+                "title": "",
+                "content": "",
+                "to_pages": {
+                    "contract-main-page": "↪️ Назад"
+                }
+            },
+            "contract-create-page": {
                 "title": "",
                 "content": "",
                 "to_pages": {

@@ -14,9 +14,9 @@ class ContractView(Page):
     
     async def data_preparate(self):
         if self.scene.get_key(self.__page_name__, "stage") is None:
-            self.scene.update_key(self.__page_name__, "stage", "main") #view
+            await self.scene.update_key(self.__page_name__, "stage", "main") #view
         if self.scene.get_key(self.__page_name__, "contract_id") is None:
-            self.scene.update_key(self.__page_name__, "contract_id", -1)
+            await self.scene.update_key(self.__page_name__, "contract_id", -1)
     
     
     async def content_worker(self):

@@ -9,14 +9,14 @@ from scenes.wait_select_cell_page import WaitSelectCellPage
 from scenes.select_cell_page import SelectCell
 from scenes.about_info_page import AboutInfo
 from scenes.cells_info_page import CellsInfo
-from scenes.inventory_page import InventoryPage
+from bot.scenes.info_pages.inventory_page import InventoryPage
 from scenes.bank_page import BankPage
 from scenes.bank_credit_page import BankCreditPage
 from scenes.bank_deposit_page import BankDepositPage
 from scenes.contract_main_page import ContractMainPage
 from scenes.city_page import City
-from scenes.upgrade_menu import UpgradeMenu
-from scenes.logistics_menu import LogisticsMenu
+from bot.scenes.game_pages.upgrade_menu import UpgradeMenu
+from bot.scenes.logistics_pages.logistics_menu import LogisticsMenu
 from scenes.factory_menu_page import FactoryMenu
 from scenes.factory_rekit_groups import FactoryRekitGroups
 from scenes.factory_rekit_count import FactoryRekitCount
@@ -24,11 +24,23 @@ from scenes.factory_rekit_resource import FactoryRekitResource
 from scenes.factory_rekit_produce import FactoryRekitProduce
 from scenes.factory_start_groups import FactoryStartGroups
 from scenes.factory_change_mode import FactoryChangeMode
+from scenes.exchange_pages import (
+    ExchangeMain,
+    ExchangeFilter,
+    ExchangeSellectConfirm,
+    ExchangeCreate,
+    ExchangeCreateSetSell,
+    ExchangeCreateSetBarter,
+)
+
 from scenes.exchange_page import ExchangePage
+
+from scenes.contractc_pages import __all__
+
 from scenes.change_turn_page import ChangeTurnPage
-from scenes.prison_page import PrisonPage
+from bot.scenes.game_pages.prison_page import PrisonPage
 from scenes.end_game_page import EndGamePage
-from scenes.admin_panel_page import AdminPanelPage
+from bot.scenes.admin.admin_panel_page import AdminPanelPage
 from scenes.base_scene import AdminScene
 from scenes.about_turn_page import AboutTurnPage
 from modules.db import db
@@ -66,11 +78,18 @@ class GameManager(AdminScene):
         PrisonPage,
         EndGamePage,
         AdminPanelPage,
-        ExchangePage,
         City,
-        AboutTurnPage
+        AboutTurnPage,
+        # ExchangePage
+        ExchangeMain,
+        ExchangeFilter,
+        ExchangeSellectConfirm,
+        ExchangeCreate,
+        ExchangeCreateSetSell,
+        ExchangeCreateSetBarter,
     ]
     
+    __pages__.extend(__all__)
     @staticmethod
     async def insert_to_db(user_id: int, data: dict):
         await db.insert('scenes', data)

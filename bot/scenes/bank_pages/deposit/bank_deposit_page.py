@@ -538,7 +538,7 @@ _Вклад можно забрать через 3 хода после откр�
         
         # Изымаем вклад
         result = await company_withdraw_deposit(
-            company_id=str(company_id),
+            company_id=company_id,
             deposit_index=deposit_index
         )
         
@@ -569,7 +569,7 @@ _Вклад можно забрать через 3 хода после откр�
         
         # Открываем вклад
         result = await company_take_deposit(
-            company_id=str(company_id),
+            company_id=company_id,
             amount=deposit_amount,
             period=deposit_period
         )
