@@ -4,7 +4,7 @@ from global_modules.models.cells import Cells
 from global_modules.db.baseclass import BaseClass
 from modules.db import just_db
 from global_modules.load_config import ALL_CONFIGS, Resources, Improvements, Settings, Capital, Reputation
-from modules.function_way import *
+from modules.utils import *
 from modules.websocket_manager import websocket_manager
 
 RESOURCES: Resources = ALL_CONFIGS["resources"]
