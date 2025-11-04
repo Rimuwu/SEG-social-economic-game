@@ -57,7 +57,7 @@ async def lifespan(app: FastAPI):
 
     asyncio.create_task(scheduler.start())
     if debug:
-        asyncio.create_task(test1())
+        asyncio.create_task(test2())
 
     yield
 
@@ -215,4 +215,52 @@ async def test1():
         
     print("\n" + "="*60)
     
+
+
+async def test2():
     
+    from game.user import User
+    from game.session import Session, session_manager, SessionStages
+    from game.company import Company
+    from game.contract import Contract
+
+    # Очистка и создание сессии
+    if await session_manager.get_session('test_cell_change'):
+        session = await session_manager.get_session('test_cell_change')
+        if session: await session.delete()
+
+    session = await session_manager.create_session('test_cell_change')
+    
+    
+    print("Session created")
+
+    user1 = await User().create(
+        1,
+        session_id=session.session_id,
+        username="User 1"
+    )
+
+    user2 = await User().create(
+        2,
+        session_id=session.session_id,
+        username="User 2"
+    )
+    
+    comp1 = await user1.create_company("Company 1")
+    comp2 = await user2.create_company("Company 2")
+
+
+    await session.update_stage(SessionStages.CellSelect)
+    for i in [session, comp1, comp2]:
+        await i.reupdate()
+    
+    await comp1.set_position(0, 0)
+    await comp2.set_position(0, 1)
+
+    await session.update_stage(SessionStages.Game)
+    for i in [session, comp1, comp2]:
+        await i.reupdate()
+    
+    await comp1.add_balance(1000000, 0.0)
+    
+    await comp1.change_position(0, 5)
