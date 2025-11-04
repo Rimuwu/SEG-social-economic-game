@@ -18,6 +18,7 @@ from game.exchange import Exchange
 from game.citie import Citie
 from os import getenv
 from global_modules.logs import main_logger
+from routers.ws_company import *
 
 # Импортируем роуты
 from routers import connect_ws
@@ -225,13 +226,14 @@ async def test2():
     from game.contract import Contract
 
     # Очистка и создание сессии
-    if await session_manager.get_session('test_cell_change'):
-        session = await session_manager.get_session('test_cell_change')
+    if await session_manager.get_session('test'):
+        session = await session_manager.get_session('test')
         if session: await session.delete()
 
-    session = await session_manager.create_session('test_cell_change')
-    
-    
+    session = await session_manager.create_session('test')
+
+    await sleep(2)
+
     print("Session created")
 
     user1 = await User().create(
@@ -260,7 +262,17 @@ async def test2():
     await session.update_stage(SessionStages.Game)
     for i in [session, comp1, comp2]:
         await i.reupdate()
+
+    # await comp1.take_credit(1000, 3)
+    print('Taking credit...')
+    res = await handle_company_take_credit(
+        'test',
+        {
+            "company_id": str(comp1.id),
+            "amount": 1000,
+            "period": 3,
+            "password": getenv('UPDATE_PASSWORD')
+        }
+    )
     
-    await comp1.add_balance(1000000, 0.0)
-    
-    await comp1.change_position(0, 5)
+    print("Credit taken:", res)
