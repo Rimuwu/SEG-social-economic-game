@@ -905,7 +905,7 @@ class Company(BaseClass, SessionObject):
             "current_balance": d_sum,  # Баланс вклада (сумма + накопленные проценты)
             "income_per_turn": income_per_turn,
             "total_earned": 0,  # Сколько уже заработано процентов
-            
+
             "steps_total": steps,
             "steps_now": 0,
             
@@ -917,6 +917,8 @@ class Company(BaseClass, SessionObject):
 
         self.deposits.append(deposit_data)
         await self.save_to_base()
+
+        game_logger.info(f"Компания {self.name} ({self.id}) создала депозит на сумму {d_sum} на {steps} шагов. Доход в ход: {income_per_turn}, всего к получению: {total_income}")
 
         await websocket_manager.broadcast({
             "type": "api-company_deposit_taken",

@@ -306,7 +306,7 @@ class Session(BaseClass):
 
         return [comp for comp in await just_db.find(
             "companies", to_class=Company, session_id=self.session_id)
-                        ] # type: ignore
+                        ]
 
     @property
     async def users(self) -> list['User']:
@@ -314,7 +314,7 @@ class Session(BaseClass):
 
         return [us for us in await just_db.find(
             "users", to_class=User, session_id=self.session_id)
-                     ] # type: ignore
+                     ]
 
     @property
     async def cities(self) -> list['Citie']:
@@ -322,7 +322,7 @@ class Session(BaseClass):
 
         return [city for city in await just_db.find(
             "cities", to_class=Citie, session_id=self.session_id)
-                     ] # type: ignore
+                     ]
 
     @property
     async def item_prices(self) -> list['ItemPrice']:
@@ -330,7 +330,7 @@ class Session(BaseClass):
 
         return [item_price for item_price in await just_db.find(
             "item_price", to_class=ItemPrice, session_id=self.session_id)
-                     ] # type: ignore
+                     ]
 
     def get_cell_with_label(self, label: str, 
                             rows: int = 0,
@@ -575,8 +575,9 @@ class Session(BaseClass):
         await just_db.delete("statistics", 
                        session_id=self.session_id)
 
-        await just_db.delete("time_schedule", 
-                       id=self.change_turn_schedule_id)
+        if self.change_turn_schedule_id:
+            await just_db.delete("time_schedule", 
+                        id=self.change_turn_schedule_id)
 
         await just_db.delete(self.__tablename__, session_id=self.session_id)
         await session_manager.remove_session(self.session_id)
@@ -720,6 +721,10 @@ class Session(BaseClass):
                 }
             }
         })
+
+        await just_db.delete("time_schedule", 
+                       id=self.change_turn_schedule_id)
+
 
     async def get_time_to_next_stage(self) -> int:
         """ Возвращает время в секундах до следующей стадии игры.
