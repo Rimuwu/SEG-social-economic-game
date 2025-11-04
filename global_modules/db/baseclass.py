@@ -12,8 +12,9 @@ class BaseClass:
     def load_from_base(self, data: Optional[dict]):
         """ Загружает данные из словаря в атрибуты объекта.
         """
-        if data is None: return None
+        if data is None: return False
         for key, value in data.items(): setattr(self, key, value)
+        return True
 
     async def save_to_base(self):
         """ Сохраняет текущие атрибуты объекта в базу данных.
@@ -55,12 +56,13 @@ class BaseClass:
     async def reupdate(self):
         """ Обновляет атрибуты объекта из базы данных.
         """
-        self.load_from_base(
+        res = self.load_from_base(
             await self.__db_object__.find_one(self.__tablename__, 
                 **{self.__unique_id__: self.__dict__[self.__unique_id__]}
                 ) # type: ignore
         )
-        return self
+        if res: return self
+        return None
 
     def __repr__(self):
         return f"<{self.__class__.__name__}({self.__dict__})>"
