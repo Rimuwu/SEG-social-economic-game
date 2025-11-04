@@ -30,7 +30,7 @@ async def handle_get_factories(client_id: str, message: dict):
                              to_class=Factory,
                          **{k: v for k, v in conditions.items() if v is not None})
 
-    return [factory.to_dict() for factory in factories]
+    return [await factory.to_dict() for factory in factories]
 
 @message_handler(
     "get-factory", 
@@ -51,7 +51,7 @@ async def handle_get_factory(client_id: str, message: dict):
     if not factory:
         raise ValueError("Завод не найден.")
     
-    return factory.to_dict() if factory else None
+    return await factory.to_dict() if factory else None
 
 
 @message_handler(

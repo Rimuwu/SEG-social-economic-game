@@ -25,10 +25,10 @@ async def handle_get_logistics(client_id: str, message: dict):
 
 
     try:
-        logistics_list = await just_db.find(
+        logistics_list: list[Logistics] = await just_db.find(
             'logistics',
             to_class=Logistics,
-            **{k: v for k, v in conditions.items() if v is not None})
+            **{k: v for k, v in conditions.items() if v is not None}) # type: ignore
 
         return [logistics.to_dict() for logistics in logistics_list]
 

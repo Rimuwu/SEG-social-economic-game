@@ -60,7 +60,7 @@ class TaskScheduler:
             else:
                 func(*args, **kwargs)
         except Exception as e:
-            print(f"Ошибка при выполнении задачи {task['function_path']}: {e}")
+            print(f"Ошибка при выполнении задачи {task['function_path']}: {e.with_traceback(e.__traceback__)}")
 
         if repeat:
             interval = execute_at - add_at

@@ -3,8 +3,9 @@ from collections import Counter
 from datetime import datetime, timedelta
 from enum import Enum
 import random
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 import uuid
+from modules.websocket_manager import websocket_manager
 
 from game.stages import stage_game_updater
 
@@ -17,7 +18,12 @@ from modules.db import just_db
 from modules.generate import generate_code
 from modules.logs import game_logger
 from modules.sheduler import scheduler
-from modules.websocket_manager import websocket_manager
+
+if TYPE_CHECKING:
+    from game.user import User
+    from game.company import Company
+    from game.citie import Citie
+    from game.item_price import ItemPrice
 
 # Глобальные конфиги для оптимизации
 settings: Settings = ALL_CONFIGS['settings']
@@ -43,20 +49,33 @@ class Session(BaseClass):
     __unique_id__ = "session_id"
     __db_object__ = just_db
 
-    def __init__(self, session_id: str = ""): 
+    def __init__(
+        self, session_id: str = "",
+        map_pattern: str = "random",
+        map_size: Optional[dict] = None,
+        max_steps: int = 15,
+        session_group_url: str = '',
+        max_companies: int = settings.max_companies,
+        max_players_in_company: int = settings.max_players_in_company
+        ): 
         self.session_id = session_id
         self.cells: list[str] = []
-        self.map_size: dict = {"rows": 7, "cols": 7}
-        self.map_pattern: str = "random"
+        self.map_size: dict = map_size if map_size else {
+            "rows": 7, "cols": 7}
+        self.map_pattern: str = map_pattern
         self.cell_counts: dict = {}
         self.stage: str = SessionStages.FreeUserConnect.value
         self.step: int = 0
-        self.max_steps: int = 15
+        self.max_steps: int = max_steps
         self.change_turn_schedule_id: int = 0
+        self.session_group_url: str = session_group_url
 
         self.event_type: Optional[str] = None
         self.event_start: Optional[int] = None
         self.event_end: Optional[int] = None
+
+        self.max_companies = max_companies
+        self.max_players_in_company = max_players_in_company
 
     async def start(self):
         if not self.session_id:
@@ -79,6 +98,8 @@ class Session(BaseClass):
 
     async def update_stage(self, new_stage: SessionStages, 
                      whitout_shedule: bool = False):
+        from game.statistic import Statistic
+
         if not isinstance(new_stage, SessionStages):
             game_logger.error(f"Неверный тип новой стадии: {new_stage}")
             raise ValueError("new_stage должен быть экземпляром SessionStages Enum")
@@ -90,8 +111,6 @@ class Session(BaseClass):
         elif self.step >= self.max_steps:
             game_logger.info(f"Достигнуто максимальное количество шагов. Завершение игры в сессии {self.session_id}.")
             new_stage = SessionStages.End
-            await self.end_game()
-            return
 
         elif new_stage == SessionStages.CellSelect:
             await self.generate_cells()
@@ -99,6 +118,7 @@ class Session(BaseClass):
         elif new_stage == SessionStages.Game:
             from game.company import Company
             from game.logistics import Logistics
+            from game.item_price import ItemPrice
 
             if self.step == 0:
                 companies = await self.companies
@@ -119,13 +139,27 @@ class Session(BaseClass):
                             continue
 
                         cell = random.choice(free_cells)
-                        await company.set_position(cell[0], cell[1])
+                        await company.set_position(
+                            cell[0], cell[1],
+                            from_updater=True
+                            )
 
-                        await company.save_to_base()
                         await company.reupdate()
                         game_logger.info(f"Компании {company.name} в сессии {self.session_id} назначена клетка {company.cell_position}.")
 
+                    for step_n in range(self.max_steps):
+                        await Statistic().create(
+                            company_id=company.id,
+                            session_id=self.session_id,
+                            step=step_n + 1
+                        )
+
                 if not whitout_shedule:
+
+                    if self.change_turn_schedule_id:
+                        await just_db.delete(
+                            'time_schedule', 
+                            id=self.change_turn_schedule_id)
 
                     sh_id = await scheduler.schedule_task(
                         stage_game_updater, 
@@ -137,7 +171,8 @@ class Session(BaseClass):
 
             for company in await self.companies:
                 if company is not None:
-                    await company.on_new_game_stage(self.step + 1)
+                    await company.on_new_game_stage(
+                        self.step + 1)
 
             # Обновляем города
             for city in await self.cities:
@@ -149,13 +184,48 @@ class Session(BaseClass):
             for logistics in logistics_list:
                 await logistics.on_new_turn()
 
+            items_prices: list[ItemPrice] = await self.item_prices
+            for item_price in items_prices:
+                await item_price.on_new_game_step()
+
             # Генерируем события каждые 5 этапов
             await self.events_generator()
 
             self.step += 1
             await self.execute_step_schedule(self.step)
 
-        elif new_stage == SessionStages.End:
+        elif new_stage == SessionStages.ChangeTurn:
+            from game.company import Company
+
+            companies = await self.companies
+            for company in companies:
+                company: Company
+
+                await Statistic().update_me(
+                    company_id=company.id,
+                    session_id=self.session_id,
+                    step=self.step,
+                    **{
+                        "balance": company.balance,
+                        "reputation": company.reputation,
+                        "economic_power": company.economic_power,
+                        "tax_debt": company.tax_debt,
+                        "credits": len(company.credits),
+                        "deposits": len(company.deposits),
+                        "in_prison": company.in_prison,
+                        "business_type": company.business_type,
+                        "factories": len(
+                            await company.get_factories()),
+                        "exchanges": len(
+                            await company.exchanges),
+                        "contracnts": len(
+                            await company.get_contracts()),
+                        "free_warehouse": 
+                            await company.get_warehouse_free_size()
+                    }
+                )
+
+        if new_stage == SessionStages.End:
             await self.end_game()
 
         old_stage = self.stage
@@ -163,16 +233,17 @@ class Session(BaseClass):
 
         await self.save_to_base()
 
-        game_logger.info(f"В сессии {self.session_id} изменена стадия с {old_stage} на {self.stage}.")
+        game_logger.info(
+            f"В сессии {self.session_id} изменена стадия с {old_stage} на {self.stage}.")
 
-        asyncio.create_task(websocket_manager.broadcast({
+        await websocket_manager.broadcast({
             "type": "api-update_session_stage",
             "data": {
                 "session_id": self.session_id,
                 "new_stage": self.stage,
                 "old_stage": old_stage
             }
-        }))
+        })
 
         return self
 
@@ -186,7 +257,7 @@ class Session(BaseClass):
 
         for schedule in schedules:
             asyncio.create_task(schedule.execute())
-        
+
         game_logger.info(f"В сессии {self.session_id} выполнено {len(schedules)} запланированных задач для шага {step}.")
         return True
 
@@ -210,7 +281,7 @@ class Session(BaseClass):
 
     async def can_add_company(self):
         col_companies = len(await self.companies)
-        if col_companies >= settings.max_companies:
+        if col_companies >= self.max_companies:
             return False
 
         return self.stage == SessionStages.FreeUserConnect.value
@@ -230,7 +301,7 @@ class Session(BaseClass):
 
         return [comp for comp in await just_db.find(
             "companies", to_class=Company, session_id=self.session_id)
-                        ]
+                        ] # type: ignore
 
     @property
     async def users(self) -> list['User']:
@@ -238,7 +309,7 @@ class Session(BaseClass):
 
         return [us for us in await just_db.find(
             "users", to_class=User, session_id=self.session_id)
-                     ]
+                     ] # type: ignore
 
     @property
     async def cities(self) -> list['Citie']:
@@ -246,7 +317,7 @@ class Session(BaseClass):
 
         return [city for city in await just_db.find(
             "cities", to_class=Citie, session_id=self.session_id)
-                     ]
+                     ] # type: ignore
 
     @property
     async def item_prices(self) -> list['ItemPrice']:
@@ -254,7 +325,7 @@ class Session(BaseClass):
 
         return [item_price for item_price in await just_db.find(
             "item_price", to_class=ItemPrice, session_id=self.session_id)
-                     ]
+                     ] # type: ignore
 
     def get_cell_with_label(self, label: str, 
                             rows: int = 0,
@@ -495,43 +566,45 @@ class Session(BaseClass):
 
         await just_db.delete("step_schedule", 
                        session_id=self.session_id)
+        
+        await just_db.delete("statistics", 
+                       session_id=self.session_id)
 
         await just_db.delete(self.__tablename__, session_id=self.session_id)
         await session_manager.remove_session(self.session_id)
 
         game_logger.info(f"Сессия {self.session_id} и все связанные с ней данные удалены.")
 
-        asyncio.create_task(websocket_manager.broadcast({
+        await websocket_manager.broadcast({
             "type": "api-session_deleted",
             "data": {
                 "session_id": self.session_id
             }
-        }))
+        })
         return True
 
-    async def leaders(self) -> dict:
+    async def leaders(self) -> dict[str, Optional['Company']]:
         from game.company import Company
 
         capital_winner = None
         reputation_winner = None
         economic_winner = None
 
-        max_capital = 0
         companies = await self.companies
         for company in companies:
             company: Company
-            if company.balance > max_capital:
-                max_capital = company.balance
+            if company.balance >= (capital_winner.balance if capital_winner else 0):
+                capital_winner = company
                 capital_winner = company
 
         for company in companies:
             company: Company
-            if company.reputation > (reputation_winner.reputation if reputation_winner else 0):
+            if company.reputation >= (reputation_winner.reputation if reputation_winner else 0):
                 reputation_winner = company
 
         for company in companies:
             company: Company
-            if company.economic_power > (economic_winner.economic_power if economic_winner else 0):
+            if company.economic_power >= (economic_winner.economic_power if economic_winner else 0):
                 economic_winner = company
 
         return {
@@ -542,64 +615,108 @@ class Session(BaseClass):
 
     async def end_game(self):
         from game.company import Company
-
-        for company in await self.companies:
-            company: Company
-
-            minus_balance = 0
-            minus_rep = 0
-            for credit in company.credits:
-                minus_balance += credit['total_to_pay'] - credit['paid']
-                minus_rep += 20
-
-            if company.overdue_steps > 0:
-                minus_rep += company.overdue_steps * 10
-            minus_balance += company.tax_debt
-
-            company.balance -= minus_balance
-            company.reputation -= minus_rep
-            await company.save_to_base()
-
-            game_logger.info(f'Компания {company.name} в сессии {self.session_id} завершила игру с балансом {company.balance} и репутацией {company.reputation}. Штрафы: {minus_balance} (баланс), {minus_rep} (репутация) за {company.overdue_steps} просроченных шагов оплаты налогов, {company.tax_debt} (налоги), {len(company.credits)} (количество кредитов)')
-
-        leaders = await self.leaders()
-
-        # Объявление победителей
-        if leaders["capital"]:
-            game_logger.info(f"Победитель по капиталу в сессии {self.session_id}: {leaders['capital'].name} с {leaders['capital'].balance}")
-        if leaders["reputation"]:
-            game_logger.info(f"Победитель по репутации в сессии {self.session_id}: {leaders['reputation'].name} с {leaders['reputation'].reputation}")
-        if leaders["economic"]:
-            game_logger.info(f"Победитель по экономической мощи в сессии {self.session_id}: {leaders['economic'].name} с {leaders['economic'].economic_power}")
+        from game.statistic import Statistic
 
         try:
-            for user_id in [leaders['capital'].users, 
-                            leaders['reputation'].users, 
-                            leaders['economic'].users]:
-                for uid in user_id:
-                    user = just_db.find_one("users", id=uid)
+            for company in await self.companies:
+                company: Company
+
+                minus_balance = 0
+                minus_rep = 0
+                for credit in company.credits:
+                    minus_balance += credit['total_to_pay'] - credit['paid']
+                    minus_rep += 20
+
+                if company.overdue_steps > 0:
+                    minus_rep += company.overdue_steps * 10
+                minus_balance += company.tax_debt
+
+                company.balance -= minus_balance
+                company.reputation -= minus_rep
+                await company.save_to_base()
+
+                game_logger.info(f'Компания {company.name} в сессии {self.session_id} завершила игру с балансом {company.balance} и репутацией {company.reputation}. Штрафы: {minus_balance} (баланс), {minus_rep} (репутация) за {company.overdue_steps} просроченных шагов оплаты налогов, {company.tax_debt} (налоги), {len(company.credits)} (количество кредитов)')
+
+                await Statistic().update_me(
+                    company_id=company.id,
+                    session_id=self.session_id,
+                    step=self.step,
+                    **{
+                        "balance": company.balance,
+                        "reputation": company.reputation,
+                        "economic_power": company.economic_power,
+                        "tax_debt": company.tax_debt,
+                        "credits": len(company.credits),
+                        "deposits": len(company.deposits),
+                        "in_prison": company.in_prison,
+                        "business_type": company.business_type,
+                        "factories": len(
+                            await company.get_factories()),
+                        "exchanges": len(
+                            await company.exchanges),
+                        "contracnts": len(
+                            await company.get_contracts()),
+                        "free_warehouse": 
+                            await company.get_warehouse_free_size()
+                    }
+                )
+
+        except Exception as e:
+            game_logger.error(f"Ошибка при применении штрафов компаниям в сессии {self.session_id}: {e}")
+
+        try:
+            leaders = await self.leaders()
+
+            # Объявление победителей
+            if leaders["capital"]:
+                game_logger.info(f"Победитель по капиталу в сессии {self.session_id}: {leaders['capital'].name} с {leaders['capital'].balance}")
+
+            if leaders["reputation"]:
+                game_logger.info(f"Победитель по репутации в сессии {self.session_id}: {leaders['reputation'].name} с {leaders['reputation'].reputation}")
+
+            if leaders["economic"]:
+                game_logger.info(f"Победитель по экономической мощи в сессии {self.session_id}: {leaders['economic'].name} с {leaders['economic'].economic_power}")
+        except Exception as e:
+            game_logger.error(f"Ошибка при определении победителей в сессии {self.session_id}: {e}")
+
+        try:
+            for company_or_none in [leaders['capital'], 
+                            leaders['reputation'], 
+                            leaders['economic']]:
+
+                if not company_or_none: continue
+                comp: Company = company_or_none
+
+                for user in await comp.users:
+                    uid = user.id
+
+                    user: Optional[dict] = await just_db.find_one("users", id=uid) # type: ignore
                     if user:
-                        game_logger.info(f"Пользователь {user['username']} ({user['id']}) - победитель в сессии {self.session_id}")
+                        game_logger.info(
+                            f"Пользователь {user['username']} ({user['id']}) - победитель в сессии {self.session_id}")
+
         except Exception as e: 
             game_logger.error(f"Ошибка при логировании пользователей-победителей в сессии {self.session_id}: {e}")
 
-        asyncio.create_task(websocket_manager.broadcast({
+        await websocket_manager.broadcast({
             "type": "api-game_ended",
             "data": {
                 "session_id": self.session_id,
                 "winners": {
-                    "capital": leaders["capital"].to_dict() if leaders["capital"] else None,
-                    "reputation": leaders["reputation"].to_dict() if leaders["reputation"] else None,
-                    "economic": leaders["economic"].to_dict() if leaders["economic"] else None
+                    "capital": 
+                        await leaders["capital"].to_dict() if leaders["capital"] else None,
+                    "reputation": 
+                        await leaders["reputation"].to_dict() if leaders["reputation"] else None,
+                    "economic": 
+                        await leaders["economic"].to_dict() if leaders["economic"] else None
                 }
             }
-        }))
+        })
 
     async def get_time_to_next_stage(self) -> int:
         """ Возвращает время в секундах до следующей стадии игры.
             Если стадия не связана со временем, возвращает 0.
         """
-        from modules.sheduler import scheduler
 
         get_schedule: dict = await scheduler.get_scheduled_tasks(
             self.change_turn_schedule_id
@@ -726,7 +843,7 @@ class Session(BaseClass):
 
     async def events_generator(self):
         """ Генерирует случайное событие каждые 5 этапов начиная со второго
-        
+
         Проверяет что событие не запущено и:
         - Откладывает предсказуемые события на 2 хода
         - Запускает непредсказуемые события сразу
@@ -734,10 +851,10 @@ class Session(BaseClass):
         # Проверяем, нужно ли генерировать событие
         if self.step < 2:  # Начинаем со второго этапа
             return False
-            
+
         if (self.step - 2) % 5 != 0:  # Каждые 5 этапов
             return False
-            
+
         if self.event_type:  # Уже есть активное событие
             return False
 
@@ -745,10 +862,10 @@ class Session(BaseClass):
         available_events = list(EVENTS.events.values())
         if not available_events:
             return False
-            
+
         # Выбираем случайное событие
         event = random.choice(available_events)
-        
+
         # Определяем длительность события
         if event.duration.min is not None and event.duration.max is not None:
             duration = random.randint(event.duration.min, event.duration.max)
@@ -758,33 +875,33 @@ class Session(BaseClass):
             duration = event.duration.max
         else:
             duration = 2  # По умолчанию 2 хода
-        
+
         # Определяем время начала события
         if event.predictability:
             start_step = self.step + 2  # Предсказуемые - через 2 хода
         else:
             start_step = self.step  # Непредсказуемые - сразу
-            
+
         end_step = start_step + duration
-        
+
         # Проверяем, что событие не выйдет за пределы игры
         if end_step >= self.max_steps:
             return False
-            
+
         # Устанавливаем событие
         await self.set_event(event.id, start_step, end_step)
-        
+
         game_logger.info(f"В сессии {self.session_id} сгенерировано событие '{event.id}'.")
-        
+
         # Отправляем уведомление
-        asyncio.create_task(websocket_manager.broadcast({
+        await websocket_manager.broadcast({
             "type": "api-event_generated",
             "data": {
                 "session_id": self.session_id,
                 "event": self.public_event_data()
             }
-        }))
-        
+        })
+
         return True
 
     async def to_dict(self):
@@ -807,7 +924,11 @@ class Session(BaseClass):
                 "type": self.event_type,
                 "start": self.event_start,
                 "end": self.event_end
-            }
+            },
+
+            "session_group_url": self.session_group_url,
+            "max_companies": self.max_companies,
+            "max_players_in_company": self.max_players_in_company
         }
 
 class SessionObject:
@@ -829,8 +950,26 @@ class SessionsManager():
     def __init__(self):
         self.sessions = {}
 
-    async def create_session(self, session_id: str = ""):
-        session = await Session(session_id=session_id).start()
+    async def create_session(self, 
+            session_id: str,
+            map_pattern: str = 'random',
+            size=6,
+            max_steps=15,
+            session_group_url='',
+            max_companies: int = settings.max_companies,
+            max_players_in_company: int = settings.max_players_in_company
+                             ):
+
+        session = await Session(
+            session_id=session_id,
+            map_pattern=map_pattern,
+            map_size={"rows": size, "cols": size},
+            max_steps=max_steps,
+            session_group_url=session_group_url,
+            max_companies=max_companies,
+            max_players_in_company=max_players_in_company
+                                ).start()
+
         if session.session_id in self.sessions:
             game_logger.error(f"Попытка создать сессию с уже существующим ID: {session.session_id}")
             raise ValueError("Сессия с этим ID уже существует в памяти.")

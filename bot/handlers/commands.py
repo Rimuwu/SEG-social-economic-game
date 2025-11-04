@@ -352,7 +352,7 @@ async def on_update_session_stage(message: dict):
     
     elif new_stage == "ChangeTurn":
         await go_to_page(session_id, None, "change-turn-page")
-        asyncio.sleep(5)
+        await asyncio.sleep(5)
         await go_to_page(session_id, None, "change-turn-page")
         
     

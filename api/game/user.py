@@ -67,9 +67,6 @@ class User(BaseClass, SessionObject):
             game_logger.warning(f"Пользователь {self.username} ({self.id}) не может создать компанию на данном этапе в сессии {self.session_id}.")
             raise ValueError("Невозможно добавить компанию на данном этапе.")
 
-        company = Company().create(name=name, 
-                                   session_id=self.session_id)
-
         self.company_id = company.id
 
         await self.save_to_base()

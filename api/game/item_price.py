@@ -30,10 +30,25 @@ class ItemPrice(BaseClass, SessionObject):
         self.current_price: int = 0
         self.material_based_price: int = 0
 
+        self.popularity: int = 0  # Как часто покупают этот товар
+        self.popularity_on_step: int = 0  # Популярность за текущий шаг
 
-    async def create(self, session_id: str, item_id: str):
+
+    async def add_popularity(self, amount: int = 1):
+        self.popularity += amount
+        self.popularity_on_step += amount
+
+        await self.save_to_base()
+        return True
+
+    async def create(self, session_id: str, item_id: str) -> 'ItemPrice':
         self.id = item_id
         self.session_id = session_id
+
+        # Попытка найти в базе
+        data = await just_db.find_one(self.__tablename__, id=item_id, session_id=session_id)
+        if data:
+            return self.load_from_base(data) # type: ignore
 
         self.current_price = RESOURCES.resources[item_id].basePrice
         self.prices = [self.current_price]
@@ -52,7 +67,9 @@ class ItemPrice(BaseClass, SessionObject):
             "session_id": self.session_id,
             "prices": self.prices,
             "current_price": self.current_price,
-            "material_based_price": self.material_based_price
+            "material_based_price": self.material_based_price,
+            "popularity": self.popularity,
+            "popularity_on_step": self.popularity_on_step
         }
 
     async def calculate_material_price(self) -> int:
@@ -115,3 +132,8 @@ class ItemPrice(BaseClass, SessionObject):
                 "price": self.get_effective_price(),
             }
         })
+    
+    async def on_new_game_step(self):
+        self.popularity_on_step = 0
+        await self.save_to_base()
+        return True
