@@ -4,7 +4,7 @@ from modules.ws_client import get_factories
 from oms.utils import callback_generator
 from global_modules.logs import Logger
 from modules.resources import get_resource_name
-from .utils.oneuser_page import OneUserPage
+from scenes.utils.oneuser_page import OneUserPage
 
 bot_logger = Logger.get_logger("bot")
 

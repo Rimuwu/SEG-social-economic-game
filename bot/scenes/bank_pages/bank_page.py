@@ -1,7 +1,7 @@
 from aiogram.types import CallbackQuery  # type: ignore
 from modules.ws_client import get_company, company_pay_taxes
 from oms.utils import callback_generator
-from .utils.oneuser_page import OneUserPage
+from scenes.utils.oneuser_page import OneUserPage
 
 
 Page = OneUserPage

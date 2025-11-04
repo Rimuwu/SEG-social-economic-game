@@ -4,7 +4,7 @@ from modules.ws_client import get_exchanges, get_exchange, buy_exchange_offer, g
 from oms.utils import callback_generator
 from global_modules.load_config import ALL_CONFIGS, Resources
 from .filters.item_filter import ItemFilter
-from .utils.oneuser_page import OneUserPage
+from scenes.utils.oneuser_page import OneUserPage
 
 RESOURCES: Resources = ALL_CONFIGS["resources"]
 

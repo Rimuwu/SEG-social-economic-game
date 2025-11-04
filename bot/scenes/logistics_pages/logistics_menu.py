@@ -4,7 +4,7 @@ from oms.utils import callback_generator
 from modules.ws_client import get_logistics, logistics_pickup
 from global_modules.load_config import ALL_CONFIGS, Resources
 from modules.utils import xy_into_cell
-from ..utils.oneuser_page import OneUserPage
+from scenes.utils.oneuser_page import OneUserPage
 
 
 RESOURCES: Resources = ALL_CONFIGS["resources"]

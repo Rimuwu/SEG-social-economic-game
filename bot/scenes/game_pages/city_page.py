@@ -6,7 +6,7 @@ from modules.ws_client import get_cities, get_city, get_company, sell_to_city
 from oms.utils import callback_generator
 from global_modules.load_config import ALL_CONFIGS, Resources
 from modules.utils import xy_into_cell
-from .utils.oneuser_page import OneUserPage
+from scenes.utils.oneuser_page import OneUserPage
 
 
 RESOURCES: Resources = ALL_CONFIGS["resources"]

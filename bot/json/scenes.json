@@ -225,6 +225,10 @@
                 "image": "img/main_company.png",
                 "content": ""
             },
+            "factory-select-mode": {
+                "image": "img/main_company.png",
+                "content": ""
+            },
             "change-turn-page": {
                 "image": "img/mejturn.png",
                 "content": "*Смена хода...*\n\n"

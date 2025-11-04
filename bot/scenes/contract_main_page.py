@@ -1,4 +1,4 @@
-from .utils.oneuser_page import OneUserPage
+from scenes.utils.oneuser_page import OneUserPage
 from modules.ws_client import get_contracts, create_contract, accept_contract,execute_contract, cancel_contract, get_company_contracts
 from oms.utils import callback_generator
 
