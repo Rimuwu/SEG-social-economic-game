@@ -105,30 +105,75 @@
                     "main-page": "↪️ Назад"
                 }
             },
-            "bank-credit-page": {
+            "bank-credit-main": {
                 "image": "img/bank.png",
                 "content": "",
                 "to_pages": {
                     "bank-menu": "↪️ Назад"
                 }
             },
-            "bank-credit-amount": {
+            "bank-credit-take-period": {
                 "image": "img/bank.png",
                 "content": "",
                 "to_pages": {
-                    "bank-credit-page": "↪️ Назад"
+                    "bank-credit-main": "↪️ Назад"
                 }
             },
-            "bank-credit-period": {
+            "bank-credit-take-amount": {
                 "image": "img/bank.png",
                 "content": "",
                 "to_pages": {
-                    "bank-credit-amount": "↪️ Назад"
+                    "bank-credit-take-period": "↪️ Назад"
                 }
             },
-            "bank-deposit-page": {
+            "bank-credit-take-confirm": {
                 "image": "img/bank.png",
-                "content": ""
+                "content": "",
+                "to_pages": {
+                    "bank-credit-take-amount": "↪️ Назад"
+                }
+            },
+            "bank-credit-pay": {
+                "image": "img/bank.png",
+                "content": "",
+                "to_pages": {
+                    "bank-credit-main": "↪️ Назад"
+                }
+            },
+            "bank-deposit-main": {
+                "image": "img/bank.png",
+                "content": "",
+                "to_pages": {
+                    "bank-menu": "↪️ Назад"
+                }
+            },
+            "bank-deposit-view": {
+                "image": "img/bank.png",
+                "content": "",
+                "to_pages": {
+                    "bank-deposit-main": "↪️ Назад"
+                }
+            },
+            "bank-deposit-open-amount": {
+                "image": "img/bank.png",
+                "content": "",
+                "to_pages": {
+                    "bank-deposit-main": "↪️ Назад"
+                }
+            },
+            "bank-deposit-open-period": {
+                "image": "img/bank.png",
+                "content": "",
+                "to_pages": {
+                    "bank-deposit-open-amount": "↪️ Назад"
+                }
+            },
+            "bank-deposit-open-confirm": {
+                "image": "img/bank.png",
+                "content": "",
+                "to_pages": {
+                    "bank-deposit-open-period": "↪️ Назад"
+                }
             },
             "exchange-page": {
                 "image": "img/exchange.png",

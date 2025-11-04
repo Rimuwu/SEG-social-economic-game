@@ -7,7 +7,7 @@ from scenes.utils.oneuser_page import OneUserPage
 Page = OneUserPage
 
 class BankPage(Page):
-    __for_blocked_pages__ = ["bank-credit-page", "bank-deposit-page"]
+    __for_blocked_pages__ = ["bank-credit-main", "bank-deposit-main"]
     __page_name__ = "bank-menu"
     
     async def content_worker(self):
@@ -109,13 +109,13 @@ class BankPage(Page):
     @Page.on_callback('credit')
     async def show_credit_page(self, callback: CallbackQuery, args: list):
         """Переход на страницу кредитов"""
-        await self.scene.update_page('bank-credit-page')
+        await self.scene.update_page('bank-credit-main')
         await callback.answer()
     
     @Page.on_callback('deposit')
     async def show_deposit_page(self, callback: CallbackQuery, args: list):
         """Переход на страницу вкладов"""
-        await self.scene.update_page('bank-deposit-page')
+        await self.scene.update_page('bank-deposit-main')
         await callback.answer()
     
     @Page.on_callback('pay_taxes')

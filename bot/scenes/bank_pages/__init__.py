@@ -1,9 +1,10 @@
 from .bank_page import BankPage
-from .deposit.bank_deposit_page import BankDepositPage
-from .credit.bank_credit_page import BankCreditPage
+from .deposit import __deposit__
+from .credit import __credit__
 
 __bank__ = [
-    BankPage,
-    BankDepositPage,
-    BankCreditPage
+    BankPage
 ]
+
+__bank__.extend(__deposit__)
+__bank__.extend(__credit__)
