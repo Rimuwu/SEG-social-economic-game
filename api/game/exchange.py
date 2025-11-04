@@ -45,7 +45,7 @@ class Exchange(BaseClass, SessionObject):
         self.barter_resource: str = ""  # Ресурс для обмена (если offer_type='barter')
         self.barter_amount: int = 0  # Количество ресурса для обмена (если offer_type='barter')
 
-        self.created_at: int = 0  # Время создания (игровой ход)
+        self.created_at_step: int = 0  # Время создания (игровой ход)
 
     async def create(self, 
                company_id: int, session_id: str, 
@@ -120,7 +120,7 @@ class Exchange(BaseClass, SessionObject):
         self.price = price
         self.barter_resource = barter_resource
         self.barter_amount = barter_amount
-        self.created_at = session.step
+        self.created_at_step = session.step
 
         await self.insert()
 
@@ -367,7 +367,7 @@ class Exchange(BaseClass, SessionObject):
             "price": self.price,
             "barter_resource": self.barter_resource,
             "barter_amount": self.barter_amount,
-            "created_at": self.created_at
+            "created_at_step": self.created_at_step
         }
 
     async def delete(self):
