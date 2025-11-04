@@ -395,6 +395,8 @@ class Company(BaseClass, SessionObject):
                 "new_balance": self.balance
             }
         })
+
+        game_logger.info(f"Компания {self.name} ({self.id}) получила {amount} денежных средств. Новый баланс: {self.balance}")
         return True
 
     async def remove_balance(self, amount: int):
@@ -419,6 +421,8 @@ class Company(BaseClass, SessionObject):
                 "new_balance": self.balance
             }
         })
+
+        game_logger.info(f"Компания {self.name} ({self.id}) потратила {amount} денежных средств. Новый баланс: {self.balance}")
         return True
 
     async def improve(self, improvement_type: str):
@@ -489,6 +493,8 @@ class Company(BaseClass, SessionObject):
                 "new_reputation": self.reputation
             }
         })
+
+        game_logger.info(f"Репутация компании {self.name} ({self.id}) увеличена на {amount}. Новая репутация: {self.reputation}")
         return True
 
     async def remove_reputation(self, amount: int):
@@ -515,7 +521,8 @@ class Company(BaseClass, SessionObject):
 
             if self.reputation <= REPUTATION.prison.on_reputation: 
                 await self.to_prison()
-
+            
+            game_logger.info(f"Репутация компании {self.name} ({self.id}) уменьшена на {amount}. Новая репутация: {self.reputation}")
             return True
         return False
 
