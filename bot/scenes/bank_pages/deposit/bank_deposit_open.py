@@ -27,15 +27,17 @@ class BankDepositOpenAmount(Page):
         min_deposit = CAPITAL.bank.contribution.min
         max_deposit = CAPITAL.bank.contribution.max
         
-        text = f"""💰 *Открытие вклада*
-
-*Шаг 1: Введите сумму вклада*
-
-Ваш баланс: {balance:,} 💰
-Минимум: {min_deposit:,} 💰
-Максимум: {max_deposit:,} 💰
-
-Введите сумму, которую хотите внести на вклад:""".replace(",", " ")
+        # Форматируем числа
+        balance_formatted = f"{balance:,}".replace(",", " ")
+        min_deposit_formatted = f"{min_deposit:,}".replace(",", " ")
+        max_deposit_formatted = f"{max_deposit:,}".replace(",", " ")
+        
+        # Формируем текст из шаблона
+        text = self.content.format(
+            balance=balance_formatted,
+            min_deposit=min_deposit_formatted,
+            max_deposit=max_deposit_formatted
+        )
         
         if error:
             text += f"\n\n❌ {error}"
@@ -144,18 +146,16 @@ class BankDepositOpenPeriod(Page):
         conditions = get_deposit_conditions(reputation)
         percent = conditions.percent * 100
         
-        text = f"""⏱ *Открытие вклада*
-
-✅ Сумма вклада: {deposit_amount:,} 💰
-📈 Процентная ставка: {percent}% в ход
-
-*Шаг 2: Введите срок вклада*
-
-Минимум: 3 хода (минимальный срок блокировки)
-Максимум: {max_period} ход(ов)
-(Текущий ход: {current_step}, до конца игры: {max_period})
-
-Введите количество ходов:""".replace(",", " ")
+        # Форматируем числа
+        deposit_amount_formatted = f"{deposit_amount:,}".replace(",", " ")
+        
+        # Формируем текст из шаблона
+        text = self.content.format(
+            deposit_amount=deposit_amount_formatted,
+            percent=percent,
+            max_period=max_period,
+            current_step=current_step
+        )
         
         if error:
             text += f"\n\n❌ {error}"
@@ -259,23 +259,21 @@ class BankDepositOpenConfirm(Page):
         percent = conditions.percent * 100
         final_sum = deposit_amount + total_income
         
-        text = f"""🏦 *Подтверждение вклада*
-
-*Параметры вклада:*
-💵 Сумма вклада: {deposit_amount:,} 💰
-⏱ Срок: {deposit_period} ход(ов)
-
-*Условия:*
-📈 Процентная ставка: {percent}% в ход
-🔒 Минимальный срок: 3 хода
-(Забрать вклад можно будет через 3 хода)
-
-*Доход:*
-📈 Доход за ход: {income_per_turn:,} 💰
-✅ Общий доход: {total_income:,} 💰
-💰 Итоговая сумма: {final_sum:,} 💰
-
-Подтвердите открытие вклада:""".replace(",", " ")
+        # Форматируем числа
+        deposit_amount_formatted = f"{deposit_amount:,}".replace(",", " ")
+        income_per_turn_formatted = f"{income_per_turn:,}".replace(",", " ")
+        total_income_formatted = f"{total_income:,}".replace(",", " ")
+        final_sum_formatted = f"{final_sum:,}".replace(",", " ")
+        
+        # Формируем текст из шаблона
+        text = self.content.format(
+            deposit_amount=deposit_amount_formatted,
+            deposit_period=deposit_period,
+            percent=percent,
+            income_per_turn=income_per_turn_formatted,
+            total_income=total_income_formatted,
+            final_sum=final_sum_formatted
+        )
         
         return text
     

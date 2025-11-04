@@ -33,17 +33,12 @@ class BankCreditPay(Page):
         need_pay = credit.get("need_pay", 0)
         remaining = total - paid
         
-        text = f"""💸 *Оплата кредита #{pay_credit_index + 1}*
-
-*Информация о кредите:*
-Осталось выплатить: {remaining:,} 💰
-Текущий платеж: {need_pay:,} 💰
-Ваш баланс: {balance:,} 💰
-
-*Введите сумму для оплаты:*
-
-Минимум: {need_pay:,} 💰 (текущий платеж)
-Максимум: {remaining:,} 💰 (весь остаток)""".replace(",", " ")
+        text = self.content.format(
+            credit_index=pay_credit_index + 1,
+            remaining=f"{remaining:,}".replace(",", " "),
+            need_pay=f"{need_pay:,}".replace(",", " "),
+            balance=f"{balance:,}".replace(",", " ")
+        )
         
         if error:
             text += f"\n\n❌ {error}"

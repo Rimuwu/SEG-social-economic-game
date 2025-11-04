@@ -23,14 +23,10 @@ class BankCreditTakePeriod(Page):
         max_step = session_data.get('max_step', 15)
         max_period = max_step - current_step
         
-        text = f"""⏱ *Взятие кредита*
-
-*Шаг 1: Введите срок кредита*
-
-На какое количество ходов хотите взять кредит?
-Минимум: 2 ход
-Максимум: {max_period} ход(ов)
-(Текущий ход: {current_step}, до конца игры: {max_period})"""
+        text = self.content.format(
+            max_period=max_period,
+            current_step=current_step
+        )
         
         if error:
             text += f"\n\n❌ {error}"
@@ -111,14 +107,11 @@ class BankCreditTakeAmount(Page):
         min_credit = CAPITAL.bank.credit.min
         max_credit = CAPITAL.bank.credit.max
         
-        text = f"""💰 *Взятие кредита*
-
-✅ Срок: {credit_period} ход(ов)
-
-*Шаг 2: Введите сумму кредита*
-
-Минимум: {min_credit:,} 💰
-Максимум: {max_credit:,} 💰""".replace(",", " ")
+        text = self.content.format(
+            credit_period=credit_period,
+            min_credit=f"{min_credit:,}".replace(",", " "),
+            max_credit=f"{max_credit:,}".replace(",", " ")
+        )
         
         if error:
             text += f"\n\n❌ {error}"
@@ -213,22 +206,15 @@ class BankCreditTakeConfirm(Page):
         
         percent = conditions.percent * 100
         
-        text = f"""💳 *Подтверждение кредита*
-
-*Параметры кредита:*
-Сумма: {credit_amount:,} 💰
-Срок: {credit_period} ход(ов)
-
-*Условия:*
-Процентная ставка: {percent}%
-Льготный период: {conditions.without_interest} ход(ов)
-Ходов с процентами: {extra}
-
-*К оплате:*
-Всего к возврату: {total:,} 💰
-Платеж за ход: {pay_per_turn:,} 💰
-
-Подтвердите взятие кредита:""".replace(",", " ")
+        text = self.content.format(
+            credit_amount=f"{credit_amount:,}".replace(",", " "),
+            credit_period=credit_period,
+            percent=percent,
+            without_interest=conditions.without_interest,
+            extra=extra,
+            total=f"{total:,}".replace(",", " "),
+            pay_per_turn=f"{pay_per_turn:,}".replace(",", " ")
+        )
         
         return text
     

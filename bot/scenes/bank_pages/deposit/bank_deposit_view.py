@@ -57,23 +57,26 @@ class BankDepositView(Page):
         else:
             profit_percent = 0
         
-        text = f"""{status_icon} *Вклад #{deposit_index + 1}*
-
-*Финансовая информация:*
-💵 Начальная сумма: {initial_sum:,} 💰
-💰 Текущий баланс: {current_balance:,} 💰
-📈 Заработано: {total_earned:,} 💰 (+{profit_percent:.1f}%)
-💸 Доход за ход: {income_per_turn:,} 💰
-
-*Информация о сроках:*
-⏱ Общий срок вклада: {steps_total} ход(ов)
-⏳ Прошло ходов: {steps_now} / {steps_total}
-🔄 Осталось ходов: {steps_left}
-
-*Статус:*
-{status_text}
-
-_Вклад можно забрать через 3 хода после открытия, независимо от общего срока_""".replace(",", " ")
+        # Форматируем числа
+        initial_sum_formatted = f"{initial_sum:,}".replace(",", " ")
+        current_balance_formatted = f"{current_balance:,}".replace(",", " ")
+        total_earned_formatted = f"{total_earned:,}".replace(",", " ")
+        income_per_turn_formatted = f"{income_per_turn:,}".replace(",", " ")
+        
+        # Формируем текст из шаблона
+        text = self.content.format(
+            status_icon=status_icon,
+            deposit_index=deposit_index + 1,
+            initial_sum=initial_sum_formatted,
+            current_balance=current_balance_formatted,
+            total_earned=total_earned_formatted,
+            profit_percent=f"{profit_percent:.1f}",
+            income_per_turn=income_per_turn_formatted,
+            steps_total=steps_total,
+            steps_now=steps_now,
+            steps_left=steps_left,
+            status_text=status_text
+        )
         
         return text
     

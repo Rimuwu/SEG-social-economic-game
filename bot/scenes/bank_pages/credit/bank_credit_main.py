@@ -30,58 +30,66 @@ class BankCreditMain(Page):
         # Получаем сообщение об успехе, если есть
         success_message = scene_data.get('success_message', '')
         
-        text = "💳 *Кредиты*\n\n"
-        
-        # Показываем успешное сообщение, если есть
-        if success_message:
-            text += f"✅ {success_message}\n\n"
-            # Очищаем сообщение после показа
-            scene_data['success_message'] = ''
-            await self.scene.set_data('scene', scene_data)
-        
         # Получаем условия кредитования
         try:
             conditions = get_credit_conditions(reputation)
             
-            # Информация об условиях
+            # Параметры для шаблона
             percent = conditions.percent * 100
             without_interest = conditions.without_interest
             max_credits = ALL_CONFIGS['settings'].max_credits_per_company
             
-            text += f"*Ваши условия:*\n"
-            text += f"Процентная ставка: {percent}%\n"
-            text += f"Льготный период: {without_interest} ход(ов)\n"
-            text += f"Репутация: {reputation} ⭐\n"
-            text += f"Лимит кредитов: {len(credits)}/{max_credits}\n\n"
+            # Формируем секцию с активными кредитами
+            if credits and len(credits) > 0:
+                credits_list = "*Активные кредиты:*\n\n"
+                for i, credit in enumerate(credits, 1):
+                    total = credit.get("total_to_pay", 0)
+                    paid = credit.get("paid", 0)
+                    need_pay = credit.get("need_pay", 0)
+                    steps_total = credit.get("steps_total", 0)
+                    steps_now = credit.get("steps_now", 0)
+                    
+                    remaining = total - paid
+                    steps_left = steps_total - steps_now
+                    
+                    total_formatted = f"{total:,}".replace(",", " ")
+                    remaining_formatted = f"{remaining:,}".replace(",", " ")
+                    need_pay_formatted = f"{need_pay:,}".replace(",", " ")
+                    
+                    credits_list += f"*Кредит #{i}*\n"
+                    credits_list += f"Осталось выплатить: {remaining_formatted} 💰 (из {total_formatted})\n"
+                    credits_list += f"Текущий платеж: {need_pay_formatted} 💰\n"
+                    credits_list += f"Ходов до закрытия: {max(0, steps_left)}/{steps_total}\n"
+                    
+                    if need_pay > 0:
+                        credits_list += "⚠️ *Требуется оплата!*\n"
+                    
+                    credits_list += "\n"
+                
+                active_credits_section = credits_list
+            else:
+                active_credits_section = "_У вас нет активных кредитов_"
+            
+            # Формируем текст из шаблона
+            text = self.content.format(
+                percent=percent,
+                without_interest=without_interest,
+                reputation=reputation,
+                credits_count=len(credits),
+                max_credits=max_credits,
+                active_credits_section=active_credits_section
+            )
+            
         except ValueError:
-            text += "❌ *Кредиты недоступны*\n"
-            text += f"Минимальная репутация для кредита: 11\n"
-            text += f"Ваша репутация: {reputation} ⭐\n\n"
+            # Если репутация недостаточна
+            text = f"💳 *Кредиты*\n\n❌ *Кредиты недоступны*\nМинимальная репутация для кредита: 11\nВаша репутация: {reputation} ⭐"
         
-        # Активные кредиты
-        if credits and len(credits) > 0:
-            text += "*Активные кредиты:*\n\n"
-            for i, credit in enumerate(credits, 1):
-                total = credit.get("total_to_pay", 0)
-                paid = credit.get("paid", 0)
-                need_pay = credit.get("need_pay", 0)
-                steps_total = credit.get("steps_total", 0)
-                steps_now = credit.get("steps_now", 0)
-                
-                remaining = total - paid
-                steps_left = steps_total - steps_now
-                
-                text += f"*Кредит #{i}*\n"
-                text += f"Осталось выплатить: {remaining:,} 💰 (из {total:,})\n".replace(",", " ")
-                text += f"Текущий платеж: {need_pay:,} 💰\n".replace(",", " ")
-                text += f"Ходов до закрытия: {max(0, steps_left)}/{steps_total}\n"
-                
-                if need_pay > 0:
-                    text += "⚠️ *Требуется оплата!*\n"
-                
-                text += "\n"
-        else:
-            text += "_У вас нет активных кредитов_\n"
+        # Добавляем сообщение об успехе, если есть
+        if success_message:
+            text = f"✅ {success_message}\n\n" + text
+            # Очищаем сообщение после показа
+            scene_data['success_message'] = ''
+            await self.scene.set_data('scene', scene_data)
         
         return text
     
