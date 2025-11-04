@@ -35,7 +35,6 @@ services:
     restart: unless-stopped
     volumes:
       - ./logs:/logs:rw
-      - ./data:/data:rw
     depends_on:
       mongodb:
         condition: service_healthy
@@ -62,7 +61,6 @@ services:
     restart: unless-stopped
     volumes:
       - ./logs:/logs:rw
-      - ./data:/data:rw
     depends_on:
       mongodb:
         condition: service_healthy

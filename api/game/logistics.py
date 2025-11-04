@@ -4,7 +4,7 @@ from global_modules.models.cells import Cells
 from global_modules.db.baseclass import BaseClass
 from modules.db import just_db
 from global_modules.load_config import ALL_CONFIGS, Resources, Improvements, Settings, Capital, Reputation
-from modules.function_way import *
+from modules.utils import *
 from modules.websocket_manager import websocket_manager
 
 RESOURCES: Resources = ALL_CONFIGS["resources"]
@@ -47,8 +47,11 @@ class Logistics(BaseClass, SessionObject):
 
     async def get_delivery_speed(self) -> float:
         """Возвращает скорость доставки в клетках за ход"""
+        from game.company import Company
 
         session = await self.get_session_or_error()
+
+        company_sender = await Company(self.from_company_id).reupdate()
 
         if not session:
             mod = 1.0
@@ -56,6 +59,9 @@ class Logistics(BaseClass, SessionObject):
             mod = await session.get_event_effects().get(
                 'cell_logistics', 1.0
             )
+
+        if company_sender and company_sender.fast_logistic:
+            mod += SETTINGS.fast_logistic
 
         return SETTINGS.logistics_speed * mod
 

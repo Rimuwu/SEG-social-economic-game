@@ -31,8 +31,6 @@ cells: Cells = ALL_CONFIGS['cells']
 cells_types = cells.types
 EVENTS: Events = ALL_CONFIGS['events']
 
-GAME_TIME = settings.time_on_game_stage * 60
-CHANGETURN_TIME = settings.time_on_change_stage * 60
 TURN_CELL_TIME = settings.turn_cell_time_minutes * 60
 
 class SessionStages(Enum):
@@ -56,7 +54,9 @@ class Session(BaseClass):
         max_steps: int = 15,
         session_group_url: str = '',
         max_companies: int = settings.max_companies,
-        max_players_in_company: int = settings.max_players_in_company
+        max_players_in_company: int = settings.max_players_in_company,
+        time_on_game_stage: int = settings.time_on_game_stage,
+        time_on_change_stage: int = settings.time_on_change_stage
         ): 
         self.session_id = session_id
         self.cells: list[str] = []
@@ -74,8 +74,11 @@ class Session(BaseClass):
         self.event_start: Optional[int] = None
         self.event_end: Optional[int] = None
 
-        self.max_companies = max_companies
-        self.max_players_in_company = max_players_in_company
+        self.max_companies: int = max_companies
+        self.max_players_in_company: int = max_players_in_company
+
+        self.time_on_game_stage: int = time_on_game_stage
+        self.time_on_change_stage: int = time_on_change_stage
 
     async def start(self):
         if not self.session_id:
@@ -113,6 +116,12 @@ class Session(BaseClass):
             new_stage = SessionStages.End
 
         elif new_stage == SessionStages.CellSelect:
+
+            # Удаление юзеров из сесси без компании
+            for user in await self.users:
+                if not user.company_id:
+                    await user.delete()
+
             await self.generate_cells()
 
         elif new_stage == SessionStages.Game:
@@ -156,14 +165,9 @@ class Session(BaseClass):
 
                 if not whitout_shedule:
 
-                    if self.change_turn_schedule_id:
-                        await just_db.delete(
-                            'time_schedule', 
-                            id=self.change_turn_schedule_id)
-
                     sh_id = await scheduler.schedule_task(
                         stage_game_updater, 
-                        datetime.now() + timedelta(seconds=GAME_TIME),
+                        datetime.now() + timedelta(seconds=self.time_on_game_stage * 60),
                         kwargs={"session_id": self.session_id}
                     )
                     self.change_turn_schedule_id = sh_id
@@ -199,6 +203,7 @@ class Session(BaseClass):
 
             companies = await self.companies
             for company in companies:
+                if company is None: continue
                 company: Company
 
                 await Statistic().update_me(
@@ -465,10 +470,10 @@ class Session(BaseClass):
 
                     game_logger.info(f"В сессии {self.session_id} создан город в позиции {x}.{y} с отраслью {city.branch}.")
 
-    async def can_select_cell(self, x: int, y: int):
+    async def can_select_cell(self, x: int, y: int, ignore_stage: bool = False) -> bool:
         """ Проверяет, можно ли выбрать клетку с координатами (x, y) для компании.
         """
-        if not self.can_select_cells():
+        if not ignore_stage and not self.can_select_cells():
             raise ValueError("Текущая стадия сессии не позволяет выбирать клетки.")
 
         index = x * self.map_size["cols"] + y
@@ -566,9 +571,12 @@ class Session(BaseClass):
 
         await just_db.delete("step_schedule", 
                        session_id=self.session_id)
-        
+
         await just_db.delete("statistics", 
                        session_id=self.session_id)
+
+        await just_db.delete("time_schedule", 
+                       id=self.change_turn_schedule_id)
 
         await just_db.delete(self.__tablename__, session_id=self.session_id)
         await session_manager.remove_session(self.session_id)
@@ -953,11 +961,13 @@ class SessionsManager():
     async def create_session(self, 
             session_id: str,
             map_pattern: str = 'random',
-            size=6,
+            size=7,
             max_steps=15,
             session_group_url='',
             max_companies: int = settings.max_companies,
-            max_players_in_company: int = settings.max_players_in_company
+            max_players_in_company: int = settings.max_players_in_company,
+            time_on_game_stage: int = settings.time_on_game_stage,
+            time_on_change_stage: int = settings.time_on_change_stage
                              ):
 
         session = await Session(
@@ -967,7 +977,9 @@ class SessionsManager():
             max_steps=max_steps,
             session_group_url=session_group_url,
             max_companies=max_companies,
-            max_players_in_company=max_players_in_company
+            max_players_in_company=max_players_in_company,
+            time_on_game_stage=time_on_game_stage,
+            time_on_change_stage=time_on_change_stage
                                 ).start()
 
         if session.session_id in self.sessions:

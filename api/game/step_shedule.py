@@ -4,7 +4,7 @@ from global_modules.db.baseclass import BaseClass
 from modules.db import just_db
 from game.session import SessionObject
 from global_modules.load_config import ALL_CONFIGS, Resources, Improvements, Settings, Capital, Reputation
-from modules.function_way import *
+from modules.utils import *
 
 RESOURCES: Resources = ALL_CONFIGS["resources"]
 CELLS: Cells = ALL_CONFIGS['cells']

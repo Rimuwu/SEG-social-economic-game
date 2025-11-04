@@ -7,7 +7,7 @@ from global_modules.models.cells import Cells
 from global_modules.db.baseclass import BaseClass
 from modules.db import just_db
 from global_modules.load_config import ALL_CONFIGS, Resources, Improvements, Settings, Capital, Reputation
-from modules.function_way import determine_city_branch
+from modules.utils import determine_city_branch
 from modules.websocket_manager import websocket_manager
 from modules.logs import game_logger
 

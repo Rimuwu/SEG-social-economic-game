@@ -29,6 +29,7 @@ class User(BaseClass, SessionObject):
             raise ValueError("Неверная сессия или регистрация запрещена на данном этапе.")
 
         self.id = id
+        username = validate_username(username)
 
         with_this_name = await just_db.find_one("users", 
                                           username=username, 
@@ -37,9 +38,7 @@ class User(BaseClass, SessionObject):
             game_logger.warning(f"Попытка создать пользователя с занятым именем '{username}' в сессии {session_id}.")
             raise ValueError(f"Имя пользователя '{username}' уже занято в этой сессии.")
 
-        username = validate_username(username)
         self.username = username
-
         await self.insert()
 
         await websocket_manager.broadcast({

@@ -61,6 +61,11 @@ class Company(BaseClass, SessionObject):
         self.business_type: str = "small"  # Тип бизнеса: "small" или "big"
         self.owner: int = 0
 
+        self.start_step_capital: int = 0  # Капитал на начало шага
+
+        self.fast_logistic: bool = False
+        self.fast_complectation: bool = False
+
     async def set_owner(self, user_id: int):
         if self.owner != 0:
             game_logger.warning(f"Попытка установить владельца компании {self.name} ({self.id}), но владелец уже установлен: {self.owner}.")
@@ -145,6 +150,10 @@ class Company(BaseClass, SessionObject):
         if not await session.can_select_cell(x, y):
             game_logger.warning(f"Компания {self.name} ({self.id}) не может выбрать клетку ({x}, {y}) в сессии {self.session_id}.")
             raise ValueError("Невозможно выбрать эту клетку - либо она занята, либо находится вне карты.")
+
+        if session.stage != SessionStages.CellSelect.value:
+            game_logger.warning(f"Компания {self.name} ({self.id}) пытается изменить позицию на этапе {session.stage}. Возможно подразумевается change_position")
+            raise ValueError("Невозможно изменить позицию на данном этапе игры.")
 
         old_position = self.cell_position
         self.cell_position = f"{x}.{y}"
@@ -386,6 +395,8 @@ class Company(BaseClass, SessionObject):
                 "new_balance": self.balance
             }
         })
+
+        game_logger.info(f"Компания {self.name} ({self.id}) получила {amount} денежных средств. Новый баланс: {self.balance}")
         return True
 
     async def remove_balance(self, amount: int):
@@ -410,6 +421,8 @@ class Company(BaseClass, SessionObject):
                 "new_balance": self.balance
             }
         })
+
+        game_logger.info(f"Компания {self.name} ({self.id}) потратила {amount} денежных средств. Новый баланс: {self.balance}")
         return True
 
     async def improve(self, improvement_type: str):
@@ -480,6 +493,8 @@ class Company(BaseClass, SessionObject):
                 "new_reputation": self.reputation
             }
         })
+
+        game_logger.info(f"Репутация компании {self.name} ({self.id}) увеличена на {amount}. Новая репутация: {self.reputation}")
         return True
 
     async def remove_reputation(self, amount: int):
@@ -506,7 +521,8 @@ class Company(BaseClass, SessionObject):
 
             if self.reputation <= REPUTATION.prison.on_reputation: 
                 await self.to_prison()
-
+            
+            game_logger.info(f"Репутация компании {self.name} ({self.id}) уменьшена на {amount}. Новая репутация: {self.reputation}")
             return True
         return False
 
@@ -1102,6 +1118,8 @@ class Company(BaseClass, SessionObject):
         """
         from game.contract import Contract
 
+        self.start_step_capital = self.balance
+
         self.last_turn_income = self.this_turn_income
         self.this_turn_income = 0
 
@@ -1228,5 +1246,84 @@ class Company(BaseClass, SessionObject):
 
             "contracts": [
                 contract.to_dict() for contract in await self.get_contracts()
-            ]
+            ],
+
+            "fast_complectation": self.fast_complectation,
+            "fast_logistic": self.fast_logistic,
+
+            "profit": self.profit,
+            "start_step_capital": self.start_step_capital
         }
+
+    async def set_fast_logistic(self): 
+        if self.fast_logistic:
+            raise ValueError("Компания уже имеет быструю логистику.")
+
+        upgrade_price = SETTINGS.fast_logistic_price
+        await self.remove_balance(upgrade_price)
+
+        self.fast_logistic = True
+        await self.save_to_base()
+
+        await websocket_manager.broadcast({
+            "type": "api-company_fast_logistic_set",
+            "data": {
+                "company_id": self.id,
+                "fast_logistic": self.fast_logistic
+            }
+        })
+
+    async def set_fast_complectation(self):
+        if self.fast_complectation:
+            raise ValueError("Компания уже имеет быструю комплектацию.")
+
+        upgrade_price = SETTINGS.fast_complectation_price
+        await self.remove_balance(upgrade_price)
+
+        self.fast_complectation = True
+        await self.save_to_base()
+        
+        await websocket_manager.broadcast({
+            "type": "api-company_fast_complectation_set",
+            "data": {
+                "company_id": self.id,
+                "fast_complectation": self.fast_complectation
+            }
+        })
+
+    async def change_position(self, x: int, y: int):
+
+        change_price = SETTINGS.change_location_price
+        business_type = self.business_type
+
+        assert isinstance(x, int) and isinstance(y, int), "Координаты должны быть целыми числами."
+
+        session = await self.get_session_or_error()
+        if not await session.can_select_cell(x, y, True):
+            game_logger.warning(
+                f"Компания {self.name} ({self.id}) не может выбрать клетку ({x}, {y}) в сессии {self.session_id}."
+                )
+            raise ValueError("Невозможно выбрать эту клетку - либо она занята, либо находится вне карты.")
+
+        price = change_price.get(business_type, 100_000)
+        await self.remove_balance(price)
+
+        old_position = self.cell_position
+        self.cell_position = f"{x}.{y}"
+
+        await self.save_to_base()
+
+        await websocket_manager.broadcast({
+            "type": "api-company_set_position",
+            "data": {
+                "company_id": self.id,
+                "old_position": old_position,
+                "new_position": self.cell_position
+            }
+        })
+
+    @property
+    def profit(self) -> int:
+        """ Возвращает прибыль компании за последний ход. """
+        profit = self.balance - self.start_step_capital
+        return profit
