@@ -58,17 +58,51 @@ class FactoryRekitCount(Page):
     
     async def buttons_worker(self):
         """Кнопки с быстрым выбором количества"""
-        buttons = [
-            {
-                'text': '↪️ Назад',
-                'callback_data': callback_generator(
-                    self.scene.__scene_name__,
-                    'back'
-                )
-            }
-        ]
+        scene_data = self.scene.get_data('scene')
+        group_type = scene_data.get('rekit_group')
+        company_id = scene_data.get('company_id')
         
-        self.row_width = 1
+        buttons = []
+        
+        # Получаем количество доступных заводов
+        available_count = 0
+        if company_id and group_type:
+            factories = await get_factories(company_id)
+            if factories and isinstance(factories, list):
+                if group_type == 'idle':
+                    available_count = sum(1 for f in factories if f.get('complectation') is None)
+                else:
+                    available_count = sum(1 for f in factories if f.get('complectation') == group_type)
+        
+        # Если есть заводы, добавляем кнопки быстрого выбора
+        if available_count > 0:
+            # Определяем количество кнопок (минимум available_count и 4)
+            num_buttons = min(available_count, 4)
+            
+            for i in range(1, num_buttons + 1):
+                # Рассчитываем количество: i/num_buttons от available_count
+                count = int((available_count * i) / num_buttons)
+                if count > 0:  # Добавляем только если count больше 0
+                    buttons.append({
+                        'text': str(count),
+                        'callback_data': callback_generator(
+                            self.scene.__scene_name__,
+                            'quick_select',
+                            str(count)
+                        )
+                    })
+        
+        # Кнопка назад
+        buttons.append({
+            'text': '↪️ Назад',
+            'callback_data': callback_generator(
+                self.scene.__scene_name__,
+                'back'
+            ),
+            'next_line': True
+        })
+        
+        self.row_width = 4
         return buttons
     
     @Page.on_text('int')
@@ -116,6 +150,29 @@ class FactoryRekitCount(Page):
         
         # Переходим на страницу выбора ресурса
         await self.scene.update_page('factory-rekit-resource')
+    
+    @Page.on_callback('quick_select')
+    async def handle_quick_select(self, callback: CallbackQuery, args: list):
+        """Обработка быстрого выбора количества через кнопки"""
+        if not args or len(args) < 2:
+            await callback.answer("❌ Ошибка: некорректные данные", show_alert=True)
+            return
+        
+        try:
+            count = int(args[1])
+        except (ValueError, IndexError):
+            await callback.answer("❌ Ошибка: некорректное количество", show_alert=True)
+            return
+        
+        scene_data = self.scene.get_data('scene')
+        
+        # Сохраняем количество
+        scene_data['rekit_count'] = str(count)
+        await self.scene.set_data('scene', scene_data)
+        
+        # Переходим на страницу выбора ресурса
+        await self.scene.update_page('factory-rekit-resource')
+        await callback.answer()
     
     @Page.on_callback('back')
     async def back_to_groups(self, callback: CallbackQuery, args: list):
