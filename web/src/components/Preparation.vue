@@ -108,12 +108,12 @@ onUnmounted(() => {
   -->
   <div id="page" ref="pageRef">
     <div class="left">
-      <Map class="map" />
       <div class="footer">
         <span>@sneg_gamebot</span>
         <span>/</span>
         <span>{{ wsManager.session_id }}</span>
       </div>
+      <Map class="map" />
     </div>
     <div class="right">
       <div class="grid">
