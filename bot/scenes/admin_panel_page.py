@@ -26,7 +26,7 @@ class AdminPanelPage(Page):
             scene_data['admin_substate'] = None  # create_session, delete_session, change_stage и т.д.
             scene_data['admin_page'] = 0  # Для пагинации
             scene_data['admin_temp_data'] = {}  # Временные данные
-            self.scene.set_data('scene', scene_data)
+            await self.scene.set_data('scene', scene_data)
     
     async def content_worker(self):
         """Контент админ-панели"""
@@ -178,7 +178,7 @@ class AdminPanelPage(Page):
             text += f"{last_message}\n\n"
             # Очищаем сообщение после показа
             scene_data['admin_temp_data']['last_message'] = ''
-            self.scene.set_data('scene', scene_data)
+            await self.scene.set_data('scene', scene_data)
         
         text += "Выберите действие:"
         return text
@@ -397,7 +397,7 @@ class AdminPanelPage(Page):
             text += f"{last_message}\n\n"
             # Очищаем сообщение после показа
             scene_data['admin_temp_data']['last_message'] = ''
-            self.scene.set_data('scene', scene_data)
+            await self.scene.set_data('scene', scene_data)
         
         # Получаем и показываем список компаний
         companies = await get_companies()
@@ -643,7 +643,7 @@ class AdminPanelPage(Page):
             text += f"{last_message}\n\n"
             # Очищаем сообщение после показа
             scene_data['admin_temp_data']['last_message'] = ''
-            self.scene.set_data('scene', scene_data)
+            await self.scene.set_data('scene', scene_data)
         
         # Получаем и показываем список пользователей
         users = await get_users()
@@ -797,7 +797,7 @@ class AdminPanelPage(Page):
         scene_data['admin_substate'] = None
         scene_data['admin_page'] = 0
         scene_data['admin_temp_data'] = {}
-        self.scene.set_data('scene', scene_data)
+        await self.scene.set_data('scene', scene_data)
         
         await self.scene.update_message()
         await callback.answer()
@@ -818,7 +818,7 @@ class AdminPanelPage(Page):
         """Начать создание сессии"""
         scene_data = self.scene.get_data('scene')
         scene_data['admin_substate'] = 'input_create'
-        self.scene.set_data('scene', scene_data)
+        await self.scene.set_data('scene', scene_data)
         
         await self.scene.update_message()
         await callback.answer()
@@ -837,7 +837,7 @@ class AdminPanelPage(Page):
         # Вернуться в меню сессий
         scene_data = self.scene.get_data('scene')
         scene_data['admin_substate'] = None
-        self.scene.set_data('scene', scene_data)
+        await self.scene.set_data('scene', scene_data)
         await self.scene.update_message()
     
     @Page.on_callback('session_delete')
@@ -845,7 +845,7 @@ class AdminPanelPage(Page):
         """Показать список сессий для удаления"""
         scene_data = self.scene.get_data('scene')
         scene_data['admin_substate'] = 'list_delete'
-        self.scene.set_data('scene', scene_data)
+        await self.scene.set_data('scene', scene_data)
         
         await self.scene.update_message()
         await callback.answer()
@@ -861,7 +861,7 @@ class AdminPanelPage(Page):
         scene_data = self.scene.get_data('scene')
         scene_data['admin_substate'] = 'confirm_delete'
         scene_data['admin_temp_data']['delete_session_id'] = session_id
-        self.scene.set_data('scene', scene_data)
+        await self.scene.set_data('scene', scene_data)
         
         await self.scene.update_message()
         await callback.answer()
@@ -886,7 +886,7 @@ class AdminPanelPage(Page):
         scene_data = self.scene.get_data('scene')
         scene_data['admin_substate'] = None
         scene_data['admin_temp_data'] = {}
-        self.scene.set_data('scene', scene_data)
+        await self.scene.set_data('scene', scene_data)
         await self.scene.update_message()
     
     @Page.on_callback('session_change_stage')
@@ -894,7 +894,7 @@ class AdminPanelPage(Page):
         """Показать список сессий для смены этапа"""
         scene_data = self.scene.get_data('scene')
         scene_data['admin_substate'] = 'list_change_stage'
-        self.scene.set_data('scene', scene_data)
+        await self.scene.set_data('scene', scene_data)
         
         await self.scene.update_message()
         await callback.answer()
@@ -911,7 +911,7 @@ class AdminPanelPage(Page):
         scene_data['admin_substate'] = 'select_stage'
         scene_data['admin_temp_data']['change_stage_session_id'] = session_id
         scene_data['admin_temp_data']['add_schedule'] = True
-        self.scene.set_data('scene', scene_data)
+        await self.scene.set_data('scene', scene_data)
         
         await self.scene.update_message()
         await callback.answer()
@@ -922,7 +922,7 @@ class AdminPanelPage(Page):
         scene_data = self.scene.get_data('scene')
         current = scene_data.get('admin_temp_data', {}).get('add_schedule', True)
         scene_data['admin_temp_data']['add_schedule'] = not current
-        self.scene.set_data('scene', scene_data)
+        await self.scene.set_data('scene', scene_data)
         
         await self.scene.update_message()
         await callback.answer()
@@ -954,7 +954,7 @@ class AdminPanelPage(Page):
         # Вернуться в меню сессий
         scene_data['admin_substate'] = None
         scene_data['admin_temp_data'] = {}
-        self.scene.set_data('scene', scene_data)
+        await self.scene.set_data('scene', scene_data)
         await self.scene.update_message()
     
     # === КОМПАНИИ CALLBACKS ===
@@ -965,7 +965,7 @@ class AdminPanelPage(Page):
         scene_data = self.scene.get_data('scene')
         scene_data['admin_substate'] = 'list'
         scene_data['admin_page'] = 0
-        self.scene.set_data('scene', scene_data)
+        await self.scene.set_data('scene', scene_data)
         
         await self.scene.update_message()
         await callback.answer()
@@ -977,7 +977,7 @@ class AdminPanelPage(Page):
         
         scene_data = self.scene.get_data('scene')
         scene_data['admin_page'] = page
-        self.scene.set_data('scene', scene_data)
+        await self.scene.set_data('scene', scene_data)
         
         await self.scene.update_message()
         await callback.answer()
@@ -987,7 +987,7 @@ class AdminPanelPage(Page):
         """Запросить ID компании для информации"""
         scene_data = self.scene.get_data('scene')
         scene_data['admin_substate'] = 'input_info'
-        self.scene.set_data('scene', scene_data)
+        await self.scene.set_data('scene', scene_data)
         
         await self.scene.update_message()
         await callback.answer()
@@ -997,7 +997,7 @@ class AdminPanelPage(Page):
         """Запросить ID компании для переименования"""
         scene_data = self.scene.get_data('scene')
         scene_data['admin_substate'] = 'input_rename_id'
-        self.scene.set_data('scene', scene_data)
+        await self.scene.set_data('scene', scene_data)
         
         await self.scene.update_message()
         await callback.answer()
@@ -1010,7 +1010,7 @@ class AdminPanelPage(Page):
         scene_data = self.scene.get_data('scene')
         scene_data['admin_substate'] = 'list'
         scene_data['admin_page'] = 0
-        self.scene.set_data('scene', scene_data)
+        await self.scene.set_data('scene', scene_data)
         
         await self.scene.update_message()
         await callback.answer()
@@ -1022,7 +1022,7 @@ class AdminPanelPage(Page):
         
         scene_data = self.scene.get_data('scene')
         scene_data['admin_page'] = page
-        self.scene.set_data('scene', scene_data)
+        await self.scene.set_data('scene', scene_data)
         
         await self.scene.update_message()
         await callback.answer()
@@ -1032,7 +1032,7 @@ class AdminPanelPage(Page):
         """Запросить ID пользователя для переименования"""
         scene_data = self.scene.get_data('scene')
         scene_data['admin_substate'] = 'input_rename_id'
-        self.scene.set_data('scene', scene_data)
+        await self.scene.set_data('scene', scene_data)
         
         await self.scene.update_message()
         await callback.answer()
@@ -1042,7 +1042,7 @@ class AdminPanelPage(Page):
         """Запросить ID пользователя для удаления"""
         scene_data = self.scene.get_data('scene')
         scene_data['admin_substate'] = 'input_delete_id'
-        self.scene.set_data('scene', scene_data)
+        await self.scene.set_data('scene', scene_data)
         
         await self.scene.update_message()
         await callback.answer()
@@ -1058,7 +1058,7 @@ class AdminPanelPage(Page):
         scene_data = self.scene.get_data('scene')
         scene_data['admin_substate'] = 'confirm_delete'
         scene_data['admin_temp_data']['confirm_delete_user_id'] = user_id
-        self.scene.set_data('scene', scene_data)
+        await self.scene.set_data('scene', scene_data)
         
         await self.scene.update_message()
         await callback.answer()
@@ -1083,7 +1083,7 @@ class AdminPanelPage(Page):
         scene_data = self.scene.get_data('scene')
         scene_data['admin_substate'] = None
         scene_data['admin_temp_data'] = {}
-        self.scene.set_data('scene', scene_data)
+        await self.scene.set_data('scene', scene_data)
         await self.scene.update_message()
     
     # ============================================
@@ -1098,9 +1098,6 @@ class AdminPanelPage(Page):
         admin_substate = scene_data.get('admin_substate')
         text = value  # Используем value вместо message.text
         
-        # Удаляем сообщение пользователя
-        await message.delete()
-        
         # === СЕССИИ ===
         if admin_state == 'sessions' and admin_substate == 'input_create':
             # Создание сессии с указанным ID
@@ -1109,14 +1106,11 @@ class AdminPanelPage(Page):
             # Вернуться в меню сессий
             scene_data['admin_substate'] = None
             
-            if result and 'session' in result:
-                session_id = result['session']['id']
-                scene_data['admin_temp_data']['last_message'] = f"✅ Сессия создана: {session_id}"
-            else:
-                error_msg = result.get('error', 'Неизвестная ошибка') if result else 'Нет ответа'
-                scene_data['admin_temp_data']['last_message'] = f"❌ Ошибка: {error_msg}"
+            # if result and 'session' in result:
+            session_id = result['id']
+            scene_data['admin_temp_data']['last_message'] = f"✅ Сессия создана: {session_id}"
             
-            self.scene.set_data('scene', scene_data)
+            await self.scene.set_data('scene', scene_data)
             await self.scene.update_message()
         
         # === КОМПАНИИ ===
@@ -1127,11 +1121,11 @@ class AdminPanelPage(Page):
                     company_id = int(text)
                     scene_data['admin_temp_data']['info_company_id'] = company_id
                     scene_data['admin_substate'] = 'show_info'
-                    self.scene.set_data('scene', scene_data)
+                    await self.scene.set_data('scene', scene_data)
                     await self.scene.update_message()
                 except ValueError:
                     scene_data['admin_temp_data']['last_message'] = "❌ Ошибка: введите числовой ID компании"
-                    self.scene.set_data('scene', scene_data)
+                    await self.scene.set_data('scene', scene_data)
                     await self.scene.update_message()
             
             elif admin_substate == 'input_rename_id':
@@ -1142,17 +1136,17 @@ class AdminPanelPage(Page):
                     company = await get_company(id=company_id)
                     if not company or 'error' in company:
                         scene_data['admin_temp_data']['last_message'] = f"❌ Компания с ID {company_id} не найдена"
-                        self.scene.set_data('scene', scene_data)
+                        await self.scene.set_data('scene', scene_data)
                         await self.scene.update_message()
                         return
                     
                     scene_data['admin_temp_data']['rename_company_id'] = company_id
                     scene_data['admin_substate'] = 'input_rename_name'
-                    self.scene.set_data('scene', scene_data)
+                    await self.scene.set_data('scene', scene_data)
                     await self.scene.update_message()
                 except ValueError:
                     scene_data['admin_temp_data']['last_message'] = "❌ Ошибка: введите числовой ID компании"
-                    self.scene.set_data('scene', scene_data)
+                    await self.scene.set_data('scene', scene_data)
                     await self.scene.update_message()
             
             elif admin_substate == 'input_rename_name':
@@ -1169,7 +1163,7 @@ class AdminPanelPage(Page):
                     error_msg = result.get('error', 'Неизвестная ошибка') if result else 'Нет ответа'
                     scene_data['admin_temp_data'] = {'last_message': f"❌ Ошибка: {error_msg}"}
                 
-                self.scene.set_data('scene', scene_data)
+                await self.scene.set_data('scene', scene_data)
                 await self.scene.update_message()
         
         # === ПОЛЬЗОВАТЕЛИ ===
@@ -1182,17 +1176,17 @@ class AdminPanelPage(Page):
                     user = await get_user(id=user_id)
                     if not user or 'error' in user:
                         scene_data['admin_temp_data']['last_message'] = f"❌ Пользователь с ID {user_id} не найден"
-                        self.scene.set_data('scene', scene_data)
+                        await self.scene.set_data('scene', scene_data)
                         await self.scene.update_message()
                         return
                     
                     scene_data['admin_temp_data']['rename_user_id'] = user_id
                     scene_data['admin_substate'] = 'input_rename_name'
-                    self.scene.set_data('scene', scene_data)
+                    await self.scene.set_data('scene', scene_data)
                     await self.scene.update_message()
                 except ValueError:
                     scene_data['admin_temp_data']['last_message'] = "❌ Ошибка: введите числовой ID пользователя"
-                    self.scene.set_data('scene', scene_data)
+                    await self.scene.set_data('scene', scene_data)
                     await self.scene.update_message()
             
             elif admin_substate == 'input_rename_name':
@@ -1209,7 +1203,7 @@ class AdminPanelPage(Page):
                     error_msg = result.get('error', 'Неизвестная ошибка') if result else 'Нет ответа'
                     scene_data['admin_temp_data'] = {'last_message': f"❌ Ошибка: {error_msg}"}
                 
-                self.scene.set_data('scene', scene_data)
+                await self.scene.set_data('scene', scene_data)
                 await self.scene.update_message()
             
             elif admin_substate == 'input_delete_id':
@@ -1220,16 +1214,16 @@ class AdminPanelPage(Page):
                     user = await get_user(id=user_id)
                     if not user or 'error' in user:
                         scene_data['admin_temp_data']['last_message'] = f"❌ Пользователь с ID {user_id} не найден"
-                        self.scene.set_data('scene', scene_data)
+                        await self.scene.set_data('scene', scene_data)
                         await self.scene.update_message()
                         return
                     
                     scene_data['admin_temp_data']['delete_user_id'] = user_id
                     scene_data['admin_substate'] = 'confirm_delete'
-                    self.scene.set_data('scene', scene_data)
+                    await self.scene.set_data('scene', scene_data)
                     await self.scene.update_message()
                 except ValueError:
                     scene_data['admin_temp_data']['last_message'] = "❌ Ошибка: введите числовой ID пользователя"
-                    self.scene.set_data('scene', scene_data)
+                    await self.scene.set_data('scene', scene_data)
                     await self.scene.update_message()
     

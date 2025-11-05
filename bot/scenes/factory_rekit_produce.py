@@ -167,19 +167,6 @@ class FactoryRekitProduce(Page):
             scene_data.pop('rekit_resource', None)
             await self.scene.set_data('scene', scene_data)
             
-            # Обновляем сообщение вместо отправки нового
-            if rekit_time > 0:
-                await callback.message.edit_text(
-                    f"✅ Перекомплектовано {success_count} заводов на {resource_name}!\n"
-                    f"Режим производства: {mode_text}\n"
-                    f"⏳ Перекомплектация займёт {rekit_time} ход(-ов)"
-                )
-            else:
-                await callback.message.edit_text(
-                    f"✅ Перекомплектовано {success_count} заводов на {resource_name}!\n"
-                    f"Режим производства: {mode_text}\n"
-                    f"✨ Готовы к работе немедленно!"
-                )
             
             # Возвращаемся в меню заводов
             await self.scene.update_page('factory-menu')

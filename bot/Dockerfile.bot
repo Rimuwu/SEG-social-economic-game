@@ -12,5 +12,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY bot/ ./
 COPY global_modules/ ./global_modules/
 COPY config/ ./config/
+COPY img/ ./img/
 
 CMD ["python", "main.py"]

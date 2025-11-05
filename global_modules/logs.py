@@ -28,19 +28,21 @@ class Logger:
         self.backup_count = 10
         self.log_format = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
         unicorn_logs = False
+        self.enable_console = True
 
         self.formatter = logging.Formatter(self.log_format)
 
         # Настройка консольного вывода для Docker
-        stream_handler = logging.StreamHandler(sys.stdout)
-        stream_handler.setLevel(self.log_level)
-        stream_handler.setFormatter(self.formatter)
-        self._handlers.append(stream_handler)
+        if self.enable_console:
+            stream_handler = logging.StreamHandler(sys.stdout)
+            stream_handler.setLevel(self.log_level)
+            stream_handler.setFormatter(self.formatter)
+            self._handlers.append(stream_handler)
 
         # Дата без секунд для имен файлов
         self.date_str = datetime.now().strftime("%Y.%m.%d_%H-%M")
 
-        if unicorn_logs:
+        if unicorn_logs and self.enable_console:
             for logger_name in ["uvicorn", "uvicorn.error"]:
                 # Настройка логгеров uvicorn для лучшей видимости (кроме access логов)
                 uvicorn_logger = logging.getLogger(logger_name)
@@ -123,5 +125,18 @@ class Logger:
     def critical(cls, message, app_name="seg"):
         """Логировать critical сообщение"""
         cls.get_logger(app_name).critical(message)
+
+    @classmethod
+    def disable_console_output(cls):
+        """Отключить вывод логов в консоль"""
+        if cls._instance:
+            cls._instance.enable_console = False
+            # Удалить stream_handler из _handlers
+            cls._instance._handlers = [h for h in cls._instance._handlers if not isinstance(h, logging.StreamHandler)]
+            # Удалить из всех существующих логгеров
+            for logger in cls._instance._loggers.values():
+                for handler in logger.handlers[:]:
+                    if isinstance(handler, logging.StreamHandler):
+                        logger.removeHandler(handler)
 
 main_logger = Logger().get_logger("main")

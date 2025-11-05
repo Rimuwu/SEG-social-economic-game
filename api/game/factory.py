@@ -1,13 +1,13 @@
-
-import asyncio
 from typing import Optional
+from game.session import SessionObject
 from global_modules.models.cells import Cells
 from global_modules.db.baseclass import BaseClass
 from global_modules.models.resources import Production, Resource
-from modules.json_database import just_db
+from modules.db import just_db
 from global_modules.load_config import ALL_CONFIGS, Resources, Improvements, Settings, Capital, Reputation
-from modules.function_way import *
+from modules.utils import *
 from modules.websocket_manager import websocket_manager
+from game.statistic import Statistic
 
 RESOURCES: Resources = ALL_CONFIGS["resources"]
 CELLS: Cells = ALL_CONFIGS['cells']
@@ -16,7 +16,7 @@ SETTINGS: Settings = ALL_CONFIGS['settings']
 CAPITAL: Capital = ALL_CONFIGS['capital']
 REPUTATION: Reputation = ALL_CONFIGS['reputation']
 
-class Factory(BaseClass):
+class Factory(BaseClass, SessionObject):
 
     __tablename__ = "factories"
     __unique_id__ = "id"
@@ -35,17 +35,20 @@ class Factory(BaseClass):
         self.complectation_stages = 0  # Сколько ходов осталось до завершения комплектации
 
         self.produced: int = 0  # Сколько всего произведено продукции
+        
+        self.event_stack: list[dict] = []  # Стэк событий фабрики за этап
 
-    def create(self, company_id: int, 
-               complectation: Optional[str] = None):
+    async def create(self, 
+                     company_id: int, 
+                     complectation: Optional[str] = None
+                     ):
         """ Создание новой фабрики
         """
         if complectation not in RESOURCES.resources and complectation is not None:
-            raise ValueError("Invalid complectation type.")
+            raise ValueError("Неверный тип комплектации.")
 
         self.company_id = company_id
         self.complectation = complectation
-        self.id = self.__db_object__.max_id_in_table(self.__tablename__) + 1
 
         if complectation is not None:
             production: Production = RESOURCES.get_resource(complectation).production # type: ignore
@@ -53,21 +56,18 @@ class Factory(BaseClass):
             turns = production.turns if production else 0
             self.progress = [0, turns]
 
-        self.save_to_base()
-        self.reupdate()
-
-        asyncio.create_task(websocket_manager.broadcast({
+        await self.insert()
+        await websocket_manager.broadcast({
             "type": "api-factory-create",
             "data": {
-                "factory": self.to_dict(),
+                "factory": await self.to_dict(),
                 "company_id": self.company_id
             }
-        }))
-
+        })
         return self
 
     @property
-    def is_working(self) -> bool:
+    async def is_working(self) -> bool:
         """ Проверка, работает ли фабрика
         """
 
@@ -80,19 +80,24 @@ class Factory(BaseClass):
         if not self.produce and not self.is_auto: # Если не производит и не авто
             return False
 
-        if not self.check_materials(): # Если нет материалов
+        if not await self.check_materials(): # Если нет материалов
             return False
 
         return True
 
-    def pere_complete(self, new_complectation: str):
+    async def pere_complete(self, new_complectation: str):
         """ Перекомплектация фабрики
         """
+        from game.company import Company
+        
         if new_complectation not in RESOURCES.resources:
             raise ValueError("Неверный тип комплектации.")
 
         # Проверяем, что ресурс не является сырьем
         new_resource = RESOURCES.get_resource(new_complectation)
+        if new_resource is None:
+            raise ValueError("Ресурс не найден.")
+        
         if new_resource.raw:
             raise ValueError("Невозможно производить сырьевые ресурсы.")
 
@@ -109,49 +114,76 @@ class Factory(BaseClass):
         else:
             self.complectation_stages = new_level
 
+        company = await Company(self.company_id).reupdate()
+        mod_speed = 1.0
+        if company:
+            if company.fast_complectation:
+                mod_speed = SETTINGS.fast_complectation
+
+        self.complectation_stages = max(1, 
+                int(self.complectation_stages // mod_speed))
+
         self.complectation = new_complectation
         production: Production = new_resource.production # type: ignore
         self.progress = [0, production.turns]
 
-        self.save_to_base()
-
-        asyncio.create_task(websocket_manager.broadcast({
+        await self.save_to_base()
+        await websocket_manager.broadcast({
             "type": "api-factory-start-complectation",
             "data": {
             'factory_id': self.id,
             'company_id': self.company_id
             }
-        }))
+        })
         return True
 
-    def on_new_game_stage(self):
+    async def on_new_game_stage(self):
         from game.company import Company
         from game.session import Session
 
-        company = Company(self.company_id).reupdate()
+        company = await Company(self.company_id).reupdate()
         if not company:
             return False
-        
-        session = Session(company.session_id).reupdate()
+
+        session = await Session(company.session_id).reupdate()
         if not session:
             return False
+        
+        self.event_stack = []  # Очищаем стэк событий компании
+        await self.save_to_base()
 
         # Этап комплектации
         if self.complectation_stages > 0:
             self.complectation_stages -= 1
-            self.save_to_base()
+            await self.save_to_base()
 
             if self.complectation_stages == 0:
-                asyncio.create_task(websocket_manager.broadcast({
+                await websocket_manager.broadcast({
                     "type": "api-factory-end-complectation",
                     "data": {
                         'factory_id': self.id,
                         'company_id': self.company_id
                     }
-                }))
+                })
+
+                self.event_stack.append({
+                    "type": "complectation_completed",
+                })
+                await self.save_to_base()
+                return True
+
+            else:
+                self.event_stack.append({
+                    "type": "complectation_progress",
+                    "data": {
+                        "stages_left": self.complectation_stages
+                    }
+                })
+                await self.save_to_base()
+                return True
 
         # Этап производства
-        elif self.is_working:
+        elif await self.is_working:
             resource = RESOURCES.get_resource(self.complectation) # type: ignore
 
             # Снимаем материалы со склада компании при первом ходе производства
@@ -160,8 +192,17 @@ class Factory(BaseClass):
 
                 for mat, qty in materials.items():
                     try:
-                        company.remove_resource(mat, qty)
+                        await company.remove_resource(mat, qty)
                     except Exception as e:
+                        self.event_stack.append({
+                            "type": "material_removal_failed",
+                            "data": {
+                                "material": mat,
+                                "quantity": qty,
+                                "error": str(e)
+                            }
+                        })
+                        await self.save_to_base()
                         return False
 
             tasks_speed = session.get_event_effects().get(
@@ -175,52 +216,88 @@ class Factory(BaseClass):
 
                 # Добавляем продукцию на склад компании
                 if self.complectation:
-                    try:
-                        company.add_resource(
-                            self.complectation, output)
-                        self.produced += output
-                    except Exception as e:
-                        max_col = company.get_warehouse_free_size()
-                        if max_col > 0:
-                            company.add_resource(
-                                self.complectation, max_col)
-                            self.produced += max_col
+                    free_space = await company.get_warehouse_free_size()
+                    add_min = min(output, free_space)
+                    await company.add_resource(
+                            self.complectation, add_min,
+                            )
+
+                    self.produced += add_min
+                    self.event_stack.append({
+                        "type": "production_completed",
+                        "data": {
+                            "product": self.complectation,
+                            "added": add_min,
+                            "output": output
+                        }
+                    })
+
+                    st = await Statistic.get_latest_by_company(
+                        session_id=company.session_id,
+                        company_id=company.id
+                    )
+                    if st:
+                        await Statistic.update_me(
+                            company_id=company.id,
+                            session_id=company.session_id,
+                            step=session.step,
+                            total_products_produced=add_min
+                        )
 
                 self.progress[0] = 0
 
                 # Если авто, то проверяем материалы и продолжаем производство, если есть материалы
-                if self.is_auto and self.check_materials():
+                if self.is_auto and await self.check_materials():
                     self.produce = True
+
+                    self.event_stack.append({
+                        "type": "production_continued",
+                    })
+
                 else:
                     self.produce = False
+                    self.is_auto = False
 
-                asyncio.create_task(websocket_manager.broadcast({
+                    self.event_stack.append({
+                        "type": "production_stopped",
+                    })
+
+                await websocket_manager.broadcast({
                     "type": "api-factory-end-production",
                     "data": {
                         'factory_id': self.id,
                         'company_id': self.company_id
                     }
-                }))
+                })
 
-            self.save_to_base()
+            else:
+                self.event_stack.append({
+                    "type": "production_progress",
+                    "data": {
+                        "progress": self.progress[0],
+                        "required": self.progress[1]
+                    }
+                })
+
+            await self.save_to_base()
         return True
 
-    def set_produce(self, produce: bool):
+    async def set_produce(self, produce: bool):
         """ Установка статуса производства фабрики
         """
         if self.progress[0] == 0:
             self.produce = produce
-            self.save_to_base()
+            await self.save_to_base()
         else:
             raise ValueError("Нельзя изменить статус производства во время производства.")
 
-    def set_auto(self, is_auto: bool):
+    async def set_auto(self, is_auto: bool):
         """ Установка статуса автоматического производства фабрики
         """
         self.is_auto = is_auto
-        self.save_to_base()
+        await self.save_to_base()
 
-    def check_materials(self):
+    async def check_materials(self):
         """ Проверка наличия материалов для производства
         """
         from game.company import Company
@@ -233,7 +310,7 @@ class Factory(BaseClass):
 
         materials = resource.production.materials # type: ignore
 
-        company = Company(self.company_id).reupdate()
+        company = await Company(self.company_id).reupdate()
         all_good = True
         for mat, qty in materials.items():
             if company.warehouses.get(mat, 0) < qty:
@@ -242,7 +319,7 @@ class Factory(BaseClass):
 
         return all_good
 
-    def to_dict(self) -> dict:
+    async def to_dict(self) -> dict:
         """ Получение статуса фабрики
         """
         return {
@@ -253,25 +330,27 @@ class Factory(BaseClass):
             "produce": self.produce,
             "is_auto": self.is_auto,
             "complectation_stages": self.complectation_stages,
-            "is_working": self.is_working,
-            "check_materials": self.check_materials() if self.complectation else False
+            "is_working": await self.is_working,
+            "check_materials": await self.check_materials() if self.complectation else False,
+            "event_stack": self.event_stack,
+            "produced": self.produced
         }
 
-    def delete(self):
+    async def delete(self):
         """ Удаление фабрики
         """
         company_id = self.company_id
         factory_id = self.id
 
-        self.__db_object__.delete(self.__tablename__, 
+        await self.__db_object__.delete(self.__tablename__, 
                                   **{self.__unique_id__: self.id})
 
-        asyncio.create_task(websocket_manager.broadcast({
+        await websocket_manager.broadcast({
             "type": "api-factory-delete",
             "data": {
                 "factory_id": factory_id,
                 "company_id": company_id
             }
-        }))
+        })
 
         return True

@@ -4,7 +4,6 @@ from modules.ws_client import get_company, company_take_credit, company_pay_cred
 from oms.utils import callback_generator
 from global_modules.bank import get_credit_conditions, calc_credit, CAPITAL
 from global_modules.load_config import ALL_CONFIGS
-from pprint import pprint
 
 class BankCreditPage(Page):
     
@@ -13,7 +12,7 @@ class BankCreditPage(Page):
     async def content_worker(self):
         scene_data = self.scene.get_data('scene')
         company_id = scene_data.get('company_id')
-        session_id = scene_data.get('session_id')
+        session_id = scene_data.get('session')
         
         if not company_id:
             return "❌ Ошибка: компания не найдена"
@@ -65,7 +64,7 @@ class BankCreditPage(Page):
             text += f"✅ {success_message}\n\n"
             # Очищаем сообщение после показа
             scene_data['success_message'] = ''
-            self.scene.set_data('scene', scene_data)
+            await self.scene.set_data('scene', scene_data)
         
         # Получаем условия кредитования
         try:
@@ -102,7 +101,7 @@ class BankCreditPage(Page):
                 text += f"*Кредит #{i}*\n"
                 text += f"Осталось выплатить: {remaining:,} 💰 (из {total:,})\n".replace(",", " ")
                 text += f"Текущий платеж: {need_pay:,} 💰\n".replace(",", " ")
-                text += f"Ходов до закрытия: {steps_left}/{steps_total}\n"
+                text += f"Ходов до закрытия: {max(0, steps_left)}/{steps_total}\n"
                 
                 if need_pay > 0:
                     text += "⚠️ *Требуется оплата!*\n"
@@ -128,7 +127,7 @@ class BankCreditPage(Page):
 *Шаг 1: Введите срок кредита*
 
 На какое количество ходов хотите взять кредит?
-Минимум: 1 ход
+Минимум: 2 ход
 Максимум: {max_period} ход(ов)
 (Текущий ход: {current_step}, до конца игры: {max_period})"""
         
@@ -240,6 +239,7 @@ class BankCreditPage(Page):
         
         # Кнопки для основного экрана
         if credit_state == 'main':
+            self.row_width = 1
             # Получаем данные компании
             company_data = await get_company(id=company_id)
             
@@ -283,6 +283,7 @@ class BankCreditPage(Page):
         
         # Кнопки для экранов ввода - добавляем кнопку отмены
         elif credit_state in ['input_period', 'input_amount', 'pay_amount']:
+            self.row_width = 2
             buttons = [
                 {
                     'text': '❌ Отменить',
@@ -295,6 +296,7 @@ class BankCreditPage(Page):
         
         # Кнопки для экрана подтверждения
         elif credit_state == 'confirm':
+            self.row_width = 1
             buttons = [
                 {
                     'text': '✅ Да, взять кредит',
@@ -311,8 +313,6 @@ class BankCreditPage(Page):
                     )
                 }
             ]
-        
-        self.row_width = 1
         return buttons
     
     @Page.on_callback('take_credit')
@@ -352,7 +352,7 @@ class BankCreditPage(Page):
         # Устанавливаем состояние ожидания ввода срока
         scene_data['credit_state'] = 'input_period'
         scene_data['error_message'] = ''  # Очищаем ошибки
-        self.scene.set_data('scene', scene_data)
+        await self.scene.set_data('scene', scene_data)
         
         # Обновляем сообщение для показа инструкции
         await self.scene.update_message()
@@ -405,7 +405,7 @@ class BankCreditPage(Page):
         scene_data['pay_credit_index'] = credit_index
         scene_data['credit_state'] = 'pay_amount'
         scene_data['error_message'] = ''  # Очищаем ошибки
-        self.scene.set_data('scene', scene_data)
+        await self.scene.set_data('scene', scene_data)
         
         # Обновляем сообщение для показа экрана ввода суммы
         await self.scene.update_message()
@@ -449,7 +449,7 @@ class BankCreditPage(Page):
             scene_data['credit_state'] = 'main'
             scene_data['credit_amount'] = 0
             scene_data['credit_period'] = 0
-            self.scene.set_data('scene', scene_data)
+            await self.scene.set_data('scene', scene_data)
             await self.scene.update_message()
         else:
             await callback.answer(
@@ -462,7 +462,7 @@ class BankCreditPage(Page):
             scene_data['credit_state'] = 'main'
             scene_data['credit_amount'] = 0
             scene_data['credit_period'] = 0
-            self.scene.set_data('scene', scene_data)
+            await self.scene.set_data('scene', scene_data)
             await self.scene.update_message()
     
     @Page.on_callback('cancel_credit')
@@ -474,7 +474,7 @@ class BankCreditPage(Page):
         scene_data['credit_period'] = 0
         scene_data['pay_credit_index'] = 0
         scene_data['error_message'] = ''  # Очищаем ошибки
-        self.scene.set_data('scene', scene_data)
+        await self.scene.set_data('scene', scene_data)
         
         await callback.answer("❌ Операция отменена")
         await self.scene.update_message()
@@ -485,16 +485,16 @@ class BankCreditPage(Page):
         scene_data = self.scene.get_data('scene')
         credit_state = scene_data.get('credit_state', 'main')
         company_id = scene_data.get('company_id')
-        session_id = scene_data.get('session_id')
+        session_id = scene_data.get('session')
         
         # Ввод срока кредита
         if credit_state == 'input_period':
             # Очищаем предыдущую ошибку
             scene_data['error_message'] = ''
             
-            if value < 1:
-                scene_data['error_message'] = 'Срок должен быть не менее 1 хода'
-                self.scene.set_data('scene', scene_data)
+            if value < 2:
+                scene_data['error_message'] = 'Срок должен быть не менее 2 хода'
+                await self.scene.set_data('scene', scene_data)
                 await self.scene.update_message()
                 return
             
@@ -503,7 +503,7 @@ class BankCreditPage(Page):
             session_data = await get_session(session_id=session_id)
             if isinstance(company_data, str):
                 scene_data['error_message'] = f'Ошибка: {company_data}'
-                self.scene.set_data('scene', scene_data)
+                await self.scene.set_data('scene', scene_data)
                 await self.scene.update_message()
                 return
             
@@ -513,14 +513,14 @@ class BankCreditPage(Page):
             
             if value > max_period:
                 scene_data['error_message'] = f'Срок не может превышать {max_period} ход(ов)! (Текущий ход: {current_step}, до конца игры: {max_period})'
-                self.scene.set_data('scene', scene_data)
+                await self.scene.set_data('scene', scene_data)
                 await self.scene.update_message()
                 return
             
             # Сохраняем срок и переходим к вводу суммы
             scene_data['credit_period'] = value
             scene_data['credit_state'] = 'input_amount'
-            self.scene.set_data('scene', scene_data)
+            await self.scene.set_data('scene', scene_data)
             
             # Обновляем сообщение для показа следующего шага
             await self.scene.update_message()
@@ -536,20 +536,20 @@ class BankCreditPage(Page):
             
             if value < min_credit:
                 scene_data['error_message'] = f'Минимальная сумма кредита: {min_credit:,} 💰'.replace(",", " ")
-                self.scene.set_data('scene', scene_data)
+                await self.scene.set_data('scene', scene_data)
                 await self.scene.update_message()
                 return
             
             if value > max_credit:
                 scene_data['error_message'] = f'Максимальная сумма кредита: {max_credit:,} 💰'.replace(",", " ")
-                self.scene.set_data('scene', scene_data)
+                await self.scene.set_data('scene', scene_data)
                 await self.scene.update_message()
                 return
             
             # Сохраняем сумму и переходим к подтверждению
             scene_data['credit_amount'] = value
             scene_data['credit_state'] = 'confirm'
-            self.scene.set_data('scene', scene_data)
+            await self.scene.set_data('scene', scene_data)
             
             # Обновляем сообщение для показа экрана подтверждения
             await self.scene.update_message()
@@ -563,7 +563,7 @@ class BankCreditPage(Page):
             company_data = await get_company(id=company_id)
             if isinstance(company_data, str):
                 scene_data['error_message'] = f'Ошибка: {company_data}'
-                self.scene.set_data('scene', scene_data)
+                await self.scene.set_data('scene', scene_data)
                 await self.scene.update_message()
                 return
             
@@ -573,7 +573,7 @@ class BankCreditPage(Page):
             
             if pay_credit_index >= len(credits):
                 scene_data['error_message'] = 'Ошибка: кредит не найден'
-                self.scene.set_data('scene', scene_data)
+                await self.scene.set_data('scene', scene_data)
                 await self.scene.update_message()
                 return
             
@@ -586,21 +586,21 @@ class BankCreditPage(Page):
             # Проверяем минимальную сумму (текущий платеж)
             if value < need_pay:
                 scene_data['error_message'] = f'Минимальная сумма оплаты: {need_pay:,} 💰 (текущий платеж)'.replace(",", " ")
-                self.scene.set_data('scene', scene_data)
+                await self.scene.set_data('scene', scene_data)
                 await self.scene.update_message()
                 return
             
             # Проверяем, что сумма не превышает остаток
             if value > remaining:
                 scene_data['error_message'] = f'Сумма превышает остаток по кредиту! Осталось выплатить: {remaining:,} 💰'.replace(",", " ")
-                self.scene.set_data('scene', scene_data)
+                await self.scene.set_data('scene', scene_data)
                 await self.scene.update_message()
                 return
             
             # Проверяем баланс
             if value > balance:
                 scene_data['error_message'] = f'Недостаточно средств! Необходимо: {value:,} 💰, Доступно: {balance:,} 💰'.replace(",", " ")
-                self.scene.set_data('scene', scene_data)
+                await self.scene.set_data('scene', scene_data)
                 await self.scene.update_message()
                 return
             
@@ -613,12 +613,12 @@ class BankCreditPage(Page):
             
             if isinstance(result, str):
                 scene_data['error_message'] = f'Ошибка: {result}'
-                self.scene.set_data('scene', scene_data)
+                await self.scene.set_data('scene', scene_data)
                 await self.scene.update_message()
             else:
                 # Успешная оплата - показываем уведомление и возвращаемся к главному экрану
                 scene_data['credit_state'] = 'main'
                 scene_data['pay_credit_index'] = 0
                 scene_data['success_message'] = f'Платеж выполнен: {value:,} 💰'.replace(",", " ")
-                self.scene.set_data('scene', scene_data)
+                await self.scene.set_data('scene', scene_data)
                 await self.scene.update_message()

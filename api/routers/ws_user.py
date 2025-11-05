@@ -2,7 +2,7 @@ from modules.websocket_manager import websocket_manager
 from game.user import User
 from modules.check_password import check_password
 from modules.ws_hadnler import message_handler
-from modules.json_database import just_db
+from modules.db import just_db
 from game.session import Session, session_manager
 
 @message_handler(
@@ -22,7 +22,7 @@ async def handle_get_users(client_id: str, message: dict):
     }
 
     # Получаем список пользователей из базы данных
-    users = just_db.find('users',
+    users = await just_db.find('users',
                          to_class=User,
                          **{k: v for k, v in conditions.items() if v is not None})
 
@@ -49,7 +49,7 @@ async def handle_get_user(client_id: str, message: dict):
     }
 
     # Получаем пользователя из базы данных
-    user = just_db.find_one('users',
+    user = await just_db.find_one('users',
                             to_class=User,
                          **{k: v for k, v in conditions.items() if v is not None})
 
@@ -81,7 +81,7 @@ async def handle_create_user(client_id: str, message: dict):
     try:
         check_password(password)
 
-        user = User().create(_id=user_id, 
+        user = await User().create(id=user_id, 
                             username=username, 
                             session_id=session_id)
 
@@ -121,15 +121,15 @@ async def handle_update_user(client_id: str, message: dict):
     try:
         check_password(password)
 
-        old_user = User(_id=user_id).reupdate()
+        old_user = await User(id=user_id).reupdate()
         if not old_user: raise ValueError("Пользователь не найден.")
 
-        just_db.update("users",
+        await just_db.update("users",
                 {"id": user_id}, 
             {k: v for k, v in updates.items() if v is not None}
                        )
 
-        new_user = User(_id=user_id).reupdate()
+        new_user = await User(id=user_id).reupdate()
 
     except ValueError as e:
         return {"error": str(e)}
@@ -166,10 +166,10 @@ async def handle_delete_user(client_id: str, message: dict):
     try:
         check_password(password)
 
-        user = User(_id=user_id).reupdate()
+        user = await User(id=user_id).reupdate()
         if not user: raise ValueError("Пользователь не найден.")
 
-        user.delete()
+        await user.delete()
 
     except ValueError as e:
         return {"error": str(e)}

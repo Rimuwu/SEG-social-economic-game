@@ -1,8 +1,12 @@
-from modules import websocket_manager
+from modules.websocket_manager import websocket_manager
 from modules.ws_hadnler import message_handler
-from modules.json_database import just_db
+from modules.db import just_db
 from game.session import session_manager, Session, SessionStages
 from modules.check_password import check_password
+from game.statistic import Statistic
+
+from global_modules.load_config import ALL_CONFIGS, Settings
+settings: Settings = ALL_CONFIGS['settings']
 
 @message_handler(
     "get-sessions", 
@@ -19,11 +23,11 @@ async def handle_get_sessions(client_id: str, message: dict):
     }
 
     # Получаем список сессий из базы данных
-    sessions = just_db.find('sessions',
+    sessions = await just_db.find('sessions',
                             to_class=Session,
                          **{k: v for k, v in conditions.items() if v is not None})
 
-    return [s.to_dict() for s in sessions]
+    return [await s.to_dict() for s in sessions]
 
 @message_handler(
     "get-session", 
@@ -42,17 +46,27 @@ async def handle_get_session(client_id: str, message: dict):
     }
 
     # Получаем сессию из базы данных
-    session = just_db.find_one('sessions',
+    session = await just_db.find_one('sessions',
                                to_class=Session,
                          **{k: v for k, v in conditions.items() if v is not None})
 
-    return session.to_dict() if session else None
+    return await session.to_dict() if session else None
 
 @message_handler(
     "create-session", 
     doc="Обработчик создания сессии. Отправляет ответ на request_id. Требуется пароль для взаимодействия.",
     datatypes=[
         "session_id: Optional[str]",
+        
+        "map_pattern: Optional[str]",
+        "size: Optional[int]",
+        "max_steps: Optional[int]",
+        "session_group_url: Optional[str]",
+        "max_companies: Optional[int]",
+        "max_players_in_company: Optional[int]",
+        "time_on_game_stage: Optional[int]",
+        "time_on_change_stage: Optional[int]",
+
         "password: str",
         "request_id: str"
     ]
@@ -62,18 +76,39 @@ async def handle_create_session(client_id: str, message: dict):
 
     session_id = message.get("session_id", "")
     password = message.get("password", "")
-    
+
+    map_pattern = message.get('map_pattern', 'random')
+    size = message.get('size', 7)
+    max_steps = message.get('max_steps', 15)
+    session_group_url = message.get(
+        'session_group_url', '')
+    max_companies = message.get('max_companies', 
+                                settings.max_companies)
+    max_players_in_company = message.get('max_players_in_company', 
+                                         settings.max_players_in_company)
+    time_on_game_stage = message.get('time_on_game_stage', 
+                                    settings.time_on_game_stage)
+    time_on_change_stage = message.get('time_on_change_stage', 
+                                    settings.time_on_change_stage)
+
     try:
         check_password(password)
+
+        session = await session_manager.create_session(
+            session_id=session_id,
+            map_pattern=map_pattern,
+            size=size,
+            max_steps=max_steps,
+            session_group_url=session_group_url,
+            max_companies=max_companies,
+            max_players_in_company=max_players_in_company,
+            time_on_game_stage=time_on_game_stage,
+            time_on_change_stage=time_on_change_stage
+        )
     except ValueError as e:
         return {"error": str(e)}
 
-    try:
-        session = session_manager.create_session(session_id=session_id)
-    except ValueError as e:
-        return {"error": str(e)}
-
-    return {"session": session.to_dict()}
+    return await session.to_dict()
 
 @message_handler(
     "update-session-stage", 
@@ -104,13 +139,13 @@ async def handle_update_session_stage(client_id: str, message: dict):
     try:
         check_password(password)
 
-        session = session_manager.get_session(session_id=session_id)
+        session = await session_manager.get_session(session_id=session_id)
         if not session: raise ValueError("Сессия не найдена.")
 
         if stage not in stages_to_types:
             raise ValueError("Неверное значение стадии.")
 
-        session.update_stage(stages_to_types[stage], 
+        await session.update_stage(stages_to_types[stage], 
                              not add_shedule)
     except ValueError as e:
         return {"error": str(e)}
@@ -131,10 +166,10 @@ async def handle_get_sessions_free_cells(
     session_id = message.get("session_id", "")
 
     try:
-        session = session_manager.get_session(session_id=session_id)
+        session = await session_manager.get_session(session_id=session_id)
         if not session: raise ValueError("Сессия не найдена.")
 
-        free_cells = session.get_free_cells()
+        free_cells = await session.get_free_cells()
         return {"free_cells": free_cells}
 
     except ValueError as e:
@@ -161,13 +196,13 @@ async def handle_delete_session(
     try:
         check_password(password)
 
-        session = session_manager.get_session(session_id=session_id)
+        session = await session_manager.get_session(session_id=session_id)
         if not session: raise ValueError("Сессия не найдена.")
 
         if not really:
             raise ValueError("Требуется подтверждение для удаления сессии.")
 
-        session.delete()
+        await session.delete()
     except ValueError as e:
         return {"error": str(e)}
 
@@ -186,10 +221,10 @@ async def handle_get_session_time_to_next_stage(
 
     session_id = message.get("session_id", "")
 
-    session = session_manager.get_session(session_id=session_id)
+    session = await session_manager.get_session(session_id=session_id)
     if not session: raise ValueError("Сессия не найдена.")
 
-    t = session.get_time_to_next_stage()
+    t = await session.get_time_to_next_stage()
     return {
         "time_to_next_stage": t, 
         "stage_now": session.stage, 
@@ -213,11 +248,11 @@ async def handle_get_item_price(client_id: str, message: dict):
     item_id = message.get("item_id", "")
 
     try:
-        session = session_manager.get_session(session_id=session_id)
+        session = await session_manager.get_session(session_id=session_id)
         if not session: 
             raise ValueError("Сессия не найдена.")
 
-        price = session.get_item_price(item_id)
+        price = await session.get_item_price(item_id)
         return {
             "item_id": item_id,
             "price": price
@@ -240,11 +275,11 @@ async def handle_get_all_item_prices(client_id: str, message: dict):
     session_id = message.get("session_id", "")
 
     try:
-        session = session_manager.get_session(session_id=session_id)
+        session = await session_manager.get_session(session_id=session_id)
         if not session: 
             raise ValueError("Сессия не найдена.")
 
-        all_prices = session.get_all_item_prices_dict()
+        all_prices = await session.get_all_item_prices_dict()
         return {
             "prices": all_prices
         }
@@ -266,7 +301,7 @@ async def handle_get_session_event(client_id: str, message: dict):
     session_id = message.get("session_id", "")
 
     try:
-        session = session_manager.get_session(session_id=session_id)
+        session = await session_manager.get_session(session_id=session_id)
         if not session: 
             raise ValueError("Сессия не найдена.")
 
@@ -292,15 +327,251 @@ async def handle_get_session_leaders(client_id: str, message: dict):
     session_id = message.get("session_id", "")
 
     try:
-        session = session_manager.get_session(session_id=session_id)
+        session = await session_manager.get_session(session_id=session_id)
         if not session: 
             raise ValueError("Сессия не найдена.")
 
-        leaders = session.leaders()
+        leaders = await session.leaders()
         return {
             "capital": leaders["capital"].to_dict() if leaders["capital"] else None,
             "reputation": leaders["reputation"].to_dict() if leaders["reputation"] else None,
             "economic": leaders["economic"].to_dict() if leaders["economic"] else None
+        }
+
+    except ValueError as e:
+        return {"error": str(e)}
+
+@message_handler(
+    "get-all-session-statistics", 
+    doc="Обработчик получения всех статистических данных сессии. Отправляет ответ на request_id",
+    datatypes=[
+        "session_id: str",
+        "request_id: str",
+    ]
+)
+async def handle_get_all_statistics(client_id: str, message: dict):
+    """Обработчик получения всех статистических данных сессии"""
+
+    session_id = message.get("session_id", "")
+
+    try:
+        session = await session_manager.get_session(session_id=session_id)
+        if not session: 
+            raise ValueError("Сессия не найдена.")
+
+        st = await Statistic.get_all_by_session(session_id)
+        data_list = [s.to_dict() for s in st]
+
+        return data_list
+
+    except ValueError as e:
+        return {"error": str(e)}
+
+
+@message_handler(
+    "get-session-basic-info", 
+    doc="Обработчик получения базовой информации о сессии. Отправляет ответ на request_id",
+    datatypes=[
+        "session_id: str",
+        "request_id: str",
+    ]
+)
+async def handle_get_session_basic_info(client_id: str, message: dict):
+    """Обработчик получения базовой информации о сессии"""
+
+    session_id = message.get("session_id", "")
+
+    try:
+        session = await session_manager.get_session(session_id=session_id)
+        if not session: 
+            raise ValueError("Сессия не найдена.")
+
+        return {
+            "id": session.session_id,
+            "stage": session.stage,
+            "step": session.step,
+            "max_steps": session.max_steps,
+            "session_group_url": session.session_group_url
+        }
+
+    except ValueError as e:
+        return {"error": str(e)}
+
+
+@message_handler(
+    "get-session-map-info", 
+    doc="Обработчик получения информации о карте сессии. Отправляет ответ на request_id",
+    datatypes=[
+        "session_id: str",
+        "request_id: str",
+    ]
+)
+async def handle_get_session_map_info(client_id: str, message: dict):
+    """Обработчик получения информации о карте сессии"""
+
+    session_id = message.get("session_id", "")
+
+    try:
+        session = await session_manager.get_session(session_id=session_id)
+        if not session: 
+            raise ValueError("Сессия не найдена.")
+
+        return {
+            "cells": session.cells,
+            "map_size": session.map_size,
+            "map_pattern": session.map_pattern,
+            "cell_counts": session.cell_counts
+        }
+
+    except ValueError as e:
+        return {"error": str(e)}
+
+
+@message_handler(
+    "get-session-companies", 
+    doc="Обработчик получения компаний сессии. Отправляет ответ на request_id",
+    datatypes=[
+        "session_id: str",
+        "full_data: Optional[bool]",
+        "request_id: str",
+    ]
+)
+async def handle_get_session_companies(client_id: str, message: dict):
+    """Обработчик получения компаний сессии"""
+
+    session_id = message.get("session_id", "")
+    full_data = message.get("full_data", True)
+
+    try:
+        session = await session_manager.get_session(session_id=session_id)
+        if not session: 
+            raise ValueError("Сессия не найдена.")
+
+        companies = await session.companies
+        if full_data:
+            return {
+                "companies": [await company.to_dict() for company in companies]
+            }
+        else:
+            return {
+                "companies": [
+                    {
+                        "id": company.id,
+                        "name": company.name,
+                        "cell_position": company.cell_position,
+                        "balance": company.balance,
+                        "reputation": company.reputation,
+                        "in_prison": company.in_prison
+                    } for company in companies
+                ]
+            }
+
+    except ValueError as e:
+        return {"error": str(e)}
+
+
+@message_handler(
+    "get-session-users", 
+    doc="Обработчик получения пользователей сессии. Отправляет ответ на request_id",
+    datatypes=[
+        "session_id: str",
+        "request_id: str",
+    ]
+)
+async def handle_get_session_users(client_id: str, message: dict):
+    """Обработчик получения пользователей сессии"""
+
+    session_id = message.get("session_id", "")
+
+    try:
+        session = await session_manager.get_session(session_id=session_id)
+        if not session: 
+            raise ValueError("Сессия не найдена.")
+
+        users = await session.users
+        return {
+            "users": [user.to_dict() for user in users]
+        }
+
+    except ValueError as e:
+        return {"error": str(e)}
+
+
+@message_handler(
+    "get-session-cities", 
+    doc="Обработчик получения городов сессии. Отправляет ответ на request_id",
+    datatypes=[
+        "session_id: str",
+        "request_id: str",
+    ]
+)
+async def handle_get_session_cities(client_id: str, message: dict):
+    """Обработчик получения городов сессии"""
+
+    session_id = message.get("session_id", "")
+
+    try:
+        session = await session_manager.get_session(session_id=session_id)
+        if not session: 
+            raise ValueError("Сессия не найдена.")
+
+        cities = await session.cities
+        return {
+            "cities": [city.to_dict() for city in cities]
+        }
+
+    except ValueError as e:
+        return {"error": str(e)}
+
+
+@message_handler(
+    "notforgame-update-session-max-steps", 
+    doc="Обработчик обновления максимального количества этапов сессии. Требуется пароль для взаимодействия. НЕ ИСПОЛЬЗОВАТЬ В ИГРОВОМ ПРОЦЕССЕ!",
+    datatypes=[
+        "session_id: str",
+        "max_steps: int",
+        "password: str"
+    ],
+    messages=[]
+)
+async def handle_notforgame_update_session_max_steps(client_id: str, message: dict):
+    """Обработчик обновления максимального количества этапов сессии"""
+
+    session_id = message.get("session_id", "")
+    max_steps = message.get("max_steps", 0)
+    password = message.get("password", "")
+
+    for i in [session_id, max_steps, password]:
+        if i is None or (isinstance(i, str) and not i):
+            return {"error": "Missing required fields."}
+
+    try:
+        check_password(password)
+
+        session = await session_manager.get_session(session_id=session_id)
+        if not session:
+            return {"error": "Session not found."}
+
+        if not isinstance(max_steps, int) or max_steps <= 0:
+            return {"error": "max_steps must be a positive integer."}
+
+        old_max_steps = session.max_steps
+        session.max_steps = max_steps
+        await session.save_to_base()
+
+        await websocket_manager.broadcast({
+            "type": "api-session_max_steps_updated",
+            "data": {
+                "session_id": session.session_id,
+                "old_max_steps": old_max_steps,
+                "new_max_steps": session.max_steps
+            }
+        })
+
+        return {
+            "success": True,
+            "old_max_steps": old_max_steps,
+            "new_max_steps": session.max_steps
         }
 
     except ValueError as e:

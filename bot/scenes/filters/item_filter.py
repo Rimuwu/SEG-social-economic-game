@@ -130,8 +130,7 @@ class ItemFilter:
                 self.scene_name,
                 'filter_page',
                 str(next_page)
-            ),
-            'next_line': True  # После навигации начинается новая строка
+            )
         })
         
         # Кнопка сброса фильтра

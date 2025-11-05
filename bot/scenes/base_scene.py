@@ -24,30 +24,8 @@ class AdminScene(Scene):
         Переопределенный метод preparate_message_data
         Добавляет кнопку админ-панели для администраторов
         """
-        # Вызываем родительский метод для получения базовых данных
+        text, buttons = await super().preparate_message_data(only_buttons, raw_buttons=True)
         page = self.current_page
-        await page.data_preparate()
-
-        if not only_buttons:
-            text: str = await page.content_worker()
-        else: 
-            text = page.__page__.content
-
-        buttons: list[dict] = await page.buttons_worker()
-
-        # Добавляем кнопки перехода между страницами
-        if page.enable_topages:
-            to_pages: dict[str, str] = page.to_pages
-
-            for i, (page_name, title) in enumerate(to_pages.items()):
-                buttons.append({
-                    'text': title,
-                    'callback_data': callback_generator(
-                        self.__scene_name__, 
-                        'to_page', page_name
-                    ),
-                    'next_line': len(buttons) > 0 and i == 0
-                })
 
         # ===== ДОБАВЛЕНИЕ КНОПКИ АДМИН-ПАНЕЛИ =====
         # Проверяем, является ли пользователь администратором

@@ -1,10 +1,10 @@
 import random
 import string
 
-def generate_number(length):
+def generate_number(length) -> int:
     """Генерирует случайное число заданной длины"""
     if length <= 0:
-        return ""
+        return 0
 
     # Первая цифра не может быть 0
     first_digit = random.randint(1, 9)

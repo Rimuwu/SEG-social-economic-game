@@ -49,7 +49,10 @@ def callback_generator(scene_name: str, c_type: str, *args):
     """ prefix:type:name:*args
     """
     sep = CALLBACK_SEPARATOR
-    return f'{CALLBACK_PREFIX}{sep}{c_type}{sep}{scene_name}{sep}{":".join(map(str, args))}'
+    res = f'{CALLBACK_PREFIX}{sep}{c_type}{sep}{scene_name}{sep}{":".join(map(str, args))}'
+    if len(res) > 64:
+        raise ValueError(f"Длина callback_data ({res}) превышает {len(res)} > 64 символа.")
+    return res
 
 def func_to_str(func):
     """Преобразует функцию в строку вида 'модуль.имя_функции'."""
@@ -140,6 +143,9 @@ def parse_text(text: str, data_type: str, separator: str = ','):
 def prepare_image(image_path: str):
     """Подготавливает изображение для отправки в Telegram"""
     if not image_path:
+        return None
+
+    if not isinstance(image_path, str):
         return None
 
     # Если это URL

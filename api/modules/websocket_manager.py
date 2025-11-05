@@ -1,8 +1,7 @@
 from fastapi import WebSocket, WebSocketDisconnect
 from typing import Dict, List, Any
 import json
-from global_modules.logs import main_logger
-
+from modules.logs import websocket_logger
 
 class WebSocketManager:
     """Менеджер для управления WebSocket соединениями"""
@@ -30,11 +29,11 @@ class WebSocketManager:
                 await self.disconnect(client_id)
 
             self.active_connections[client_id] = websocket
-            main_logger.info(f"WebSocket подключение установлено для клиента: {client_id}")
+            websocket_logger.info(f"WebSocket подключение установлено для клиента: {client_id}")
             return True
 
         except Exception as e:
-            main_logger.error(f"Ошибка при подключении WebSocket для {client_id}: {e}")
+            websocket_logger.error(f"Ошибка при подключении WebSocket для {client_id}: {e}")
             return False
 
     async def disconnect(self, client_id: str) -> bool:
@@ -56,14 +55,14 @@ class WebSocketManager:
                     pass  # Соединение уже может быть закрыто
 
                 del self.active_connections[client_id]
-                main_logger.info(f"WebSocket соединение закрыто для клиента: {client_id}")
+                websocket_logger.info(f"WebSocket соединение закрыто для клиента: {client_id}")
                 return True
 
-            main_logger.warning(f"Попытка отключить несуществующее соединение: {client_id}")
+            websocket_logger.warning(f"Попытка отключить несуществующее соединение: {client_id}")
             return False
 
         except Exception as e:
-            main_logger.error(f"Ошибка при отключении WebSocket для {client_id}: {e}")
+            websocket_logger.error(f"Ошибка при отключении WebSocket для {client_id}: {e}")
             return False
 
     async def send_message(self, client_id: str, message: Any, log: bool = True) -> bool:
@@ -79,7 +78,7 @@ class WebSocketManager:
         """
         try:
             if client_id not in self.active_connections:
-                main_logger.warning(f"Попытка отправить сообщение несуществующему клиенту: {client_id}")
+                websocket_logger.warning(f"Попытка отправить сообщение несуществующему клиенту: {client_id}")
                 return False
 
             websocket = self.active_connections[client_id]
@@ -91,16 +90,16 @@ class WebSocketManager:
                 await websocket.send_text(json.dumps(message, ensure_ascii=False))
 
             if log:
-                main_logger.info(f"Sent message to {client_id}")
+                websocket_logger.info(f"Sent message to {client_id}")
 
             return True
 
         except WebSocketDisconnect:
-            main_logger.warning(f"Клиент {client_id} отключился")
+            websocket_logger.warning(f"Клиент {client_id} отключился")
             await self.disconnect(client_id)
             return False
         except Exception as e:
-            main_logger.error(f"Ошибка при отправке сообщения клиенту {client_id}: {e}\nmessage: {message}")
+            websocket_logger.error(f"Ошибка при отправке сообщения клиенту {client_id}: {e}\nmessage: {message}")
             # await self.disconnect(client_id)
             return False
 
@@ -127,8 +126,8 @@ class WebSocketManager:
                 if await self.send_message(client_id, message, False):
                     success_count += 1
 
-        # main_logger.info(
-        #     f"Broadcast ({message['type']}) for {success_count} clients")
+        websocket_logger.info(
+            f"Broadcast ({message['type']}) for {success_count} clients")
         return success_count
 
     def get_connected_clients(self) -> List[str]:

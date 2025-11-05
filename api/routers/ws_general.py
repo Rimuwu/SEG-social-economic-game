@@ -2,9 +2,7 @@
 
 from modules.websocket_manager import websocket_manager
 from modules.ws_hadnler import message_handler
-from global_modules.logs import main_logger
-from game.session import Session
-from modules.json_database import just_db
+from modules.logs import websocket_logger
 
 @message_handler(
     "ping", 
@@ -20,4 +18,4 @@ async def handle_ping(client_id: str, message: dict):
     }
 
     await websocket_manager.send_message(client_id, pong_message)
-    main_logger.debug(f"Отправлен pong клиенту {client_id}")
+    websocket_logger.debug(f"Отправлен pong клиенту {client_id}")

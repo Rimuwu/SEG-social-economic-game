@@ -1,14 +1,14 @@
-from fastapi import APIRouter, FastAPI
+from fastapi import APIRouter, FastAPI, Request, HTTPException
+from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
+import traceback
 
 def get_fastapi_app(
         title: str,
         version: str,
         description: str,
         debug: bool = False,
-        limiter: bool = False,
         lifespan: any = None,
-        middlewares: list[BaseHTTPMiddleware] = None,
         routers: list[APIRouter] = None,
         api_logger = None
     ):
@@ -24,13 +24,6 @@ def get_fastapi_app(
 
     if api_logger:
         app.state.logger = api_logger
-
-    if limiter: 
-        from global_modules.limiter import setup_rate_limiter
-        setup_rate_limiter(app)
-
-    for middleware in middlewares:
-        app.add_middleware(middleware)
 
     for router in routers:
         app.include_router(router)

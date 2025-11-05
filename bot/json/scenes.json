@@ -6,12 +6,12 @@
         },
         "pages": {
             "start": {
-                "title": "",
+                "image": "img/end_game.png",
                 "content": "Введиие код для подключения к игровой сессии: ",
                 "to_pages": {}
             },
             "name-enter": {
-                "title": "",
+                "image": "img/end_game.png",
                 "content": "Подключение успешно\nВведите ваше имя для продолжения: ",
                 "to_pages": {
                     "start": "Указать другой код"
@@ -19,7 +19,6 @@
             },
             "company-option": { 
                 "image": "img/main_company.png",
-                "title": "",
                 "content": "Выберите - создать или присоединиться",
                 "to_pages": {
                     "company-create": "Создать",
@@ -28,51 +27,43 @@
             },
             "company-create": {
                 "image": "img/main_company.png",
-                "title": "",
                 "content": "Введите название компании: ",
                 "to_pages": {
                     "company-option": "Вернуться к выбору"
                 }
             },
             "company-join": {
-                "image": "img\\main_company.png",
-                "title": "",
+                "image": "img/main_company.png",
                 "content": "Введите секретный код: ",
                 "to_pages": {
                     "company-option": "Вернуться к выбору"
                 }
             },
             "wait-start-page": {
-                "image": "img\\cellselect_start.png",
-                "title": "",
+                "image": "img/cellselect_start.png",
                 "content": "*Ожидание начала игры...*\n\n"
             },
             "select-cell-page": {
-                "image": "img\\cellselect_start.png",
-                "title": "",
+                "image": "img/cellselect_start.png",
                 "content": "Выберите клетку, на которой будет ваша располагаться ваша компания: ",
                 "to_pages": {}
             },
             "wait-select-cell-page": {
-                "image": "img\\cellselect_start.png",
-                "title": "",
+                "image": "img/mejturn.png",
                 "content": "Ожидание выбора клетки владельцем...",
                 "to_pages": {}
             },
             "wait-game-stage-page": {
-                "image": "img\\cellselect_start.png",
-                "title": "",
+                "image": "img/cellselect_start.png",
                 "content": "Вы выбрали клетку. Ожидание начала игрового этапа...",
                 "to_pages": {}
             },
             "main-page":{ 
                 "image": "img/main_company.png",
-                "title": "",
                 "content": "Меню управления компанией",
                 "to_pages": {
                     "bank-menu": "🏦 Банк",
                     "exchange-page": "📈 Биржа",
-                    "contract-main-page": "📋 Контракты",
                     "factory-menu": "🏭 Управление заводами",
                     "upgrade-menu": "🔧 Улучшения",
                     "about-info-menu": "👥 Общая информация",
@@ -82,7 +73,7 @@
                 "row_width": 2
             },
             "about-info-menu": {
-                "title": "",
+                "image": "img/about_company.png",
                 "content": "jh",
                 "to_pages": {
                     "about-turn-page": "О этапе",
@@ -93,111 +84,126 @@
                 }
             },
             "cells-info-page": {
-                "title": "",
+                "image": "img/cellselect_start.png",
                 "content": "",
                 "to_pages": {
                     "about-info-menu": "↪️ Назад"
                 }
             },
             "inventory-page": {
-                "title": "",
+                "image": "img/inventory.png",
                 "content": "",
                 "to_pages": {
                     "about-info-menu": "↪️ Назад"
                 }
             },
             "bank-menu": {
-                "title": "",
+                "image": "img/bank.png",
                 "content": "",
                 "to_pages": {
                     "main-page": "↪️ Назад"
                 }
             },
             "bank-credit-page": {
-                "title": "",
+                "image": "img/bank.png",
                 "content": "",
                 "to_pages": {
                     "bank-menu": "↪️ Назад"
                 }
             },
             "bank-credit-amount": {
-                "title": "",
+                "image": "img/bank.png",
                 "content": "",
                 "to_pages": {
                     "bank-credit-page": "↪️ Назад"
                 }
             },
             "bank-credit-period": {
-                "title": "",
+                "image": "img/bank.png",
                 "content": "",
                 "to_pages": {
                     "bank-credit-amount": "↪️ Назад"
                 }
             },
             "bank-deposit-page": {
-                "title": "",
+                "image": "img/bank.png",
                 "content": ""
             },
             "exchange-page": {
-                "title": "",
+                "image": "img/exchange.png",
                 "content": ""
             },
-            "contract-main-page": {
-                "title": "",
+            "upgrade-menu": {
+                "image": "img/upgrade.png",
                 "content": "",
                 "to_pages": {
                     "main-page": "↪️ Назад"
                 }
+            },
+            "logistics-menu": {
+                "image": "img/exchange.png",
+                "content": ""
             },
             "factory-menu": {
-                "title": "",
+                "image": "img/main_company.png",
                 "content": "",
                 "to_pages": {
                     "main-page": "↪️ Назад"
                 }
             },
-            "factory-rekit-groups": {
+            "contract-view-page": {
                 "title": "",
+                "content": "",
+                "to_pages": {
+                    "contract-main-page": "↪️ Назад"
+                }
+            },
+            "factory-change-mode": {
+                "image": "img/main_company.png",
+                "content": ""
+            },
+            "factory-rekit-groups": {
+                "image": "img/main_company.png",
                 "content": ""
             },
             "factory-rekit-count": {
-                "title": "",
+                "image": "img/main_company.png",
                 "content": ""
             },
             "factory-rekit-resource": {
-                "title": "",
+                "image": "img/main_company.png",
                 "content": ""
             },
             "factory-rekit-produce": {
-                "title": "",
+                "image": "img/main_company.png",
                 "content": ""
             },
             "factory-start-groups": {
-                "title": "",
+                "image": "img/main_company.png",
                 "content": ""
             },
             "change-turn-page": {
-                "title": "",
+                "image": "img/mejturn.png",
                 "content": "*Смена хода...*\n\n"
             },
             "prison-page": {
-                "title": "",
+                "image": "img/prison.png",
                 "content": "Вы находитесь в тюрьме."
             },
             "end-game-page": {
-                "title": "",
+                "image": "img/end_game.png",
                 "content": "Игра завершена!"
             },
             "admin-panel-page": {
-                "title": "",
+                "image": "img/end_game.png",
                 "content": "Админ панель"
             },
             "city-page": {
-                "title": "",
+                "image": "img/cities.png",
                 "content": ""
             },
             "about-turn-page": {
-                "title": "",
+                "image": "img/about_turn.png",
                 "content": "",
                 "to_pages": {
                     "about-info-menu": "↪️ Назад"
@@ -212,11 +218,9 @@
         },
         "pages": {
             "game-info-page": {
-                "title": "",
                 "content": ""
             },
             "admin-panel-page": {
-                "title": "",
                 "content": "Админ панель"
             }
         }

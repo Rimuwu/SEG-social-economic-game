@@ -251,6 +251,19 @@ async def confirm_leave(message: Message, state: FSMContext):
     await state.clear()
 
     
+@dp.message(Command("prevpage"))
+async def go_previous_page(message: Message):
+    """Возвращает пользователя на предыдущую страницу сцены."""
+    user_id = message.from_user.id
+
+    scene = scene_manager.get_scene(user_id)
+    scene_data = scene.get_data('scene') or {}
+    try:
+        await scene.update_page("main-page")
+    except Exception as exc:  # noqa: BLE001
+        await message.answer(f"Не удалось переключиться: {exc}")
+
+
 # http://localhost:81/ws/status - тут можно посмотреть статус вебсокета и доступные типы для отправки сообщений через send_message
 @dp.message(Command("ping"))
 async def ping_command(message: Message):
@@ -274,9 +287,8 @@ async def on_pong(message: dict):
 
 @ws_client.on_event("connect")
 async def on_connect():
-    load_scenes_from_db(scene_manager)
+    await load_scenes_from_db(scene_manager)
     print("🔗 Подключено к WebSocket серверу")
-
 
 @ws_client.on_message('api-update_session_stage')
 async def on_update_session_stage(message: dict):
@@ -340,6 +352,9 @@ async def on_update_session_stage(message: dict):
     
     elif new_stage == "ChangeTurn":
         await go_to_page(session_id, None, "change-turn-page")
+        await asyncio.sleep(5)
+        await go_to_page(session_id, None, "change-turn-page")
+        
     
     elif new_stage == "End":
         await go_to_page(session_id, None, "end-game-page")

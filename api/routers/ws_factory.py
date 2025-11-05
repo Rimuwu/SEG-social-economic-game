@@ -1,6 +1,6 @@
 
 from modules.ws_hadnler import message_handler
-from modules.json_database import just_db
+from modules.db import just_db
 from game.factory import Factory
 from modules.check_password import check_password
 
@@ -26,11 +26,11 @@ async def handle_get_factories(client_id: str, message: dict):
     }
 
     # Получаем список фабрик из базы данных
-    factories = just_db.find('factories',
+    factories = await just_db.find('factories',
                              to_class=Factory,
                          **{k: v for k, v in conditions.items() if v is not None})
 
-    return [factory.to_dict() for factory in factories]
+    return [await factory.to_dict() for factory in factories]
 
 @message_handler(
     "get-factory", 
@@ -47,11 +47,11 @@ async def handle_get_factory(client_id: str, message: dict):
     if factory_id is None:
         return {"error": "factory_id is required"}
 
-    factory = Factory(factory_id).reupdate()
+    factory = await Factory(factory_id).reupdate()
     if not factory:
         raise ValueError("Завод не найден.")
     
-    return factory.to_dict() if factory else None
+    return await factory.to_dict() if factory else None
 
 
 @message_handler(
@@ -80,11 +80,11 @@ async def handle_factory_recomplectation(client_id: str, message: dict):
     try:
         check_password(password)
         
-        factory = Factory(factory_id).reupdate()
+        factory = await Factory(factory_id).reupdate()
         if not factory:
             raise ValueError("Завод не найден.")
         
-        result = factory.pere_complete(new_complectation)
+        result = await factory.pere_complete(new_complectation)
         
         return {"success": result}
     except ValueError as e:
@@ -111,11 +111,11 @@ async def handle_factory_set_produce(client_id: str, message: dict):
         return {"error": "produce is required"}
 
     try:
-        factory = Factory(factory_id).reupdate()
+        factory = await Factory(factory_id).reupdate()
         if not factory:
             raise ValueError("Завод не найден.")
         
-        factory.set_produce(produce)
+        await factory.set_produce(produce)
 
         return {"success": True}
     except ValueError as e:
@@ -142,11 +142,11 @@ async def handle_factory_set_auto(client_id: str, message: dict):
         return {"error": "is_auto is required"}
 
     try:
-        factory = Factory(factory_id).reupdate()
+        factory = await Factory(factory_id).reupdate()
         if not factory:
             raise ValueError("Завод не найден.")
         
-        factory.set_auto(is_auto)
+        await factory.set_auto(is_auto)
 
         return {"success": True}
     except ValueError as e:

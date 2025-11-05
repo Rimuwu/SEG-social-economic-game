@@ -6,12 +6,13 @@ from modules.ws_client import get_cities, get_city, get_company, sell_to_city
 from oms.utils import callback_generator
 from global_modules.load_config import ALL_CONFIGS, Resources
 from modules.utils import xy_into_cell
+from .oneuser_page import OneUserPage
 
 
 RESOURCES: Resources = ALL_CONFIGS["resources"]
 
 
-class City(Page):
+class City(OneUserPage):
     __page_name__ = "city-page"
 
     async def data_preparate(self):
@@ -45,7 +46,7 @@ class City(Page):
         if stage == "main":
             lines.append("🏙 **Города**")
             lines.append("")
-            lines.append("Выберите город, чтобы посмотреть востребованные товары.")
+            lines.append("🗺 Нажмите на город (🏢), чтобы посмотреть востребованные товары.")
         elif stage == "city_info":
             city_text = await self._build_city_info_text(scene_data, page_data)
             lines.append(city_text)
@@ -75,37 +76,54 @@ class City(Page):
         buttons: List[dict] = []
 
         if stage == "main":
-            self.row_width = 1
-            city_chunks = await self._get_city_chunks(session_id)
-            if not city_chunks:
-                buttons.append({
-                    "text": "🔄 Обновить",
-                    "callback_data": callback_generator(self.scene.__scene_name__, "city_refresh"),
-                })
-            else:
-                current_page = self._clamp_page(page_data.get("page_cities", 0), len(city_chunks))
-                await self.scene.update_key("city-page", "page_cities", current_page)
-                for city in city_chunks[current_page]:
-                    buttons.append({
-                        "text": f"🏙 {city.get('name', 'Город')}",
-                        "callback_data": callback_generator(self.scene.__scene_name__, "city_select", city.get("id", 0))
-                    })
-
-                if len(city_chunks) > 1:
-                    buttons.append({
-                        "text": "◀️",
-                        "callback_data": callback_generator(self.scene.__scene_name__, "city_page_prev"),
-                        "next_line": True
-                    })
-                    buttons.append({
-                        "text": f"{current_page + 1}/{len(city_chunks)}",
-                        "callback_data": callback_generator(self.scene.__scene_name__, "noop")
-                    })
-                    buttons.append({
-                        "text": "▶️",
-                        "callback_data": callback_generator(self.scene.__scene_name__, "city_page_next")
-                    })
-
+            self.row_width = 7
+            
+            # Получаем список городов
+            cities_data = await get_cities(session_id=session_id)
+            cities_map = {}  # {(x, y): city}
+            
+            if cities_data and isinstance(cities_data, list):
+                for city in cities_data:
+                    # cell_position в формате "x.y" (например, "1.5")
+                    cell_position = city.get("cell_position", "")
+                    if cell_position and "." in cell_position:
+                        try:
+                            x, y = cell_position.split(".")
+                            x, y = int(x), int(y)
+                            cities_map[(x, y)] = city
+                        except (ValueError, AttributeError):
+                            continue
+            
+            # Генерируем карту 7x7
+            for x in range(7):
+                for y in range(7):
+                    cell_position = xy_into_cell(x, y)
+                    
+                    # Проверяем, есть ли город в этой позиции
+                    if (x, y) in cities_map:
+                        city = cities_map[(x, y)]
+                        buttons.append({
+                            'text': '🏢',
+                            'callback_data': callback_generator(
+                                self.scene.__scene_name__, 
+                                'city_select',
+                                city.get('id', 0)
+                            )
+                        })
+                    # Центральная клетка - банк
+                    elif cell_position == "D4":
+                        buttons.append({
+                            'text': '🏦',
+                            'callback_data': callback_generator(self.scene.__scene_name__, "noop")
+                        })
+                    # Остальные клетки - показываем координаты
+                    else:
+                        buttons.append({
+                            'text': cell_position,
+                            'callback_data': callback_generator(self.scene.__scene_name__, "noop")
+                        })
+            
+            # Кнопка возврата на главную
             buttons.append({
                 "text": "⬅️ На главную",
                 "callback_data": callback_generator(self.scene.__scene_name__, "city_exit"),
@@ -280,7 +298,7 @@ class City(Page):
         await callback.answer()
 
     @Page.on_text('int')
-    async def handle_numeric_input(self, _message: Message, value: int):
+    async def handle_numeric_input(self, message: Message, value: int):
         page_data = self.scene.get_data("city-page")
         if page_data.get("stage") != "sell_product":
             return
@@ -289,6 +307,8 @@ class City(Page):
             await self._set_status("Количество должно быть больше нуля", level="error")
             await self.scene.update_message()
             return
+
+        _ = message  # OMS требует параметр message; логика использует статусные сообщения
 
         scene_data = self.scene.get_data("scene")
         session_id = scene_data.get("session")
@@ -349,7 +369,9 @@ class City(Page):
             return "❌ Не удалось загрузить данные города"
 
         name = city_data.get("name", "Город")
-        branch = city_data.get("branch", "-")
+        branch_id = city_data.get("branch", "-")
+        branch_data = RESOURCES.get_resource(branch_id)
+        branch = f"{branch_data.emoji} {branch_data.label}"
         cell_position = city_data.get("cell_position", "0.0")
         x_str, y_str = cell_position.split(".") if "." in cell_position else (cell_position, "0")
         try:

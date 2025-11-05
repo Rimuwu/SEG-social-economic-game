@@ -3,7 +3,6 @@ from aiogram.types import CallbackQuery
 from oms.utils import callback_generator
 from modules.ws_client import get_factories
 
-
 class FactorySelectMode(Page):
     """Страница выбора режима заводов для перекомплектации"""
     

@@ -1,7 +1,7 @@
 from modules.websocket_manager import websocket_manager
 from modules.check_password import check_password
 from modules.ws_hadnler import message_handler
-from modules.json_database import just_db
+from modules.db import just_db
 from game.exchange import Exchange
 
 @message_handler(
@@ -26,7 +26,7 @@ async def handle_get_exchanges(client_id: str,
     }
 
     # Получаем список предложений из базы данных
-    offers = just_db.find('exchanges',
+    offers = await just_db.find('exchanges',
                          **{k: v for k, v in conditions.items() if v is not None},
                          to_class=Exchange)
 
@@ -48,7 +48,7 @@ async def handle_get_exchange(client_id: str, message: dict):
         return {"error": "Missing required field: id"}
 
     # Получаем предложение из базы данных
-    offer: Exchange = just_db.find_one(
+    offer: Exchange = await just_db.find_one(
         'exchanges', to_class=Exchange,
         id=offer_id
         ) # type: ignore
@@ -100,7 +100,7 @@ async def handle_create_exchange_offer(client_id: str, message: dict):
     try:
         check_password(password)
 
-        exchange = Exchange().create(
+        exchange = await Exchange().create(
             company_id=company_id,
             session_id=session_id,
             sell_resource=sell_resource,
@@ -150,13 +150,13 @@ async def handle_update_exchange_offer(
     try:
         check_password(password)
 
-        exchange = Exchange(id=offer_id).reupdate()
+        exchange = await Exchange(id=offer_id).reupdate()
         if not exchange:
             raise ValueError("Обменное предложение не найдено.")
 
         old_offer = exchange.to_dict()
 
-        exchange.update_offer(
+        await exchange.update_offer(
             sell_amount_per_trade=sell_amount_per_trade,
             price=price,
             barter_amount=barter_amount
@@ -196,14 +196,14 @@ async def handle_cancel_exchange_offer(
     try:
         check_password(password)
 
-        exchange = Exchange(id=offer_id).reupdate()
+        exchange = await Exchange(id=offer_id).reupdate()
         if not exchange:
             raise ValueError("Обменное предложение не найдено.")
 
         session_id = exchange.session_id
         company_id = exchange.company_id
 
-        exchange.cancel_offer()
+        await exchange.cancel_offer()
 
     except ValueError as e:
         return {"error": str(e)}
@@ -243,13 +243,13 @@ async def handle_buy_exchange_offer(
     try:
         check_password(password)
 
-        exchange = Exchange(id=offer_id).reupdate()
+        exchange = await Exchange(id=offer_id).reupdate()
         if not exchange:
             raise ValueError("Обменное предложение не найдено.")
 
         old_stock = exchange.total_stock
         
-        exchange.buy(buyer_company_id=buyer_company_id, quantity=quantity)
+        await exchange.buy(buyer_company_id=buyer_company_id, quantity=quantity)
 
         # Если сделка прошла успешно
         result = {

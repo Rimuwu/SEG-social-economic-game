@@ -2,7 +2,7 @@ from game.logistics import Logistics
 from modules.websocket_manager import websocket_manager
 from modules.check_password import check_password
 from modules.ws_hadnler import message_handler
-from modules.json_database import just_db
+from modules.db import just_db
 from typing import cast
 
 @message_handler(
@@ -25,10 +25,10 @@ async def handle_get_logistics(client_id: str, message: dict):
 
 
     try:
-        logistics_list = just_db.find(
+        logistics_list: list[Logistics] = await just_db.find(
             'logistics',
             to_class=Logistics,
-            **{k: v for k, v in conditions.items() if v is not None})
+            **{k: v for k, v in conditions.items() if v is not None}) # type: ignore
 
         return [logistics.to_dict() for logistics in logistics_list]
 
