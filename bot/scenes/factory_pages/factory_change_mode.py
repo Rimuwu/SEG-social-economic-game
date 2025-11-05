@@ -59,14 +59,10 @@ class FactoryChangeMode(Page):
                 and f.get('complectation_stages', 0) == 0
             ]
             
-            content = "🔄 **Изменение режима производства**\n\n"
-            content += "Выберите тип заводов для изменения:\n\n"
-            content += f"🤖 **Автоматические:** {len(auto_factories)} шт.\n"
-            content += f"   _Можно сделать неавтоматическими_\n\n"
-            content += f"👤 **Неавтоматические:** {len(manual_factories)} шт.\n"
-            content += f"   _Можно сделать автоматическими_\n"
-            
-            return content
+            return self.content.format(
+                auto_count=len(auto_factories),
+                manual_count=len(manual_factories)
+            )
             
         elif change_mode_stage == 'select_group':
             # Показываем группы ресурсов выбранного типа

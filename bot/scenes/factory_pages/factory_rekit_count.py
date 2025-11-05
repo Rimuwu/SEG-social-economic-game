@@ -44,17 +44,16 @@ class FactoryRekitCount(Page):
         else:
             group_name = get_resource_name(group_type)
         
-        content = "🔄 **Перекомплектация заводов**\n\n"
-        
-        # Показываем ошибку, если она есть
+        # Формируем информацию о группе с ошибкой если есть
+        group_info = ""
         if error_message:
-            content += f"❌ **{error_message}**\n\n"
+            group_info = f"❌ *{error_message}*\n\n"
+        group_info += f"Группа: {group_name}\n"
         
-        content += f"Группа: {group_name}\n"
-        content += f"Доступно заводов: **{available_count}**\n\n"
-        content += "Введите количество заводов для перекомплектации:"
-        
-        return content
+        return self.content.format(
+            group_info=group_info,
+            available=available_count
+        )
     
     async def buttons_worker(self):
         """Кнопки с быстрым выбором количества"""

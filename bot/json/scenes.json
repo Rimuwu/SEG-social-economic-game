@@ -254,7 +254,7 @@
             },
             "factory-menu": {
                 "image": "img/main_company.png",
-                "content": "",
+                "content": "🏭 *Меню управления заводами*\n\n📊 *Всего заводов:* {total}\n{recomplecting_text}{auto_text}{manual_text}{idle_text}{empty_message}",
                 "to_pages": {
                     "main-page": "↪️ Назад"
                 }
@@ -282,31 +282,49 @@
             },
             "factory-change-mode": {
                 "image": "img/main_company.png",
-                "content": ""
+                "content": "🔄 *Изменение режима производства*\n\nВыберите тип заводов для изменения:\n\n🤖 *Автоматические:* {auto_count} шт.\n   _Можно сделать неавтоматическими_\n\n👤 *Неавтоматические:* {manual_count} шт.\n   _Можно сделать автоматическими_",
+                "to_pages": {
+                    "factory-menu": "↪️ Назад"
+                }
             },
             "factory-rekit-groups": {
                 "image": "img/main_company.png",
-                "content": ""
+                "content": "🔄 *Перекомплектация заводов*\n\nВыберите группу заводов для перекомплектации:\n\n{groups_text}",
+                "to_pages": {
+                    "factory-menu": "↪️ Назад"
+                }
             },
             "factory-rekit-count": {
                 "image": "img/main_company.png",
-                "content": ""
+                "content": "🔄 *Количество заводов*\n\n{group_info}Укажите количество заводов для перекомплектации:\n\nДоступно: *{available}* шт.",
+                "to_pages": {
+                    "factory-rekit-resource": "↪️ Назад"
+                }
             },
             "factory-rekit-resource": {
                 "image": "img/main_company.png",
-                "content": ""
+                "content": "🔄 *Выбор ресурса*\n\n{current_group_text}Выберите ресурс для перекомплектации:",
+                "to_pages": {
+                    "factory-rekit-groups": "↪️ Назад"
+                }
             },
             "factory-rekit-produce": {
                 "image": "img/main_company.png",
-                "content": ""
+                "content": "🔄 *Подтверждение перекомплектации*\n\n{summary}\n\n⚠️ *Внимание!*\nПерекомплектация займёт {stages} ход(-ов).\n\nПродолжить?",
+                "to_pages": {
+                    "factory-rekit-count": "↪️ Назад"
+                }
             },
             "factory-start-groups": {
                 "image": "img/main_company.png",
-                "content": ""
+                "content": "🏭 *Запуск заводов*\n\n⏸️ Заводов готовых к запуску: {startable_count}\n▶️ Не автоматических заводов работает: {working_manual_count}\n\n{groups_text}",
+                "to_pages": {
+                    "factory-menu": "↪️ Назад"
+                }
             },
             "factory-select-mode": {
                 "image": "img/main_company.png",
-                "content": ""
+                "content": "🏭 *Перекомплектация заводов*\n\nВыберите режим заводов для перекомплектации:\n\n⚪️ *Простаивающие:* {idle_count} шт.\n🤖 *Автоматические:* {auto_count} шт.\n👤 *Неавтоматические:* {manual_count} шт."
             },
             "change-turn-page": {
                 "image": "img/mejturn.png",

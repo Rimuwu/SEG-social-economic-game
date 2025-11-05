@@ -62,20 +62,23 @@ class FactoryStartGroups(Page):
             and f.get('complectation') is not None
         ]
         
-        content = "🏭 **Запуск заводов**\n\n"
-        content += f"⏸️ Заводов готовых к запуску: {len(startable_factories)}\n"
-        content += f"▶️ Не автоматических заводов работает: {len(working_manual)}\n\n"
-        
+        # Формируем текст групп
+        groups_text = ""
         if not startable_factories:
-            content += "❌ Нет заводов, готовых к запуску.\n\n"
+            groups_text = "❌ Нет заводов, готовых к запуску.\n"
         else:
-            content += "📦 **Доступные группы:**\n"
+            lines = ["📦 *Доступные группы:*"]
             for resource_key, factories_list in groups.items():
                 resource_display = self.get_resource_name(resource_key)
-                content += f"  {resource_display}: **{len(factories_list)}** шт. ⏸️\n"
-            content += "\nВыберите группу для запуска или запустите все:"
+                lines.append(f"  {resource_display}: *{len(factories_list)}* шт. ⏸️")
+            lines.append("\nВыберите группу для запуска или запустите все:")
+            groups_text = "\n".join(lines)
         
-        return content
+        return self.content.format(
+            startable_count=len(startable_factories),
+            working_manual_count=len(working_manual),
+            groups_text=groups_text
+        )
     
     async def buttons_worker(self):
         """Генерация кнопок выбора группы"""

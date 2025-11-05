@@ -24,13 +24,11 @@ class FactorySelectMode(Page):
         auto_count = sum(1 for f in factories if f.get('is_auto') is True and f.get('complectation') is not None)
         manual_count = sum(1 for f in factories if f.get('is_auto') is False and f.get('complectation') is not None)
         
-        content = "🏭 **Перекомплектация заводов**\n\n"
-        content += "Выберите режим заводов для перекомплектации:\n\n"
-        content += f"⚪️ **Простаивающие:** {idle_count} шт.\n"
-        content += f"🤖 **Автоматические:** {auto_count} шт.\n"
-        content += f"👤 **Неавтоматические:** {manual_count} шт.\n"
-        
-        return content
+        return self.content.format(
+            idle_count=idle_count,
+            auto_count=auto_count,
+            manual_count=manual_count
+        )
     
     async def buttons_worker(self):
         """Генерация кнопок выбора режима"""

@@ -28,14 +28,12 @@ class FactoryRekitProduce(Page):
         if not resource:
             return "❌ Ошибка: ресурс не найден"
         
-        # Формируем текст
-        content = "🔄 **Перекомплектация заводов**\n\n"
-        content += f"Продукт: {resource.emoji} {resource.label}\n"
-        content += f"Количество заводов: {count}\n\n"
+        # Формируем сводку
+        summary = f"Продукт: {resource.emoji} {resource.label}\nКоличество заводов: {count}\n"
         
         # Показываем крафт продукта
         if hasattr(resource, 'production') and resource.production:
-            content += "📋 **Крафт:**\n"
+            summary += "\n📋 *Крафт:*\n"
             materials = resource.production.materials
             output = resource.production.output
             
@@ -47,16 +45,20 @@ class FactoryRekitProduce(Page):
                     materials_list.append(f"{mat_count}× {mat_resource.emoji} {mat_resource.label}")
             
             if materials_list:
-                content += "   " + " + ".join(materials_list) + f" → {output}× {resource.emoji} {resource.label}\n\n"
+                summary += "   " + " + ".join(materials_list) + f" → {output}× {resource.emoji} {resource.label}\n"
+        
+        # Добавляем описание режимов
+        summary += "\nВыберите режим производства:\n\n"
+        summary += "🔄 *Автоматический* - завод будет производить ресурс каждый ход автоматически\n\n"
+        summary += "🎯 *Не автоматический* - завод нужно запускать вручную"
         
         # Время перекомплектации из lvl ресурса
         rekit_time = resource.lvl if hasattr(resource, 'lvl') else 1
-        content += f"⏳ _Перекомплектация займёт {rekit_time} ход(ов)_\n\n"
-        content += "Выберите режим производства:\n\n"
-        content += "🔄 **Автоматический** - завод будет производить ресурс каждый ход автоматически\n\n"
-        content += "🎯 **Не автоматический** - завод нужно запускать вручную"
         
-        return content
+        return self.content.format(
+            summary=summary,
+            stages=rekit_time
+        )
     
     async def buttons_worker(self):
         """Кнопки выбора режима производства"""

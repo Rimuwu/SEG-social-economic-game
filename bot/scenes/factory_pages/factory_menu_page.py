@@ -69,31 +69,31 @@ class FactoryMenu(Page):
                         manual_factories[complectation] = []
                     manual_factories[complectation].append(factory)
             
-            # Формируем текст
-            content = "🏭 **Меню управления заводами**\n\n"
-            content += f"📊 **Всего заводов:** {total}\n\n"
-            
+            # Формируем части контента
             # Заводы в процессе перекомплектации
+            recomplecting_text = ""
             if recomplecting_factories:
-                content += "⏳ **Перекомплектуются:**\n"
+                lines = ["\n⏳ *Перекомплектуются:*"]
                 for resource_key, factories_list in recomplecting_factories.items():
                     resource_display = self.get_resource_name(resource_key)
                     # Показываем максимальное количество оставшихся ходов
                     max_stages = max(f.get('complectation_stages', 0) for f in factories_list)
-                    content += f"  {resource_display}: **{len(factories_list)}** шт. (осталось {max_stages} ход(-ов))\n"
-                content += "\n"
+                    lines.append(f"  {resource_display}: *{len(factories_list)}* шт. (осталось {max_stages} ход(-ов))")
+                recomplecting_text = "\n".join(lines) + "\n"
             
             # Автоматические заводы
+            auto_text = ""
             if auto_factories:
-                content += "🔄 **Автоматические заводы** (производят каждый ход):\n"
+                lines = ["\n🔄 *Автоматические заводы* (производят каждый ход):"]
                 for resource_key, factories_list in auto_factories.items():
                     resource_display = self.get_resource_name(resource_key)
-                    content += f"  {resource_display}: **{len(factories_list)}** шт.\n"
-                content += "\n"
+                    lines.append(f"  {resource_display}: *{len(factories_list)}* шт.")
+                auto_text = "\n".join(lines) + "\n"
             
             # Не автоматические заводы
+            manual_text = ""
             if manual_factories:
-                content += "⚡ **Не автоматические заводы:**\n"
+                lines = ["\n⚡ *Не автоматические заводы:*"]
                 for resource_key, factories_list in manual_factories.items():
                     resource_display = self.get_resource_name(resource_key)
                     # Считаем работающие и остановленные
@@ -108,19 +108,25 @@ class FactoryMenu(Page):
                     elif stopped > 0:
                         status_text = f" (⏸️ все остановлены)"
                     
-                    content += f"  {resource_display}: **{len(factories_list)}** шт.{status_text}\n"
-                content += "\n"
+                    lines.append(f"  {resource_display}: *{len(factories_list)}* шт.{status_text}")
+                manual_text = "\n".join(lines) + "\n"
             
             # Простаивающие заводы
-            if idle_factories:
-                content += f"⚪️ **Простаивают:** {len(idle_factories)} шт.\n\n"
-            else:
-                content += "⚪️ **Простаивают:** 0 шт.\n\n"
+            idle_text = f"\n⚪️ *Простаивают:* {len(idle_factories)} шт.\n"
             
+            # Сообщение если нет заводов
+            empty_message = ""
             if not auto_factories and not manual_factories and not idle_factories:
-                content += "У вас пока нет активных заводов."
+                empty_message = "\nУ вас пока нет активных заводов."
             
-            return content
+            return self.content.format(
+                total=total,
+                recomplecting_text=recomplecting_text,
+                auto_text=auto_text,
+                manual_text=manual_text,
+                idle_text=idle_text,
+                empty_message=empty_message
+            )
             
         except Exception as e:
             bot_logger.error(f"Ошибка при получении заводов: {e}")

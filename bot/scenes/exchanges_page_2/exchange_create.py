@@ -14,26 +14,20 @@ class ExchangeCreateMain(OneUserPage):
     
     async def data_preparate(self):
         """Инициализация данных"""
-        scene_data = self.scene.get_data('scene')
-        
         # Инициализируем поля, если их нет
-        if scene_data.get('create_offer_type') is None:
-            scene_data['create_offer_type'] = 'money'
-        
-        await self.scene.set_data('scene', scene_data)
+        if self.scene.get_key(self.__page_name__, 'offer_type') is None:
+            await self.scene.update_key(self.__page_name__, 'offer_type', 'money')
     
     async def content_worker(self):
         """Генерация контента страницы"""
-        scene_data = self.scene.get_data('scene')
-        
-        sell_resource = scene_data.get('create_sell_resource')
-        sell_amount = scene_data.get('create_sell_amount')
-        count_offers = scene_data.get('create_count_offers')
-        offer_type = scene_data.get('create_offer_type', 'money')
-        price = scene_data.get('create_price')
-        barter_resource = scene_data.get('create_barter_resource')
-        barter_amount = scene_data.get('create_barter_amount')
-        error = scene_data.get('create_error')
+        sell_resource = self.scene.get_key(self.__page_name__, 'sell_resource')
+        sell_amount = self.scene.get_key(self.__page_name__, 'sell_amount')
+        count_offers = self.scene.get_key(self.__page_name__, 'count_offers')
+        offer_type = self.scene.get_key(self.__page_name__, 'offer_type') or 'money'
+        price = self.scene.get_key(self.__page_name__, 'price')
+        barter_resource = self.scene.get_key(self.__page_name__, 'barter_resource')
+        barter_amount = self.scene.get_key(self.__page_name__, 'barter_amount')
+        error = self.scene.get_key(self.__page_name__, 'error')
         
         # Формируем текст товара
         if sell_resource:
@@ -80,15 +74,13 @@ class ExchangeCreateMain(OneUserPage):
     
     async def buttons_worker(self):
         """Генерация кнопок"""
-        scene_data = self.scene.get_data('scene')
-        
-        sell_resource = scene_data.get('create_sell_resource')
-        sell_amount = scene_data.get('create_sell_amount')
-        count_offers = scene_data.get('create_count_offers')
-        offer_type = scene_data.get('create_offer_type', 'money')
-        price = scene_data.get('create_price')
-        barter_resource = scene_data.get('create_barter_resource')
-        barter_amount = scene_data.get('create_barter_amount')
+        sell_resource = self.scene.get_key(self.__page_name__, 'sell_resource')
+        sell_amount = self.scene.get_key(self.__page_name__, 'sell_amount')
+        count_offers = self.scene.get_key(self.__page_name__, 'count_offers')
+        offer_type = self.scene.get_key(self.__page_name__, 'offer_type') or 'money'
+        price = self.scene.get_key(self.__page_name__, 'price')
+        barter_resource = self.scene.get_key(self.__page_name__, 'barter_resource')
+        barter_amount = self.scene.get_key(self.__page_name__, 'barter_amount')
         
         # Формируем текст товара для кнопки
         if sell_resource:
@@ -185,33 +177,31 @@ class ExchangeCreateMain(OneUserPage):
     @OneUserPage.on_text('int')
     async def input_handler(self, message: Message, value: int):
         """Обработка ввода чисел"""
-        scene_data = self.scene.get_data('scene')
-        input_state = scene_data.get('create_input_state')
+        input_state = self.scene.get_key(self.__page_name__, 'input_state')
         
         # Сбрасываем ошибку
-        scene_data['create_error'] = None
+        await self.scene.update_key(self.__page_name__, 'error', None)
         
         # Ввод количества сделок
         if input_state == 'input_count_offers':
             if value <= 0:
-                scene_data['create_error'] = "Количество сделок должно быть больше нуля!"
-                scene_data['create_input_state'] = None
-                await self.scene.set_data('scene', scene_data)
+                await self.scene.update_key(self.__page_name__, 'error', "Количество сделок должно быть больше нуля!")
+                await self.scene.update_key(self.__page_name__, 'input_state', None)
                 await self.scene.update_message()
                 return
             
-            sell_amount = scene_data.get('create_sell_amount')
-            sell_resource = scene_data.get('create_sell_resource')
+            sell_amount = self.scene.get_key(self.__page_name__, 'sell_amount')
+            sell_resource = self.scene.get_key(self.__page_name__, 'sell_resource')
             total_needed = sell_amount * value
             
             # Проверяем наличие товара
+            scene_data = self.scene.get_data('scene')
             company_id = scene_data.get('company_id')
             company_data = await get_company(id=company_id)
             
             if not isinstance(company_data, dict):
-                scene_data['create_error'] = "Не удалось получить данные компании"
-                scene_data['create_input_state'] = None
-                await self.scene.set_data('scene', scene_data)
+                await self.scene.update_key(self.__page_name__, 'error', "Не удалось получить данные компании")
+                await self.scene.update_key(self.__page_name__, 'input_state', None)
                 await self.scene.update_message()
                 return
             
@@ -219,29 +209,25 @@ class ExchangeCreateMain(OneUserPage):
             available = warehouses.get(sell_resource, 0)
             
             if total_needed > available:
-                scene_data['create_error'] = f"Недостаточно товара! Требуется: {total_needed} ({sell_amount} x {value}), Доступно: {available}"
-                scene_data['create_input_state'] = None
-                await self.scene.set_data('scene', scene_data)
+                await self.scene.update_key(self.__page_name__, 'error', f"Недостаточно товара! Требуется: {total_needed} ({sell_amount} x {value}), Доступно: {available}")
+                await self.scene.update_key(self.__page_name__, 'input_state', None)
                 await self.scene.update_message()
                 return
             
-            scene_data['create_count_offers'] = value
-            scene_data['create_input_state'] = None
-            await self.scene.set_data('scene', scene_data)
+            await self.scene.update_key(self.__page_name__, 'count_offers', value)
+            await self.scene.update_key(self.__page_name__, 'input_state', None)
             await self.scene.update_message()
         
         # Ввод цены
         elif input_state == 'input_price':
             if value <= 0:
-                scene_data['create_error'] = "Цена должна быть больше нуля!"
-                scene_data['create_input_state'] = None
-                await self.scene.set_data('scene', scene_data)
+                await self.scene.update_key(self.__page_name__, 'error', "Цена должна быть больше нуля!")
+                await self.scene.update_key(self.__page_name__, 'input_state', None)
                 await self.scene.update_message()
                 return
             
-            scene_data['create_price'] = value
-            scene_data['create_input_state'] = None
-            await self.scene.set_data('scene', scene_data)
+            await self.scene.update_key(self.__page_name__, 'price', value)
+            await self.scene.update_key(self.__page_name__, 'input_state', None)
             await self.scene.update_message()
     
     @OneUserPage.on_callback('set_sell_resource')
@@ -252,51 +238,49 @@ class ExchangeCreateMain(OneUserPage):
     @OneUserPage.on_callback('change_offer_type')
     async def change_offer_type_handler(self, callback: CallbackQuery, args: list):
         """Переключение типа предложения"""
-        scene_data = self.scene.get_data('scene')
+        offer_type = self.scene.get_key(self.__page_name__, 'offer_type')
         
-        if scene_data.get('create_offer_type') == 'money':
-            scene_data['create_offer_type'] = 'barter'
-            scene_data['create_price'] = None
+        if offer_type == 'money':
+            await self.scene.update_key(self.__page_name__, 'offer_type', 'barter')
+            await self.scene.update_key(self.__page_name__, 'price', None)
         else:
-            scene_data['create_offer_type'] = 'money'
-            scene_data['create_barter_resource'] = None
-            scene_data['create_barter_amount'] = None
+            await self.scene.update_key(self.__page_name__, 'offer_type', 'money')
+            await self.scene.update_key(self.__page_name__, 'barter_resource', None)
+            await self.scene.update_key(self.__page_name__, 'barter_amount', None)
         
-        await self.scene.set_data('scene', scene_data)
         await self.scene.update_message()
     
     @OneUserPage.on_callback('set_count_offers')
     async def set_count_offers_handler(self, callback: CallbackQuery, args: list):
         """Начать ввод количества сделок"""
-        scene_data = self.scene.get_data('scene')
-        scene_data['create_error'] = None
+        await self.scene.update_key(self.__page_name__, 'error', None)
         
-        if not scene_data.get('create_sell_resource') or not scene_data.get('create_sell_amount'):
-            scene_data['create_error'] = "Сначала выберите ресурс для продажи и количество за сделку!"
-            await self.scene.set_data('scene', scene_data)
+        sell_resource = self.scene.get_key(self.__page_name__, 'sell_resource')
+        sell_amount = self.scene.get_key(self.__page_name__, 'sell_amount')
+        
+        if not sell_resource or not sell_amount:
+            await self.scene.update_key(self.__page_name__, 'error', "Сначала выберите ресурс для продажи и количество за сделку!")
             await self.scene.update_message()
             await callback.answer()
             return
         
-        scene_data['create_input_state'] = 'input_count_offers'
-        await self.scene.set_data('scene', scene_data)
+        await self.scene.update_key(self.__page_name__, 'input_state', 'input_count_offers')
         await callback.answer("Введите количество сделок в чат", show_alert=True)
     
     @OneUserPage.on_callback('change_price')
     async def change_price_handler(self, callback: CallbackQuery, args: list):
         """Начать ввод цены"""
-        scene_data = self.scene.get_data('scene')
-        scene_data['create_error'] = None
+        await self.scene.update_key(self.__page_name__, 'error', None)
         
-        if not scene_data.get('create_sell_resource'):
-            scene_data['create_error'] = "Сначала выберите ресурс для продажи!"
-            await self.scene.set_data('scene', scene_data)
+        sell_resource = self.scene.get_key(self.__page_name__, 'sell_resource')
+        
+        if not sell_resource:
+            await self.scene.update_key(self.__page_name__, 'error', "Сначала выберите ресурс для продажи!")
             await self.scene.update_message()
             await callback.answer()
             return
         
-        scene_data['create_input_state'] = 'input_price'
-        await self.scene.set_data('scene', scene_data)
+        await self.scene.update_key(self.__page_name__, 'input_state', 'input_price')
         await callback.answer("Введите цену в чат", show_alert=True)
     
     @OneUserPage.on_callback('set_barter_resource')
@@ -311,13 +295,13 @@ class ExchangeCreateMain(OneUserPage):
         company_id = scene_data.get('company_id')
         session_id = scene_data.get('session')
         
-        sell_resource = scene_data.get('create_sell_resource')
-        sell_amount = scene_data.get('create_sell_amount')
-        count_offers = scene_data.get('create_count_offers')
-        offer_type = scene_data.get('create_offer_type', 'money')
-        price = scene_data.get('create_price')
-        barter_resource = scene_data.get('create_barter_resource')
-        barter_amount = scene_data.get('create_barter_amount')
+        sell_resource = self.scene.get_key(self.__page_name__, 'sell_resource')
+        sell_amount = self.scene.get_key(self.__page_name__, 'sell_amount')
+        count_offers = self.scene.get_key(self.__page_name__, 'count_offers')
+        offer_type = self.scene.get_key(self.__page_name__, 'offer_type') or 'money'
+        price = self.scene.get_key(self.__page_name__, 'price')
+        barter_resource = self.scene.get_key(self.__page_name__, 'barter_resource')
+        barter_amount = self.scene.get_key(self.__page_name__, 'barter_amount')
         
         # Проверка полей
         if not all([sell_resource, sell_amount, count_offers]):
@@ -345,40 +329,36 @@ class ExchangeCreateMain(OneUserPage):
             barter_amount=barter_amount
         )
         
-        if isinstance(result, str):
-            await callback.answer(f"❌ Ошибка: {result}", show_alert=True)
+        if "error" in result:
+            await callback.answer(f"{result['error']}", show_alert=True)
         else:
             # Очищаем данные
-            scene_data['create_sell_resource'] = None
-            scene_data['create_sell_amount'] = None
-            scene_data['create_count_offers'] = None
-            scene_data['create_offer_type'] = 'money'
-            scene_data['create_price'] = None
-            scene_data['create_barter_resource'] = None
-            scene_data['create_barter_amount'] = None
-            scene_data['create_error'] = None
-            scene_data['create_input_state'] = None
+            await self.scene.update_key(self.__page_name__, 'sell_resource', None)
+            await self.scene.update_key(self.__page_name__, 'sell_amount', None)
+            await self.scene.update_key(self.__page_name__, 'count_offers', None)
+            await self.scene.update_key(self.__page_name__, 'offer_type', 'money')
+            await self.scene.update_key(self.__page_name__, 'price', None)
+            await self.scene.update_key(self.__page_name__, 'barter_resource', None)
+            await self.scene.update_key(self.__page_name__, 'barter_amount', None)
+            await self.scene.update_key(self.__page_name__, 'error', None)
+            await self.scene.update_key(self.__page_name__, 'input_state', None)
             
-            await self.scene.set_data('scene', scene_data)
             await callback.answer("✅ Предложение создано!", show_alert=True)
             await self.scene.update_page('exchange-main-page')
     
     @OneUserPage.on_callback('clear_exchange_offer')
     async def clear_exchange_offer_handler(self, callback: CallbackQuery, args: list):
         """Очистка формы"""
-        scene_data = self.scene.get_data('scene')
+        await self.scene.update_key(self.__page_name__, 'sell_resource', None)
+        await self.scene.update_key(self.__page_name__, 'sell_amount', None)
+        await self.scene.update_key(self.__page_name__, 'count_offers', None)
+        await self.scene.update_key(self.__page_name__, 'offer_type', 'money')
+        await self.scene.update_key(self.__page_name__, 'price', None)
+        await self.scene.update_key(self.__page_name__, 'barter_resource', None)
+        await self.scene.update_key(self.__page_name__, 'barter_amount', None)
+        await self.scene.update_key(self.__page_name__, 'error', None)
+        await self.scene.update_key(self.__page_name__, 'input_state', None)
         
-        scene_data['create_sell_resource'] = None
-        scene_data['create_sell_amount'] = None
-        scene_data['create_count_offers'] = None
-        scene_data['create_offer_type'] = 'money'
-        scene_data['create_price'] = None
-        scene_data['create_barter_resource'] = None
-        scene_data['create_barter_amount'] = None
-        scene_data['create_error'] = None
-        scene_data['create_input_state'] = None
-        
-        await self.scene.set_data('scene', scene_data)
         await self.scene.update_message()
         await callback.answer("🔄 Форма очищена")
 
@@ -390,26 +370,23 @@ class ExchangeCreateSetSell(OneUserPage):
     
     async def data_preparate(self):
         """Инициализация"""
-        scene_data = self.scene.get_data('scene')
-        if scene_data.get('create_sell_page') is None:
-            scene_data['create_sell_page'] = 0
-        if scene_data.get('create_sell_state') is None:
-            scene_data['create_sell_state'] = 'select_resource'
-        if scene_data.get('create_sell_error') is None:
-            scene_data['create_sell_error'] = None
-        await self.scene.set_data('scene', scene_data)
+        if self.scene.get_key(self.__page_name__, 'page') is None:
+            await self.scene.update_key(self.__page_name__, 'page', 0)
+        if self.scene.get_key(self.__page_name__, 'state') is None:
+            await self.scene.update_key(self.__page_name__, 'state', 'select_resource')
+        if self.scene.get_key(self.__page_name__, 'error') is None:
+            await self.scene.update_key(self.__page_name__, 'error', None)
     
     async def content_worker(self):
         """Контент"""
-        scene_data = self.scene.get_data('scene')
-        state = scene_data.get('create_sell_state', 'select_resource')
-        error = scene_data.get('create_sell_error')
+        state = self.scene.get_key(self.__page_name__, 'state') or 'select_resource'
+        error = self.scene.get_key(self.__page_name__, 'error')
         
         if state == 'select_resource':
             content_text = "📦 *Выбор товара для продажи*\n\nВыберите ресурс со склада, который хотите продать:"
         else:  # input_count
-            selected_resource_id = scene_data.get('create_sell_selected_resource')
-            max_amount = scene_data.get('create_sell_max_amount', 0)
+            selected_resource_id = self.scene.get_key(self.__page_name__, 'selected_resource')
+            max_amount = self.scene.get_key(self.__page_name__, 'max_amount') or 0
             
             if selected_resource_id:
                 resource = RESOURCES.get_resource(selected_resource_id)
@@ -432,13 +409,12 @@ class ExchangeCreateSetSell(OneUserPage):
     
     async def buttons_worker(self):
         """Кнопки"""
-        scene_data = self.scene.get_data('scene')
-        state = scene_data.get('create_sell_state', 'select_resource')
+        state = self.scene.get_key(self.__page_name__, 'state') or 'select_resource'
         buttons = []
         
         if state == 'input_count':
             # Кнопки с долями
-            max_amount = scene_data.get('create_sell_max_amount', 0)
+            max_amount = self.scene.get_key(self.__page_name__, 'max_amount') or 0
             
             self.row_width = 4
             fractions = [
@@ -462,9 +438,10 @@ class ExchangeCreateSetSell(OneUserPage):
             return buttons
         
         # Список ресурсов
-        cur_page = scene_data.get('create_sell_page', 0)
+        cur_page = self.scene.get_key(self.__page_name__, 'page') or 0
         self.row_width = 1
         
+        scene_data = self.scene.get_data('scene')
         company_id = scene_data.get('company_id')
         company_data = await get_company(id=company_id)
         
@@ -502,8 +479,7 @@ class ExchangeCreateSetSell(OneUserPage):
         items_per_page = 5
         total_pages = max(1, (len(all_resources) + items_per_page - 1) // items_per_page)
         cur_page = cur_page % total_pages
-        scene_data['create_sell_page'] = cur_page
-        await self.scene.set_data('scene', scene_data)
+        await self.scene.update_key(self.__page_name__, 'page', cur_page)
         
         start_idx = cur_page * items_per_page
         end_idx = start_idx + items_per_page
@@ -569,11 +545,10 @@ class ExchangeCreateSetSell(OneUserPage):
             await callback.answer("❌ Ресурса нет на складе")
             return
         
-        scene_data['create_sell_selected_resource'] = resource_id
-        scene_data['create_sell_max_amount'] = max_amount
-        scene_data['create_sell_state'] = 'input_count'
+        await self.scene.update_key(self.__page_name__, 'selected_resource', resource_id)
+        await self.scene.update_key(self.__page_name__, 'max_amount', max_amount)
+        await self.scene.update_key(self.__page_name__, 'state', 'input_count')
         
-        await self.scene.set_data('scene', scene_data)
         await self.scene.update_message()
         await callback.answer("✅ Ресурс выбран")
     
@@ -585,64 +560,57 @@ class ExchangeCreateSetSell(OneUserPage):
             return
         
         amount = int(args[1])
-        scene_data = self.scene.get_data('scene')
-        max_amount = scene_data.get('create_sell_max_amount', 0)
+        max_amount = self.scene.get_key(self.__page_name__, 'max_amount') or 0
         
         if amount <= 0 or amount > max_amount:
             await callback.answer(f"❌ Некорректное количество")
             return
         
-        resource_id = scene_data.get('create_sell_selected_resource')
-        scene_data['create_sell_resource'] = resource_id
-        scene_data['create_sell_amount'] = amount
-        scene_data['create_sell_state'] = 'select_resource'
+        resource_id = self.scene.get_key(self.__page_name__, 'selected_resource')
+        await self.scene.update_key('exchange-create-page', 'sell_resource', resource_id)
+        await self.scene.update_key('exchange-create-page', 'sell_amount', amount)
+        await self.scene.update_key(self.__page_name__, 'state', 'select_resource')
         
-        await self.scene.set_data('scene', scene_data)
         await self.scene.update_page('exchange-create-page')
         await callback.answer(f"✅ Выбрано: {amount} шт.")
     
     @OneUserPage.on_text('int')
     async def input_count_handler(self, message: Message, value: int):
         """Ввод количества"""
-        scene_data = self.scene.get_data('scene')
-        state = scene_data.get('create_sell_state')
+        state = self.scene.get_key(self.__page_name__, 'state')
         
-        scene_data['create_sell_error'] = None
+        await self.scene.update_key(self.__page_name__, 'error', None)
         
         if state != 'input_count':
-            scene_data['create_sell_error'] = "Сначала выберите ресурс!"
-            await self.scene.set_data('scene', scene_data)
+            await self.scene.update_key(self.__page_name__, 'error', "Сначала выберите ресурс!")
             await self.scene.update_message()
             return
         
-        max_amount = scene_data.get('create_sell_max_amount', 0)
+        max_amount = self.scene.get_key(self.__page_name__, 'max_amount') or 0
         
         if value <= 0:
-            scene_data['create_sell_error'] = "Количество должно быть больше нуля!"
-            await self.scene.set_data('scene', scene_data)
+            await self.scene.update_key(self.__page_name__, 'error', "Количество должно быть больше нуля!")
             await self.scene.update_message()
             return
         
         if value > max_amount:
-            scene_data['create_sell_error'] = f"У вас нет столько! Доступно: {max_amount}"
-            await self.scene.set_data('scene', scene_data)
+            await self.scene.update_key(self.__page_name__, 'error', f"У вас нет столько! Доступно: {max_amount}")
             await self.scene.update_message()
             return
         
-        resource_id = scene_data.get('create_sell_selected_resource')
-        scene_data['create_sell_resource'] = resource_id
-        scene_data['create_sell_amount'] = value
-        scene_data['create_sell_state'] = 'select_resource'
+        resource_id = self.scene.get_key(self.__page_name__, 'selected_resource')
+        await self.scene.update_key('exchange-create-page', 'sell_resource', resource_id)
+        await self.scene.update_key('exchange-create-page', 'sell_amount', value)
+        await self.scene.update_key(self.__page_name__, 'state', 'select_resource')
         
-        await self.scene.set_data('scene', scene_data)
         await self.scene.update_page('exchange-create-page')
     
     @OneUserPage.on_callback('next_page')
     async def next_page_handler(self, callback: CallbackQuery, args: list):
         """Следующая страница"""
-        scene_data = self.scene.get_data('scene')
-        cur_page = scene_data.get('create_sell_page', 0)
+        cur_page = self.scene.get_key(self.__page_name__, 'page') or 0
         
+        scene_data = self.scene.get_data('scene')
         company_id = scene_data.get('company_id')
         company_data = await get_company(id=company_id)
         warehouse = company_data.get('warehouses', {}) if isinstance(company_data, dict) else {}
@@ -651,16 +619,15 @@ class ExchangeCreateSetSell(OneUserPage):
         items_per_page = 5
         total_pages = max(1, (len(all_resources) + items_per_page - 1) // items_per_page)
         
-        scene_data['create_sell_page'] = (cur_page + 1) % total_pages
-        await self.scene.set_data('scene', scene_data)
+        await self.scene.update_key(self.__page_name__, 'page', (cur_page + 1) % total_pages)
         await self.scene.update_message()
     
     @OneUserPage.on_callback('back_page')
     async def back_page_handler(self, callback: CallbackQuery, args: list):
         """Предыдущая страница"""
-        scene_data = self.scene.get_data('scene')
-        cur_page = scene_data.get('create_sell_page', 0)
+        cur_page = self.scene.get_key(self.__page_name__, 'page') or 0
         
+        scene_data = self.scene.get_data('scene')
         company_id = scene_data.get('company_id')
         company_data = await get_company(id=company_id)
         warehouse = company_data.get('warehouses', {}) if isinstance(company_data, dict) else {}
@@ -669,8 +636,7 @@ class ExchangeCreateSetSell(OneUserPage):
         items_per_page = 5
         total_pages = max(1, (len(all_resources) + items_per_page - 1) // items_per_page)
         
-        scene_data['create_sell_page'] = (cur_page - 1) % total_pages
-        await self.scene.set_data('scene', scene_data)
+        await self.scene.update_key(self.__page_name__, 'page', (cur_page - 1) % total_pages)
         await self.scene.update_message()
     
     @OneUserPage.on_callback('page_info')
@@ -686,25 +652,22 @@ class ExchangeCreateSetBarter(OneUserPage):
     
     async def data_preparate(self):
         """Инициализация"""
-        scene_data = self.scene.get_data('scene')
-        if scene_data.get('create_barter_page') is None:
-            scene_data['create_barter_page'] = 0
-        if scene_data.get('create_barter_state') is None:
-            scene_data['create_barter_state'] = 'select_resource'
-        if scene_data.get('create_barter_error') is None:
-            scene_data['create_barter_error'] = None
-        await self.scene.set_data('scene', scene_data)
+        if self.scene.get_key(self.__page_name__, 'page') is None:
+            await self.scene.update_key(self.__page_name__, 'page', 0)
+        if self.scene.get_key(self.__page_name__, 'state') is None:
+            await self.scene.update_key(self.__page_name__, 'state', 'select_resource')
+        if self.scene.get_key(self.__page_name__, 'error') is None:
+            await self.scene.update_key(self.__page_name__, 'error', None)
     
     async def content_worker(self):
         """Контент"""
-        scene_data = self.scene.get_data('scene')
-        state = scene_data.get('create_barter_state', 'select_resource')
-        error = scene_data.get('create_barter_error')
+        state = self.scene.get_key(self.__page_name__, 'state') or 'select_resource'
+        error = self.scene.get_key(self.__page_name__, 'error')
         
         if state == 'select_resource':
             content_text = "⇄ *Выбор ресурса для бартера*\n\nВыберите ресурс, который покупатель должен отдать в обмен:"
         else:  # input_count
-            selected_resource_id = scene_data.get('create_barter_selected_resource')
+            selected_resource_id = self.scene.get_key(self.__page_name__, 'selected_resource')
             
             if selected_resource_id:
                 resource = RESOURCES.get_resource(selected_resource_id)
@@ -726,14 +689,13 @@ class ExchangeCreateSetBarter(OneUserPage):
     
     async def buttons_worker(self):
         """Кнопки"""
-        scene_data = self.scene.get_data('scene')
-        state = scene_data.get('create_barter_state', 'select_resource')
+        state = self.scene.get_key(self.__page_name__, 'state') or 'select_resource'
         
         if state == 'input_count':
             return []
         
         # Список ресурсов
-        cur_page = scene_data.get('create_barter_page', 0)
+        cur_page = self.scene.get_key(self.__page_name__, 'page') or 0
         self.row_width = 1
         
         all_resources = []
@@ -751,8 +713,7 @@ class ExchangeCreateSetBarter(OneUserPage):
         items_per_page = 5
         total_pages = max(1, (len(all_resources) + items_per_page - 1) // items_per_page)
         cur_page = cur_page % total_pages
-        scene_data['create_barter_page'] = cur_page
-        await self.scene.set_data('scene', scene_data)
+        await self.scene.update_key(self.__page_name__, 'page', cur_page)
         
         start_idx = cur_page * items_per_page
         end_idx = start_idx + items_per_page
@@ -804,69 +765,59 @@ class ExchangeCreateSetBarter(OneUserPage):
             return
         
         resource_id = args[1]
-        scene_data = self.scene.get_data('scene')
         
-        scene_data['create_barter_selected_resource'] = resource_id
-        scene_data['create_barter_state'] = 'input_count'
+        await self.scene.update_key(self.__page_name__, 'selected_resource', resource_id)
+        await self.scene.update_key(self.__page_name__, 'state', 'input_count')
         
-        await self.scene.set_data('scene', scene_data)
         await self.scene.update_message()
         await callback.answer("✅ Ресурс выбран! Введите количество в чат")
     
     @OneUserPage.on_text('int')
     async def input_count_handler(self, message: Message, value: int):
         """Ввод количества"""
-        scene_data = self.scene.get_data('scene')
-        state = scene_data.get('create_barter_state')
+        state = self.scene.get_key(self.__page_name__, 'state')
         
-        scene_data['create_barter_error'] = None
+        await self.scene.update_key(self.__page_name__, 'error', None)
         
         if state != 'input_count':
-            scene_data['create_barter_error'] = "Сначала выберите ресурс!"
-            await self.scene.set_data('scene', scene_data)
+            await self.scene.update_key(self.__page_name__, 'error', "Сначала выберите ресурс!")
             await self.scene.update_message()
             return
         
         if value <= 0:
-            scene_data['create_barter_error'] = "Количество должно быть больше нуля!"
-            await self.scene.set_data('scene', scene_data)
+            await self.scene.update_key(self.__page_name__, 'error', "Количество должно быть больше нуля!")
             await self.scene.update_message()
             return
         
-        resource_id = scene_data.get('create_barter_selected_resource')
-        scene_data['create_barter_resource'] = resource_id
-        scene_data['create_barter_amount'] = value
-        scene_data['create_barter_state'] = 'select_resource'
+        resource_id = self.scene.get_key(self.__page_name__, 'selected_resource')
+        await self.scene.update_key('exchange-create-page', 'barter_resource', resource_id)
+        await self.scene.update_key('exchange-create-page', 'barter_amount', value)
+        await self.scene.update_key(self.__page_name__, 'state', 'select_resource')
         
-        await self.scene.set_data('scene', scene_data)
         await self.scene.update_page('exchange-create-page')
     
     @OneUserPage.on_callback('next_page')
     async def next_page_handler(self, callback: CallbackQuery, args: list):
         """Следующая страница"""
-        scene_data = self.scene.get_data('scene')
-        cur_page = scene_data.get('create_barter_page', 0)
+        cur_page = self.scene.get_key(self.__page_name__, 'page') or 0
         
         all_resources = list(RESOURCES.resources.items())
         items_per_page = 5
         total_pages = max(1, (len(all_resources) + items_per_page - 1) // items_per_page)
         
-        scene_data['create_barter_page'] = (cur_page + 1) % total_pages
-        await self.scene.set_data('scene', scene_data)
+        await self.scene.update_key(self.__page_name__, 'page', (cur_page + 1) % total_pages)
         await self.scene.update_message()
     
     @OneUserPage.on_callback('back_page')
     async def back_page_handler(self, callback: CallbackQuery, args: list):
         """Предыдущая страница"""
-        scene_data = self.scene.get_data('scene')
-        cur_page = scene_data.get('create_barter_page', 0)
+        cur_page = self.scene.get_key(self.__page_name__, 'page') or 0
         
         all_resources = list(RESOURCES.resources.items())
         items_per_page = 5
         total_pages = max(1, (len(all_resources) + items_per_page - 1) // items_per_page)
         
-        scene_data['create_barter_page'] = (cur_page - 1) % total_pages
-        await self.scene.set_data('scene', scene_data)
+        await self.scene.update_key(self.__page_name__, 'page', (cur_page - 1) % total_pages)
         await self.scene.update_message()
     
     @OneUserPage.on_callback('page_info')

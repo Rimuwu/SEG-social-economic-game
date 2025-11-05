@@ -27,7 +27,7 @@ class FactoryRekitResource(Page):
         if not group_type or not count_str:
             return "❌ Ошибка: данные о перекомплектации не найдены"
         
-        # Формируем текст
+        # Формируем текст о текущей группе
         if group_type == 'idle':
             group_name = "⚪️ Простаивающие заводы"
         else:
@@ -36,13 +36,9 @@ class FactoryRekitResource(Page):
         
         count_display = "все" if count_str == "all" else count_str
         
-        content = "🔄 **Перекомплектация заводов**\n\n"
-        content += f"Группа: {group_name}\n"
-        content += f"Количество: **{count_display}**\n\n"
-        content += "Выберите продукт для производства:\n"
-        content += "⏳ _Перекомплектация займёт время согласно сложности производства_"
+        current_group_text = f"Группа: {group_name}\nКоличество: *{count_display}*\n"
         
-        return content
+        return self.content.format(current_group_text=current_group_text)
     
     async def buttons_worker(self):
         """Кнопки с доступными ресурсами (только производимые, без сырья) с пагинацией"""

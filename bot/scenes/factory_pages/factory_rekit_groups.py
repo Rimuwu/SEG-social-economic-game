@@ -46,22 +46,23 @@ class FactoryRekitGroups(Page):
                         resource_groups[complectation] = 0
                     resource_groups[complectation] += 1
             
-            # Формируем текст
-            content = "🔄 **Перекомплектация заводов**\n\n"
-            content += "Выберите группу заводов для перекомплектации:\n\n"
+            # Формируем текст групп
+            lines = []
             
             if idle_count > 0:
-                content += f"⚪️ Простаивающие: **{idle_count}** шт.\n"
+                lines.append(f"⚪️ Простаивающие: *{idle_count}* шт.")
             
             if resource_groups:
                 for resource_key, count in resource_groups.items():
                     resource_display = self.get_resource_name(resource_key)
-                    content += f"{resource_display}: **{count}** шт.\n"
+                    lines.append(f"{resource_display}: *{count}* шт.")
             
             if idle_count == 0 and not resource_groups:
-                content += "❌ Нет заводов для перекомплектации"
+                groups_text = "❌ Нет заводов для перекомплектации"
+            else:
+                groups_text = "\n".join(lines)
             
-            return content
+            return self.content.format(groups_text=groups_text)
             
         except Exception as e:
             bot_logger.error(f"Ошибка при получении заводов: {e}")
