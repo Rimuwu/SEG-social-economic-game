@@ -11,7 +11,9 @@ bot_logger = Logger.get_logger("bot")
 # Список ID администраторов
 UPDATE_PASSWORD = os.getenv("UPDATE_PASSWORD", "default_password")
 
-ADMIN_IDS = [admin_id.strip() for admin_id in os.getenv("ADMIN_IDS", "").strip().split(",") if admin_id.strip()]
+ADMIN_IDS = [admin_id.strip(
+    ) for admin_id in os.getenv("ADMIN_IDS", 
+                                "").strip().split(",") if admin_id.strip()]
 
 
 async def _get_user_mention(user: dict) -> str:
@@ -28,15 +30,16 @@ async def _get_user_mention(user: dict) -> str:
         
         # Если есть username - используем его
         if tg_user.username:
-            return f"@{tg_user.username}"
+            return f"@{tg_user.username} ({user['username']})"
         # Иначе создаем ссылку с ФИ или ID
         elif tg_user.first_name:
             name = tg_user.first_name
             if tg_user.last_name:
                 name += f" {tg_user.last_name}"
-            return f"[{name}](tg://user?id={user_id})"
+            return f"[{name}](tg://user?id={user_id}) ({user['username']})"
         else:
-            return f"[{user_id}](tg://user?id={user_id})"
+            return f"[{user_id}](tg://user?id={user_id}) ({user['username']})"
+
     except Exception as e:
         bot_logger.error(f"Ошибка при получении данных пользователя {user_id}: {e}")
         # Fallback на ссылку если не удалось получить данные
