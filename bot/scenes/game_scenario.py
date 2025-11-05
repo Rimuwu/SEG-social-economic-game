@@ -5,7 +5,8 @@ from scenes.bank_pages import __bank__
 from scenes.cell_pages import __cell__
 from scenes.company_pages import __company__
 from scenes.contractc_pages import __contract__
-from scenes.exchange_pages import __exchange__
+# from scenes.exchange_pages import __exchange__
+from scenes.exchanges_page_2 import __exchange__
 from scenes.factory_pages import __factory__
 from scenes.game_pages import __game__, __gameinfo__
 from scenes.info_pages import __info__

@@ -175,37 +175,71 @@
                     "bank-deposit-open-period": "↪️ Назад"
                 }
             },
-            "exchange-page": {
-                "image": "img/exchange.png",
-                "content": ""
-            },
             "exchange-main-page": {
                 "image": "img/exchange.png",
-                "content": "На данной странице вы можете посмотреть текущие предожения на биржу или создать сообственные.",
-                "to_pages": {
-                    "exchange-create-page": "Создать предложение",
-                    "main-page": "↪️ Назад"
-                }
+                "content": "📈 *Биржа*\n\n{success_message}{filter_text}{offers_text}"
+                
             },
-            "exchange-sellect-confirm-page": {
+            "exchange-details-page": {
                 "image": "img/exchange.png",
-                "content": ""
-            },
-            "exchange-create-page": {
-                "image": "img/exchange.png",
-                "content": "МЕНЮ СОЗДАНИЯ ПРЕДЛОЖЕНИЯ НА БИРЖЕ\n\nТип предложения: {offer_type}\nРесурс на продажу: {sell_resource}\nКоличество ресурса за одну сделку: {sell_amount_per_trade}\nКоличество предложений: {count_offers}"
-            },
-            "exchange-create-set-barter-page": {
-                "image": "img/exchange.png",
-                "content": ""
-            },
-            "exchange-create-set-sell-page": {
-                "image": "img/exchange.png",
-                "content": ""
+                "content": "📋 *Детали предложения*\n\n🏢 *Продавец:* {seller_name}\n\n*Товар:* {sell_emoji} {sell_name}\n*За одну сделку:* {sell_amount} шт.\n*Всего в наличии:* {total_stock} шт.\n*Доступно сделок:* {available_trades}\n\n{offer_conditions}\n\n⏰ *Создано на ходу:* {created_at}"
             },
             "exchange-filter-page": {
                 "image": "img/exchange.png",
+                "content": "🔍 *Выберите ресурс для поиска*\n\nВыберите ресурс, чтобы увидеть только предложения с этим товаром:"
+            },
+            "exchange-create-page": {
+                "image": "img/exchange.png",
+                "content": "➕ *Создание предложения*\n\n📦 *Товар:* {sell_text} x{sell_amount}\n📊 *Количество сделок:* {count_offers}\n� *Тип:* {type_text}\n💼 *Условия:*\n{conditions_text}{error_text}",
+                "to_pages": {
+                    "exchange-main-page": "↪️ Назад к бирже"
+                }
+            },
+            "exchange-create-select-sell": {
+                "image": "img/exchange.png",
+                "content": "➕ *Создание предложения*\n\nТип: {offer_type_text}\n\nВыберите товар для продажи со склада:"
+            },
+            "exchange-create-input-amount": {
+                "image": "img/exchange.png",
+                "content": "➕ *Создание предложения*\n\n{sell_info}💬 *Введите количество товара за одну сделку*\n\nПример: `10` - за одну сделку будет продаваться 10 единиц товара"
+            },
+            "exchange-create-input-count": {
+                "image": "img/exchange.png",
+                "content": "➕ *Создание предложения*\n\n{sell_info}💬 *Введите количество сделок*\n\nПример: `5` - будет создано 5 сделок по {sell_amount} единиц\nВсего будет выставлено на продажу: {sell_amount} × 5 = {total_amount} единиц"
+            },
+            "exchange-create-input-price": {
+                "image": "img/exchange.png",
+                "content": "➕ *Создание предложения*\n\nТовар: {sell_emoji} {sell_name}\nЗа сделку: {sell_amount} шт.\nКоличество сделок: {count_offers}\n\n💬 *Введите цену за одну сделку*\n\nПример: `1000` - покупатель заплатит 1000 монет за одну сделку{item_price_info}"
+            },
+            "exchange-create-select-barter": {
+                "image": "img/exchange.png",
+                "content": "➕ *Создание предложения*\n\nПродаёте: {sell_emoji} {sell_name} x{sell_amount}\nКоличество сделок: {count_offers}\n\nВыберите ресурс, который хотите получить в обмен:"
+            },
+            "exchange-create-input-barter-amount": {
+                "image": "img/exchange.png",
+                "content": "➕ *Создание предложения*\n\nПродаёте: {sell_emoji} {sell_name} x{sell_amount}\nВ обмен на: {barter_emoji} {barter_name}\n\n💬 *Введите количество ресурса для обмена*\n\nПример: `5` - покупатель отдаст 5 единиц ресурса за одну сделку"
+            },
+            "exchange-create-confirm": {
+                "image": "img/exchange.png",
+                "content": "➕ *Подтверждение создания предложения*\n\n*Продаёте:*\n└ {sell_emoji} {sell_name} x{sell_amount} за сделку\n└ Количество сделок: {count_offers}\n└ Всего: {total_sell} единиц\n\n*Условия:*\n{conditions_text}\n\n⚠️ *Подтвердите создание предложения*"
+            },
+            "exchange-sellect-confirm-page": {
+                "title": "",
                 "content": ""
+            },
+            "exchange-create-set-barter-page": {
+                "image": "img/exchange.png",
+                "content": "⇄ *Установка количества ресурса*\n\n{barter_emoji} {barter_name}\n\n💬 Введите количество ресурса, которое покупатель должен отдать за одну сделку",
+                "to_pages": {
+                    "exchange-create-page": "↪️ Назад"
+                }
+            },
+            "exchange-create-set-sell-page": {
+                "image": "img/exchange.png",
+                "content": "📦 *Установка количества товара*\n\n{sell_emoji} {sell_name}\n\n💬 Введите количество товара за одну сделку\n\nДоступно на складе: *{max_amount} шт.*",
+                "to_pages": {
+                    "exchange-create-page": "↪️ Назад"
+                }
             },
             "upgrade-menu": {
                 "image": "img/upgrade.png",
