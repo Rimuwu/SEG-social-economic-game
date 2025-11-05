@@ -1,5 +1,13 @@
 import { GameState } from './GameState.js';
 
+/**
+ * WebSocketManager - Manages WebSocket connections and game state
+ * 
+ * Features:
+ * - Automatic reconnection on connection loss (every 5 seconds)
+ * - Session persistence with localStorage (auto-rejoin on page refresh)
+ * - Session rejoin happens AFTER WebSocket connection is established
+ */
 export class WebSocketManager {
   constructor(url, consoleObj) {
     this.url = url;
@@ -11,6 +19,14 @@ export class WebSocketManager {
     
     this.pendingCallbacks = new Map();
     this._pollInterval = null;
+    
+    // Auto-reconnection settings
+    this.reconnectInterval = null;
+    this.reconnectDelay = 5000; // 5 seconds
+    this.isManualDisconnect = false;
+    
+    // Session persistence key
+    this.SESSION_STORAGE_KEY = 'seg_session_id';
   }
 
   // Expose game state for Vue components
@@ -34,6 +50,19 @@ export class WebSocketManager {
   get users() {
     return this.gameState.state.users;
   }
+  
+  /**
+   * Get stored session ID from localStorage
+   * @returns {string|null}
+   */
+  getStoredSessionId() {
+    try {
+      return localStorage.getItem(this.SESSION_STORAGE_KEY);
+    } catch (error) {
+      console.error('[WS] Error getting stored session ID:', error);
+      return null;
+    }
+  }
 
   get_id() {
     return `web_${Date.now()}`;
@@ -44,12 +73,23 @@ export class WebSocketManager {
     const wsUrl = `${this.url}?client_id=${client_id}`;
     
     this.gameState.setConnecting(true);
+    this.isManualDisconnect = false;
+    
+    // Clear any existing reconnect interval
+    if (this.reconnectInterval) {
+      clearInterval(this.reconnectInterval);
+      this.reconnectInterval = null;
+    }
+    
     this.socket = new WebSocket(wsUrl);
     
     this.socket.onopen = () => {
       console.log('[WS] Connected to server');
       this.gameState.setConnected(true);
       this.gameState.setError(null);
+      
+      // Try to rejoin stored session after connection is established
+      this.attemptSessionRejoin();
     };
     
     this.socket.onmessage = (event) => this.onmessage(event);
@@ -58,6 +98,11 @@ export class WebSocketManager {
       console.log('[WS] Disconnected from server');
       this.gameState.setConnected(false);
       this.gameState.setConnecting(false);
+      
+      // Attempt to reconnect if not manually disconnected
+      if (!this.isManualDisconnect) {
+        this.scheduleReconnect();
+      }
     };
     
     this.socket.onerror = (error) => {
@@ -66,6 +111,81 @@ export class WebSocketManager {
       this.gameState.setConnected(false);
       this.gameState.setConnecting(false);
     };
+  }
+  
+  /**
+   * Schedule automatic reconnection attempt
+   */
+  scheduleReconnect() {
+    if (this.reconnectInterval) {
+      return; // Already scheduled
+    }
+    
+    console.log(`[WS] Will attempt to reconnect in ${this.reconnectDelay / 1000} seconds...`);
+    
+    this.reconnectInterval = setInterval(() => {
+      if (!this.gameState.state.connected && !this.isManualDisconnect) {
+        console.log('[WS] Attempting to reconnect...');
+        this.connect();
+      } else {
+        // Stop trying if connected
+        clearInterval(this.reconnectInterval);
+        this.reconnectInterval = null;
+      }
+    }, this.reconnectDelay);
+  }
+  
+  /**
+   * Attempt to rejoin a previously stored session
+   */
+  attemptSessionRejoin() {
+    try {
+      const storedSessionId = localStorage.getItem(this.SESSION_STORAGE_KEY);
+      
+      if (storedSessionId) {
+        console.log(`[WS] Found stored session: ${storedSessionId}, attempting to rejoin...`);
+        
+        // Join the stored session
+        this.join_session(storedSessionId, (response) => {
+          if (response.success) {
+            console.log('[WS] Successfully rejoined stored session');
+          } else {
+            console.log('[WS] Failed to rejoin stored session, clearing it');
+            localStorage.removeItem(this.SESSION_STORAGE_KEY);
+          }
+        });
+      } else {
+        console.log('[WS] No stored session found');
+      }
+    } catch (error) {
+      console.error('[WS] Error attempting session rejoin:', error);
+    }
+  }
+  
+  /**
+   * Store session ID in localStorage
+   */
+  storeSessionId(sessionId) {
+    try {
+      if (sessionId) {
+        localStorage.setItem(this.SESSION_STORAGE_KEY, sessionId);
+        console.log(`[WS] Session ${sessionId} stored for auto-rejoin`);
+      }
+    } catch (error) {
+      console.error('[WS] Error storing session ID:', error);
+    }
+  }
+  
+  /**
+   * Clear stored session ID
+   */
+  clearStoredSession() {
+    try {
+      localStorage.removeItem(this.SESSION_STORAGE_KEY);
+      console.log('[WS] Stored session cleared');
+    } catch (error) {
+      console.error('[WS] Error clearing stored session:', error);
+    }
   }
 
   join_session(session_id, callback = null) {
@@ -87,6 +207,9 @@ export class WebSocketManager {
 
     this.state.session.id = session_id;
     console.log(`[WS] Joining session ${session_id}`);
+    
+    // Store session ID for auto-rejoin
+    this.storeSessionId(session_id);
 
     this.socket.send(
       JSON.stringify({
@@ -1353,7 +1476,15 @@ export class WebSocketManager {
 
   // Clean disconnect
   disconnect() {
+    this.isManualDisconnect = true;
     this.stopPolling();
+    
+    // Clear reconnection interval
+    if (this.reconnectInterval) {
+      clearInterval(this.reconnectInterval);
+      this.reconnectInterval = null;
+    }
+    
     if (this.socket) {
       this.socket.close();
       this.socket = null;
@@ -1366,6 +1497,10 @@ export class WebSocketManager {
   leaveSession() {
     this.stopPolling();
     this.gameState.clearSession();
+    
+    // Clear stored session when explicitly leaving
+    this.clearStoredSession();
+    
     console.log('[WS] Left session');
   }
 }
