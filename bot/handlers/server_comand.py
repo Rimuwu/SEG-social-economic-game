@@ -104,10 +104,10 @@ async def on_company_to_prison(message: dict):
     bot_logger.info(f"Сообщение о конце игры {session_id} отправлено {len(ADMIN_IDS)} администраторам")
 
 
-async def _format_price_difference_message(session_id: str, item_prices: dict) -> str:
+async def _format_price_difference_message(session_id: str, item_prices: dict, step: int) -> str:
     """Форматировать сообщение о разнице в ценах"""
-    message = f"📊 *Изменения цен в сессии {session_id}:*\n\n"
-    
+    message = f"📊 *Изменения цен в сессии {session_id}, шаг {step}:*\n\n"
+
     # Считаем изменения
     changes = []
     for item_id, prices in item_prices.items():
@@ -158,9 +158,10 @@ async def on_price_difference(message: dict):
     
     session_id = data.get('session_id', 'Неизвестная сессия')
     item_prices = data.get('item_prices', {})
+    step = data.get('step', 0)
     
     # Форматируем сообщение о ценах
-    price_message = await _format_price_difference_message(session_id, item_prices)
+    price_message = await _format_price_difference_message(session_id, item_prices, step)
     
     # Отправляем сообщение каждому админу
     for admin_id in ADMIN_IDS:

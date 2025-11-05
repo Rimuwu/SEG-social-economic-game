@@ -214,6 +214,7 @@ class Session(BaseClass):
                 await websocket_manager.broadcast({
                     "type": "api-price_difference",
                     "data": {
+                        "step": self.step,
                         "session_id": self.session_id,
                         "item_prices": item_prices
                     }
