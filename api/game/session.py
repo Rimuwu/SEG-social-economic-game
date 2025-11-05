@@ -5,6 +5,7 @@ from enum import Enum
 import random
 from typing import Optional, TYPE_CHECKING
 import uuid
+from global_modules.models.resources import Resources
 from modules.websocket_manager import websocket_manager
 
 from game.stages import stage_game_updater
@@ -30,6 +31,7 @@ settings: Settings = ALL_CONFIGS['settings']
 cells: Cells = ALL_CONFIGS['cells']
 cells_types = cells.types
 EVENTS: Events = ALL_CONFIGS['events']
+RESOURCES: Resources = ALL_CONFIGS["resources"]
 
 TURN_CELL_TIME = settings.turn_cell_time_minutes * 60
 
@@ -188,15 +190,34 @@ class Session(BaseClass):
             for logistics in logistics_list:
                 await logistics.on_new_turn()
 
+            item_prices = {}
+
             items_prices: list[ItemPrice] = await self.item_prices
             for item_price in items_prices:
+                item_prices[item_price.id] = {
+                    "name": RESOURCES.get_resource(
+                        item_price.id).label,
+                    "last": item_price.price_on_last_step,
+                    "new": 0
+                }
+
                 await item_price.on_new_game_step()
+                item_prices[item_price.id]["new"] = item_price.get_effective_price()
 
             # Генерируем события каждые 5 этапов
             await self.events_generator()
 
             self.step += 1
             await self.execute_step_schedule(self.step)
+
+            if self.step != 1:
+                await websocket_manager.broadcast({
+                    "type": "api-price_difference",
+                    "data": {
+                        "session_id": self.session_id,
+                        "item_prices": item_prices
+                    }
+                })
 
         elif new_stage == SessionStages.ChangeTurn:
             from game.company import Company

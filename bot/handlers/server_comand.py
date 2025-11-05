@@ -1,11 +1,10 @@
 
 import os
 
-from bot_instance import dp, bot
+from bot_instance import bot
 from modules.ws_client import ws_client
 from global_modules.logs import Logger
 
-# Логгер
 bot_logger = Logger.get_logger("bot")
 
 # Список ID администраторов
@@ -19,15 +18,15 @@ ADMIN_IDS = [admin_id.strip(
 async def _get_user_mention(user: dict) -> str:
     """Получить @упоминание пользователя или ссылку на него"""
     user_id = user.get('id', 0)
-    
+
     if not user_id:
         return "Неизвестный пользователь"
-    
+
     try:
         # Получаем информацию о пользователе из Telegram
         chat_member = await bot.get_chat_member(user_id, user_id)
         tg_user = chat_member.user
-        
+
         # Если есть username - используем его
         if tg_user.username:
             return f"@{tg_user.username} ({user['username']})"
@@ -49,20 +48,20 @@ async def _get_user_mention(user: dict) -> str:
 async def _format_winners_message(winners: dict) -> str:
     """Форматировать сообщение о победителях"""
     message = "🏆 *Результаты игры:*\n\n"
-    
+
     for category, company_data in winners.items():
         if not company_data:
             continue
-            
+
         category_names = {
             'capital': '💰 По капиталу',
             'reputation': '⭐ По репутации',
             'economic': '📊 По экономической мощи'
         }
-        
+
         company_name = company_data.get('name', 'Неизвестная компания')
         message += f"{category_names.get(category, category)}: *{company_name}*\n"
-        
+
         # Получаем участников компании
         try:
             users_data = company_data.get('users', [])
@@ -75,22 +74,22 @@ async def _format_winners_message(winners: dict) -> str:
                 message += ", ".join(mentions) + "\n"
         except Exception as e:
             bot_logger.error(f"Ошибка при получении участников компании: {e}")
-        
+
         message += "\n"
-    
+
     return message
 
 
 @ws_client.on_message("api-game_ended")
 async def on_company_to_prison(message: dict):
     data = message.get('data', {})
-    
+
     session_id = data['session_id']
     winners = data['winners']
-    
+
     # Форматируем сообщение о победителях
     winners_message = await _format_winners_message(winners)
-    
+
     # Отправляем сообщение каждому админу
     for admin_id in ADMIN_IDS:
         try:
@@ -101,7 +100,79 @@ async def on_company_to_prison(message: dict):
             )
         except Exception as e:
             bot_logger.error(f"Ошибка при отправке сообщения админу {admin_id}: {e}")
-    
+
     bot_logger.info(f"Сообщение о конце игры {session_id} отправлено {len(ADMIN_IDS)} администраторам")
+
+
+async def _format_price_difference_message(session_id: str, item_prices: dict) -> str:
+    """Форматировать сообщение о разнице в ценах"""
+    message = f"📊 *Изменения цен в сессии {session_id}:*\n\n"
+    
+    # Считаем изменения
+    changes = []
+    for item_id, prices in item_prices.items():
+        last_price = prices.get('last', 0)
+        new_price = prices.get('new', 0)
+        item_name = prices.get('name', item_id)  # Используем имя или ID как fallback
+        
+        if last_price != new_price:
+            difference = new_price - last_price
+            percentage = (difference / last_price * 100) if last_price > 0 else 0
+            
+            # Выбираем эмодзи в зависимости от изменения
+            if difference > 0:
+                emoji = "📈"
+                sign = "+"
+            else:
+                emoji = "📉"
+                sign = ""
+            
+            changes.append({
+                'item_id': item_id,
+                'item_name': item_name,
+                'last_price': last_price,
+                'new_price': new_price,
+                'difference': difference,
+                'percentage': percentage,
+                'emoji': emoji,
+                'sign': sign
+            })
+    
+    if not changes:
+        message += "Цены остались без изменений.\n"
+    else:
+        # Сортируем по абсолютному значению изменения (самые большие изменения вверху)
+        changes.sort(key=lambda x: abs(x['percentage']), reverse=True)
+        
+        for change in changes:
+            message += f"{change['emoji']} *{change['item_name']}*\n"
+            message += f"  {change['last_price']} → {change['new_price']} "
+            message += f"({change['sign']}{change['difference']}, {change['sign']}{change['percentage']:.1f}%)\n\n"
+    
+    return message
+
+
+@ws_client.on_message("api-price_difference")
+async def on_price_difference(message: dict):
+    data = message.get('data', {})
+    
+    session_id = data.get('session_id', 'Неизвестная сессия')
+    item_prices = data.get('item_prices', {})
+    
+    # Форматируем сообщение о ценах
+    price_message = await _format_price_difference_message(session_id, item_prices)
+    
+    # Отправляем сообщение каждому админу
+    for admin_id in ADMIN_IDS:
+        try:
+            await bot.send_message(
+                int(admin_id),
+                price_message,
+                parse_mode="Markdown"
+            )
+        except Exception as e:
+            bot_logger.error(f"Ошибка при отправке сообщения о ценах админу {admin_id}: {e}")
+    
+    bot_logger.info(f"Сообщение об изменении цен в сессии {session_id} отправлено {len(ADMIN_IDS)} администраторам")
 
 
