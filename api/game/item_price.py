@@ -33,6 +33,8 @@ class ItemPrice(BaseClass, SessionObject):
         self.popularity: int = 0  # Как часто покупают этот товар
         self.popularity_on_step: int = 0  # Популярность за текущий шаг
 
+        self.price_on_last_step: int = 0  # Цена на последнем шаге
+
 
     async def add_popularity(self, amount: int = 1):
         self.popularity += amount
@@ -69,7 +71,8 @@ class ItemPrice(BaseClass, SessionObject):
             "current_price": self.current_price,
             "material_based_price": self.material_based_price,
             "popularity": self.popularity,
-            "popularity_on_step": self.popularity_on_step
+            "popularity_on_step": self.popularity_on_step,
+            "price_on_last_step": self.price_on_last_step
         }
 
     async def calculate_material_price(self) -> int:
@@ -79,12 +82,11 @@ class ItemPrice(BaseClass, SessionObject):
 
         total_cost = 0
         for mat_id, qty in resource.production.materials.items():
-            mat_price_obj = cast(ItemPrice, 
-                                 await just_db.find_one("item_price", 
-                                        id=mat_id, 
-                                        session_id=self.session_id, 
+            mat_price_obj = await just_db.find_one("item_price", 
+                                        id=mat_id,
+                                        session_id=self.session_id,
                                         to_class=ItemPrice
-                                        ))
+                                        )
             if mat_price_obj:
                 mat_price = mat_price_obj.get_effective_price()
             else:
@@ -132,8 +134,10 @@ class ItemPrice(BaseClass, SessionObject):
                 "price": self.get_effective_price(),
             }
         })
-    
+
     async def on_new_game_step(self):
         self.popularity_on_step = 0
+        self.price_on_last_step = self.get_effective_price()
+
         await self.save_to_base()
         return True
