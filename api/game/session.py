@@ -432,7 +432,7 @@ class Session(BaseClass):
                     x_operation=location.x,
                     y_operation=location.y
                 )
-                index = x * self.map_size["cols"] + y
+                index = y * self.map_size["cols"] + x
                 self.cells[index] = cell_key
  
 
@@ -498,7 +498,7 @@ class Session(BaseClass):
         if not ignore_stage and not self.can_select_cells():
             raise ValueError("Текущая стадия сессии не позволяет выбирать клетки.")
 
-        index = x * self.map_size["cols"] + y
+        index = y * self.map_size["cols"] + x
         cell_type_key = self.cells[index]
         cell_type = cells.types.get(cell_type_key)
 
