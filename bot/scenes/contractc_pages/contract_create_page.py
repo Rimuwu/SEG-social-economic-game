@@ -14,17 +14,16 @@ class ContractCreatePage(ItemFilter):
     
     
     async def data_preparate(self):
-        data = self.scene.get_data("scene")
         if self.scene.get_key("contract-create-page", "state") is None:
             await self.scene.update_key("contract-create-page", "settings", json.dumps({
                 "supplier_company_id": None,
                 "customer_company_id": None,
-                "session_id": data["session"],
+                "session_id": self.scene.get("scene", "session"),
                 "resource": None,
                 "amount_per_turn": None,
                 "duration_turns": None,
                 "payment_amount": None,
-                "who_creator": data["company_id"],
+                "who_creator": self.scene.get("scene", "company_id"),
             }))
         if self.scene.get_key("contract-create-page", "state") is None:
             await self.scene.update_key("contract-create-page", "state", "select_role")
