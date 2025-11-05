@@ -54,13 +54,13 @@ const TileTypes = {
  * @type {Object}
  */
 const tileStyles = {
-  [TileTypes.MOUNTAINS]: { color: "#4E4E4E", fontColor: "#ff"},
+  [TileTypes.MOUNTAINS]: { color: "#4E4E4E", fontColor: "#fff"},
   [TileTypes.WATER]: { color: "#00AAFF", fontColor: "#000"},
   [TileTypes.FOREST]: { color: "#3E8B03", fontColor: "#fff"},
   [TileTypes.FIELD]: { color: "#81D905", fontColor: "#000"},
   [TileTypes.CITY]: { color: "#FFBB00", fontColor: "#000"},
   [TileTypes.BANK]: { color: "#FF4400", fontColor: "#000"},
-  [TileTypes.COMPANY]: { color: "#A100FF", fontColor: "#fff"},
+  [TileTypes.COMPANY]: { color: "", fontColor: ""},
 }
 /**
  * Sets the tile's color and label in the grid.
@@ -76,8 +76,12 @@ function setTile(row, col, tileType, text) {
   const tile = tileRefs.value[idx]
   if (!tile) return
   if (tileType !== undefined && tileType !== null) {
-    tile.style.backgroundColor = tileStyles[tileType].color
-    tile.style.color = tileStyles[tileType].fontColor
+    if (tileStyles[tileType].color !== "") {
+      tile.style.backgroundColor = tileStyles[tileType].color
+    }
+    if (tileStyles[tileType].fontColor !== "") {
+      tile.style.color = tileStyles[tileType].fontColor
+    }
   }
   
   // Remove any previous special classes
