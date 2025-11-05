@@ -2,6 +2,7 @@ from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardBut
 from aiogram.utils.keyboard import ReplyKeyboardBuilder
 from modules.ws_client import get_users, get_company, get_companies
 from oms import scene_manager
+from oms.utils import callback_generator
 
 def list_to_inline(buttons, row_width=3):
     """ Преобразует список кнопок в inline-клавиатуру 
@@ -71,3 +72,12 @@ def cell_into_xy(cell):
     x = alphabet.index(cell[0].upper())
     y = int(cell[1:]) - 1
     return x, y
+
+
+def create_buttons(scene_name, text: str, callback_data: str, *args, ignore_row=False, next_line=False):
+    return {
+        "text": text,
+        "callback_data": callback_generator(scene_name, callback_data, *args),
+        "ignore_row": ignore_row,
+        "next_line": next_line
+    }
