@@ -86,7 +86,7 @@ class SelectCell(Page):
             company_id = data.get('company_id')
             response = await set_company_position(company_id=company_id, x=x, y=y)
             
-            if response.get("result") == False:
+            if "error" in response:
                 self.content = "Данная клетка уже занята, выберите другую:"
                 await self.scene.update_message()
                 return

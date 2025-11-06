@@ -113,14 +113,14 @@ class GameInfo(Page):
             buttons.extend(nav_row)
         
         # Кнопка подключения к игре (только на последней странице)
-        if self.current_page == self.total_pages:
-            buttons.append({
-                'text': '🚀 Подключиться к игре',
-                'callback_data': callback_generator(
-                    self.scene.__scene_name__,
-                    'connect_game'
-                )
-            })
+        buttons.append({
+            'text': '🚀 Подключиться к игре',
+            'callback_data': callback_generator(
+                self.scene.__scene_name__,
+                'connect_game'
+            ),
+            "ignore_row": True
+        })
         
         self.row_width = 2  # По 2 кнопки в ряд
         return buttons
