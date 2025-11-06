@@ -14,23 +14,16 @@ class UserName(Page):
         scene_data = self.scene.get_data('scene')
         session_id = scene_data['session']
 
-        users = await get_users(session_id=session_id)       
-        flag_name = True
-        for i in users:
-            if i['username'] == value:
-                flag_name = False
-                break
-
-        if flag_name:
-            await create_user(
-                user_id=message.from_user.id,
-                username=value,
-                session_id=session_id
-            )
-            await self.scene.update_page('company-option')
-        else:
+        res = await create_user(
+            user_id=message.from_user.id,
+            username=value,
+            session_id=session_id
+        )
+        if "error" in res:
             self.clear_content()
             self.content = self.content.replace("Введите ваше имя для продолжения: ", 
-                                                "Данное имя уже занято, введите другое: ")
+                                                res["error"])
 
             await self.scene.update_message()
+        else:
+            await self.scene.update_page('company-option')

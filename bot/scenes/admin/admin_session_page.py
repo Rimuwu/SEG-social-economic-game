@@ -1,13 +1,13 @@
-from oms import Page
-from modules.ws_client import get_sessions, delete_session, create_session, update_session_stage, notforgame_update_session_max_steps
+from oms import Page, scene_manager
+from modules.ws_client import get_user, get_session, get_sessions, delete_session, create_session, update_session_stage, notforgame_update_session_max_steps, get_users
 import json
 from modules.utils import create_buttons
-
+import asyncio
 
 class SessionAdd(Page):
     __page_name__ = "admin-session-add-page"
     async def data_preparate(self):
-        if json.loads(self.scene.get_key(self.__page_name__, "settings")) is None:
+        if self.scene.get_key(self.__page_name__, "settings") is None:
             await self.scene.update_key(self.__page_name__, "settings", json.dumps({
                 "session_id": None, #ID сессии
                 "map_pattern": None, #Паттерн карты
@@ -23,7 +23,10 @@ class SessionAdd(Page):
             await self.scene.update_key(self.__page_name__, "state", None)
 
     async def content_worker(self):
-        data = json.loads(self.scene.get_key(self.__page_name__, "settings"))
+        try:
+            data = json.loads(self.scene.get_key(self.__page_name__, "settings"))
+        except:
+            data = self.scene.get_key(self.__page_name__, "settings")
         
         return self.content.format(
             session_id = data.get("session_id") if data.get("session_id") is not None else "Не задано",
@@ -102,17 +105,20 @@ class SessionAdd(Page):
     
     @Page.on_callback("create_session")
     async def create_session(self, callback, args):
-        data = json.loads(self.scene.get_key(self.__page_name__, "settings"))
+        try:
+            data = json.loads(self.scene.get_key(self.__page_name__, "settings"))
+        except:
+            data = self.scene.get_key(self.__page_name__, "settings")
         result = await create_session(
             session_id=data.get("session_id"),
-            map_pattern=data.get("map_pattern"),
-            size=data.get("size"),
-            max_steps=data.get("max_steps"),
-            session_group_url=data.get("session_group_url"),
-            max_companies=data.get("max_companies"),
-            max_players_in_company=data.get("max_player_in_company"),
-            time_on_game_stage=data.get("time_on_game_stage"),
-            time_on_change_stage=data.get("time_on_change_stage")
+            map_pattern=data.get("map_pattern") if data.get("map_pattern") is not None else "random",
+            size=data.get("size") if data.get("size") is not None else 7,
+            max_steps=data.get("max_steps") if data.get("max_steps") is not None else 15,
+            session_group_url=data.get("session_group_url") if data.get("session_group_url") is not None else "",
+            max_companies=data.get("max_companies") if data.get("max_companies") is not None else 10,
+            max_players_in_company=data.get("max_player_in_company") if data.get("max_player_in_company") is not None else 5,
+            time_on_game_stage=data.get("time_on_game_stage") if data.get("time_on_game_stage") is not None else 3,
+            time_on_change_stage=data.get("time_on_change_stage") if data.get("time_on_change_stage") is not None else 1
         )
 
         if "error" in result:
@@ -120,11 +126,14 @@ class SessionAdd(Page):
         else:
             await callback.answer("✅ Сессия создана!", show_alert=True)
             await self.scene.update_key(self.__page_name__, "settings", None)
-            await self.scene.update_page("admin-main-page")
+            await self.scene.update_page("admin-session-main-page")
         
     @Page.on_text("int")
     async def handle_int(self, message, value: int):
-        data = json.loads(self.scene.get_key(self.__page_name__, "settings"))
+        try:
+            data = json.loads(self.scene.get_key(self.__page_name__, "settings"))
+        except:
+            data = self.scene.get_key(self.__page_name__, "settings")
         state = self.scene.get_key(self.__page_name__, "state")
         
         if state == "set_size":
@@ -155,7 +164,10 @@ class SessionAdd(Page):
     
     @Page.on_text("str")
     async def handle_str(self, message, value: str):
-        data = json.loads(self.scene.get_key(self.__page_name__, "settings"))
+        try:
+            data = json.loads(self.scene.get_key(self.__page_name__, "settings"))
+        except:
+            data = self.scene.get_key(self.__page_name__, "settings")
         state = self.scene.get_key(self.__page_name__, "state")
         
         if state == "set_id":
@@ -174,7 +186,56 @@ class SessionAdd(Page):
 
 class SessionDell(Page):
     __page_name__ = "admin-session-dell-page"
-
-
+    
+    async def buttons_worker(self):
+        result = await get_sessions()
+        buttons = []
+        self.row_width = 2
+        if len(result) != 0:
+            for s in result:
+                buttons.append(create_buttons(self.scene.__scene_name__, f"{s.get('id')}", "dell_session", s.get("id")))
+        
+        return buttons
+    
+    
+    @Page.on_callback("dell_session")
+    async def dell_session(self, callback, args):
+        flag = True
+        try:
+            if await get_user(id=self.scene.user_id).get("session_id") == value:
+                flag = False
+        except:
+            pass
+        users = await get_users(session_id=args[1])
+        print(users)
+        for user in users:
+            scene = scene_manager.get_scene(user['id'])
+            print(user["id"])
+            if scene:
+                await scene.end()
+        await delete_session(args[1], really=True)
+        if flag:
+            await callback.answer("✅ Сессия удалена!", show_alert=True)
+            await self.scene.update_message()
+    
+    @Page.on_text("str")
+    async def handle_str(self, message, value: str):
+        flag = True
+        try:
+            if await get_user(id=self.scene.user_id).get("session_id") == value:
+                flag = False
+        except:
+            pass
+        if "error" not in await get_session(value):
+            users = await get_users(session_id=value)
+            for user in users:
+                scene = scene_manager.get_scene(user['id'])
+                if scene:
+                    await scene.end()
+        await delete_session(value, really=True)
+        if flag:
+            await self.scene.update_message()
+    
+        
 class SessionInfo(Page):
     __page_name__ = "admin-session-info-page"

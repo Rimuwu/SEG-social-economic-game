@@ -119,17 +119,11 @@ async def process_delete_session_id(message: Message, state: FSMContext):
     msg_id = data['msg_id']
     
     users = await get_users(session_id=session_id)
-    reposnse2 = await get_session(session_id=session_id)
+    print(users)
     response = await delete_session(
         session_id=session_id,
         really=True
     )
-    print("==========================")
-    print(users)
-    print(reposnse2)
-    print(response)
-    print(message.text)
-    print("==========================")
     for user in users:
         scene = scene_manager.get_scene(user['id'])
         if scene:

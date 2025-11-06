@@ -6,6 +6,11 @@ class AdminMainPage(Page):
     __page_name__ = "admin-main-page"
     
     
+    async def data_preparate(self):
+        if self.scene.get_key(self.__page_name__, "previous_page") is None:
+            await self.scene.update_key(self.__page_name__, "previous_page", self.scene.get_key("scene", "previous_page") if "admin" not in self.scene.get_key("scene", "previous_page") else self.scene.get_key(self.__page_name__, "previous_page"))
+    
+    
     async def buttons_worker(self):
         self.row_width = 2
         buttons = [
@@ -19,5 +24,9 @@ class AdminMainPage(Page):
     
     @Page.on_callback("back")
     async def back_to_previous(self, callback, args: list):
-        page = self.scene.get_key("scene", "previous_page")
+        page = self.scene.get_key(self.__page_name__, "previous_page")
         await self.scene.update_page(page)
+    
+    @Page.on_callback("to_pages")
+    async def to_pages(self, callback, args: list):
+        await self.scene.update_page(args[1])
