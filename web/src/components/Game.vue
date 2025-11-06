@@ -90,24 +90,24 @@ const formatExchangeText = (activity) => {
     const resourceName = wsManager?.gameState?.getResourceName(activity.resource)
     
     if (activity.offerType === 'money') {
-      return `${companyName} выставила на продажу ${resourceName}`
+      return `Компания ${companyName} выставила на продажу продукт ${resourceName}`
     } else if (activity.offerType === 'barter') {
       const barterResourceName = wsManager?.gameState?.getResourceName(activity.barterResource)
-      return `${companyName} меняет ${resourceName} на ${barterResourceName}`
+      return `Компания ${companyName} предлагает бартер товара ${resourceName} на ${barterResourceName}`
     }
-    return `${companyName} выставила на продажу ${resourceName}`
+    return `Компания ${companyName} выставила на продажу продукт ${resourceName}`
   } else if (activity.type === 'trade_completed') {
     const sellerName = activity.companyName || getCompanyName(activity.companyId)
     const buyerName = activity.buyerName || getCompanyName(activity.buyerId)
     const resourceName = wsManager?.gameState?.getResourceName(activity.resource)
     
     if (activity.offerType === 'money') {
-      return `${buyerName} купила ${resourceName} у ${sellerName}`
+      return `Компания ${buyerName} выкупила продукт ${resourceName} у компании ${sellerName}`
     } else if (activity.offerType === 'barter') {
       const barterResourceName = wsManager?.gameState?.getResourceName(activity.barterResource)
-      return `${buyerName} обменяла ${barterResourceName} на ${resourceName} с ${sellerName}`
+      return `Компания ${buyerName} обменяла ${barterResourceName} на ${resourceName} с компанией ${sellerName}`
     }
-    return `${buyerName} купила ${resourceName} у ${sellerName}`
+    return `Компания ${buyerName} купила продукт ${resourceName} у компании ${sellerName}`
   }
   return ''
 }
