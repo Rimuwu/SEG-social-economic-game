@@ -1,9 +1,17 @@
 <script setup>
 import Map from './Map.vue'
+import LeaveButton from './LeaveButton.vue'
 import { onMounted, ref, inject, computed } from 'vue'
+
+const emit = defineEmits(['navigateTo'])
 
 const pageRef = ref(null)
 const wsManager = inject('wsManager', null)
+
+// Handle leave button click
+const handleLeave = () => {
+  emit('navigateTo', 'Introduction')
+}
 
 // Computed properties for time and turn display
 const timeToNextStage = computed(() => {
@@ -270,6 +278,9 @@ onMounted(() => {
 
       </div>
     </div>
+    
+    <!-- Leave Button -->
+    <LeaveButton @leave="handleLeave" />
   </div>
 </template>
 
