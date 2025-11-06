@@ -716,7 +716,7 @@ export class GameState {
       companyId: upgradeData.company_id,
       companyName: upgradeData.company_name,
       improvementType: upgradeData.improvement_type,
-      level: upgradeData.new_1level,
+      level: upgradeData.new_level,
       timestamp: Date.now()
     };
     
