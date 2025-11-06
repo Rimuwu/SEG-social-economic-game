@@ -715,12 +715,17 @@ export class WebSocketManager {
     const callback = this.pendingCallbacks.get(requestId);
     
     if (message.data) {
+      console.log('[WS] Session response received. time_to_next_stage:', message.data.time_to_next_stage);
+      
       // Update game state with session data
       this.gameState.updateSession(message.data);
       
       // Update time to next stage if provided in session data
       if (message.data.time_to_next_stage !== undefined) {
+        console.log('[WS] Updating time from session response:', message.data.time_to_next_stage);
         this.gameState.updateTimeToNextStage(message.data.time_to_next_stage);
+      } else {
+        console.warn('[WS] Session response missing time_to_next_stage field');
       }
       
       // Load map if available
@@ -1187,8 +1192,12 @@ export class WebSocketManager {
         break;
         
       case 'api-update_session_stage':
+        console.log('[WS] Stage update broadcast received');
         // Refresh session (includes time_to_next_stage)
         this.get_session();
+        
+        // Explicitly refresh time to ensure we get the new timer value
+        this.get_time_to_next_stage();
         
         // Refresh event data (might have changed)
         this.get_session_event();

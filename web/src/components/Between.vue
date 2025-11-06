@@ -15,7 +15,12 @@ const handleLeave = () => {
 
 // Computed properties for time and turn display
 const timeToNextStage = computed(() => {
-  return wsManager?.gameState?.getFormattedTimeToNextStage() || '--:--'
+  // Access the reactive state directly for proper reactivity
+  const time = wsManager?.gameState?.state?.timeToNextStage
+  if (time === null || time === undefined) return '--:--'
+  const minutes = Math.floor(time / 60)
+  const seconds = time % 60
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
 })
 
 const turnInfo = computed(() => {
