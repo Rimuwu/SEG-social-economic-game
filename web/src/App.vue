@@ -122,11 +122,14 @@ globalThis.wsManager = wsManager
 
 /**
  * Watch for session stage changes and automatically navigate to appropriate view
+ * Only triggers if user is actually in a session (session.id exists)
  */
 watch(
   () => wsManager.gameState?.state?.session?.stage,
   (newStage, oldStage) => {
-    if (newStage && newStage !== oldStage) {
+    // Only auto-navigate if we have a valid session ID
+    const sessionId = wsManager.gameState?.state?.session?.id
+    if (newStage && newStage !== oldStage && sessionId) {
       const targetView = stageToView(newStage)
       if (targetView !== currentView.value && targetView !== 'Introduction') {
         console.log(`🎮 Stage changed: ${oldStage} → ${newStage}, navigating to ${targetView}`)
