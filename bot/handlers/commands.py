@@ -220,35 +220,51 @@ async def change_session_stage(message: Message):
 
 
 @dp.message(Command("leave"))
-async def leave_session(message: Message, state: FSMContext):
-    msg = await message.answer("Отправьте 'Да' для подтверждения выхода из сессии или что угодно для отмены.")
-    await state.update_data(msg_id=msg.message_id)
-    await state.set_state(ConfirmLeaveStates.waiting_for_confirmation)
-
-
-@dp.message(ConfirmLeaveStates.waiting_for_confirmation)
-async def confirm_leave(message: Message, state: FSMContext):
-    await message.delete()
-    data = await state.get_data()
-    msg_id = data['msg_id']
-    if message.text.lower() != "да":
-        await message.bot.edit_message_text(
-            chat_id=message.chat.id,
-            message_id=msg_id,
-            text="Выход из сессии отменен."
-        )
-        await state.clear()
-        return
-    user_id = message.from_user.id
-    await delete_user(user_id=user_id)
-    scene = scene_manager.get_scene(user_id)
-    await message.bot.edit_message_text(
-        chat_id=message.chat.id,
-        message_id=msg_id,
-        text="Ваше существование в сессии приравнено к 0, спасибо за игру."
+async def leave_session(message: Message):
+    from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+    
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="✅ Подтверждаю", callback_data="confirm_leave"),
+            InlineKeyboardButton(text="❌ Отмена", callback_data="cancel_leave")
+        ]
+    ])
+    
+    await message.answer(
+        "⚠️ Вы уверены, что хотите выйти из сессии?\n\n"
+        "Это действие удалит вашего персонажа из игры.",
+        reply_markup=keyboard
     )
-    await scene.end()
-    await state.clear()
+
+
+@dp.callback_query(F.data == "confirm_leave")
+async def confirm_leave_callback(callback):
+    user_id = callback.from_user.id
+    
+    try:
+        await delete_user(user_id=user_id)
+        scene = scene_manager.get_scene(user_id)
+        
+        await callback.message.edit_text(
+            "✅ Ваше существование в сессии приравнено к 0, спасибо за игру."
+        )
+        
+        if scene:
+            await scene.end()
+    except Exception as e:
+        await callback.message.edit_text(
+            f"❌ Ошибка при выходе из сессии: {str(e)}"
+        )
+    
+    await callback.answer()
+
+
+@dp.callback_query(F.data == "cancel_leave")
+async def cancel_leave_callback(callback):
+    await callback.message.edit_text(
+        "❌ Выход из сессии отменен."
+    )
+    await callback.answer()
 
     
 @dp.message(Command("prevpage"))

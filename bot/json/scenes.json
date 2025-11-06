@@ -338,9 +338,24 @@
                 "image": "img/end_game.png",
                 "content": "Игра завершена!"
             },
-            "admin-panel-page": {
+            "admin-main-page": {
                 "image": "img/end_game.png",
                 "content": "Админ панель"
+            },
+            "admin-session-main-page": {
+                "image": "img/end_game.png",
+                "content": "📋 *Сессии:*\n\n{sessions}",
+                "to_pages": {
+                    "admin-main-page": "↪️ Назад"
+                },
+                "row_width": 1
+            },
+            "admin-session-add-page": {
+                "image": "img/end_game.png",
+                "content": "ID: {session_id}\nMap pattern: {map_pattern}\nSize map: {size}\nMax Steps: {max_steps}\nSession group URL: {session_group_url}\n Max Companies: {max_companies}\nMax player in Company: {max_player_in_company}\nTime on game stage: {time_on_game_stage}\nTime on change stage: {time_on_change_stage}",
+                "to_pages": {
+                    "admin-session-main-page": "↪️ Назад"
+                }
             },
             "city-page": {
                 "image": "img/cities.png",
@@ -364,9 +379,61 @@
             "game-info-page": {
                 "content": ""
             },
-            "admin-panel-page": {
+           "admin-main-page": {
+                "image": "img/end_game.png",
                 "content": "Админ панель"
+            },
+            "admin-session-main-page": {
+                "image": "img/end_game.png",
+                "content": "📋 *Сессии:*\n\n{sessions}",
+                "to_pages": {
+                    "admin-main-page": "↪️ Назад"
+                },
+                "row_width": 1
+            },
+            "admin-session-add-page": {
+                "image": "img/end_game.png",
+                "content": "ID: {session_id}\nMap pattern: {map_pattern}\nSize map: {size}\nMax Steps: {max_steps}\nSession group URL: {session_group_url}\n Max Companies: {max_companies}\nMax player in Company: {max_player_in_company}\nTime on game stage: {time_on_game_stage}\nTime on change stage: {time_on_change_stage}",
+                "to_pages": {
+                    "admin-session-main-page": "↪️ Назад"
+                }
             }
+        }
+    },
+    "admin-scene-manager": {
+        "settings": {
+            "parse_mode": "Markdown",
+            "delete_after_send": true
+        },
+        "pages": {
+            "admin-main-page": {
+                "image": "img/end_game.png",
+                "content": "Админ панель",
+                "to_pages": {
+                    "admin-session-main-page": "↪️ Сессии",
+                    "admin-company-main-page": "↪️ Компании",
+                    "admin-user-main-page": "↪️ Пользователи"
+                },
+                "row_width": 2
+            },
+            "admin-session-main-page": {
+                "image": "img/end_game.png",
+                "content": "📋 *Сессии:*\n\n{sessions}",
+                "to_pages": {
+                    "admin-session-add-page": "➕ Создать",
+                    "admin-session-dell-page": "➖ Удалить",
+                    "admin-main-page": "↪️ Назад"
+                },
+                "row_width": 1
+            },
+            "admin-session-add-page": {
+                "image": "img/end_game.png",
+                "content": "ID: {session_id}\nMap pattern: {map_pattern}\nSize map: {size}\nMax Steps: {max_steps}\nSession group URL: {session_group_url}\n Max Companies: {max_companies}\nMax player in Company: {max_player_in_company}\nTime on game stage: {time_on_game_stage}\nTime on change stage: {time_on_change_stage}",
+                "to_pages": {
+                    "admin-session-main-page": "↪️ Назад"
+                }
+            }
+
         }
     }
 }

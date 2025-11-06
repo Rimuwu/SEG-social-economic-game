@@ -1,3 +1,4 @@
+from scenes.admin import AdminMainPage
 from scenes.admin import __admin__
 from scenes.game_pages import __gameinfo__
 from scenes.base_scene import AdminScene
@@ -6,8 +7,7 @@ from modules.db import db
 
 class StartManager(AdminScene):
     __scene_name__ = 'start-scene-manager'
-    __pages__ = [
-    ]
+    __pages__ = [AdminMainPage]
     
     __pages__.extend(__gameinfo__)
     __pages__.extend(__admin__)
