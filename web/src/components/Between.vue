@@ -139,9 +139,11 @@ const formatNumber = (num) => {
 
 // Event computed property
 const currentEvent = computed(() => {
-  const event = wsManager?.gameState?.getEvent() || null
+  // Access the reactive state directly for proper reactivity
+  const event = wsManager?.gameState?.state?.event
   console.log('[Between.vue] Current event:', event)
-  return event
+  // Return event only if it has an ID (meaning it exists)
+  return event && event.id ? event : null
 })
 
 // Helper to get event status text
