@@ -71,14 +71,10 @@ const formatCityDemands = (city) => {
   return formatted;
 }
 
-// Computed property for exchanges (latest 4, newest first)
+// Computed property for exchanges (latest 3 activities, newest first)
 const latestExchanges = computed(() => {
-  const exchanges = wsManager?.gameState?.state?.exchanges || []
-  const sessionExchanges = exchanges.filter(e => 
-    e.session_id === wsManager?.gameState?.state?.session?.id
-  )
-  // Get the last 4 exchanges (most recent) and reverse to show newest first
-  return sessionExchanges.slice(-4).reverse()
+  // Use the recent activity list instead of the offers list
+  return wsManager?.gameState?.getRecentExchangeActivity(3) || []
 })
 
 // Helper function to get company name by ID
@@ -87,18 +83,33 @@ const getCompanyName = (companyId) => {
   return company?.name || `Компания ${companyId}`
 }
 
-// Helper function to format exchange text (matching the existing format)
-const formatExchangeText = (exchange) => {
-  const companyName = getCompanyName(exchange.company_id)
-  const resourceName = wsManager?.gameState?.getResourceName(exchange.sell_resource)
-  
-  if (exchange.offer_type === 'money') {
+// Helper function to format exchange text based on activity type
+const formatExchangeText = (activity) => {
+  if (activity.type === 'offer_created') {
+    const companyName = activity.companyName || getCompanyName(activity.companyId)
+    const resourceName = wsManager?.gameState?.getResourceName(activity.resource)
+    
+    if (activity.offerType === 'money') {
+      return `${companyName} выставила на продажу ${resourceName}`
+    } else if (activity.offerType === 'barter') {
+      const barterResourceName = wsManager?.gameState?.getResourceName(activity.barterResource)
+      return `${companyName} меняет ${resourceName} на ${barterResourceName}`
+    }
     return `${companyName} выставила на продажу ${resourceName}`
-  } else if (exchange.offer_type === 'barter') {
-    const barterResourceName = wsManager?.gameState?.getResourceName(exchange.barter_resource)
-    return `${companyName} меняет ${resourceName} на ${barterResourceName}`
+  } else if (activity.type === 'trade_completed') {
+    const sellerName = activity.companyName || getCompanyName(activity.companyId)
+    const buyerName = activity.buyerName || getCompanyName(activity.buyerId)
+    const resourceName = wsManager?.gameState?.getResourceName(activity.resource)
+    
+    if (activity.offerType === 'money') {
+      return `${buyerName} купила ${resourceName} у ${sellerName}`
+    } else if (activity.offerType === 'barter') {
+      const barterResourceName = wsManager?.gameState?.getResourceName(activity.barterResource)
+      return `${buyerName} обменяла ${barterResourceName} на ${resourceName} с ${sellerName}`
+    }
+    return `${buyerName} купила ${resourceName} у ${sellerName}`
   }
-  return `${companyName} выставила на продажу ${resourceName}`
+  return ''
 }
 
 // Computed property for contracts (latest 2, newest first)

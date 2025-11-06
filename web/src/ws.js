@@ -1232,12 +1232,46 @@ export class WebSocketManager {
         break;
         
       case 'api-exchange_offer_created':
-      case 'api-exchange_offer_updated':
-      case 'api-exchange_offer_cancelled':
-      case 'api-exchange_trade_completed':
+        // Add to recent activity
+        if (message.data && message.data.offer) {
+          this.gameState.addExchangeActivity({
+            type: 'offer_created',
+            company_id: message.data.offer.company_id,
+            sell_resource: message.data.offer.sell_resource,
+            sell_amount_per_trade: message.data.offer.sell_amount_per_trade,
+            offer_type: message.data.offer.offer_type,
+            price: message.data.offer.price,
+            barter_resource: message.data.offer.barter_resource,
+            barter_amount: message.data.offer.barter_amount
+          });
+        }
         // Refresh exchanges
         this.get_exchanges();
-        // Also refresh companies to update balances
+        break;
+        
+      case 'api-exchange_offer_updated':
+      case 'api-exchange_offer_cancelled':
+        // Refresh exchanges
+        this.get_exchanges();
+        break;
+        
+      case 'api-exchange_trade_completed':
+        // Add to recent activity
+        if (message.data) {
+          this.gameState.addExchangeActivity({
+            type: 'trade_completed',
+            seller_id: message.data.seller_id,
+            buyer_id: message.data.buyer_id,
+            sell_resource: message.data.sell_resource,
+            sell_amount: message.data.sell_amount,
+            offer_type: message.data.offer_type,
+            price: message.data.price,
+            barter_resource: message.data.barter_resource,
+            barter_amount: message.data.barter_amount
+          });
+        }
+        // Refresh exchanges and companies
+        this.get_exchanges();
         this.get_companies();
         break;
         
