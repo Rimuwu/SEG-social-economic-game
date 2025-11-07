@@ -242,6 +242,7 @@ onMounted(() => {
                 {{ city1.name }} (↖)<br/>
                 <template v-for="demand in formatCityDemands(city1)" :key="demand.resourceId">
                   &nbsp;&nbsp;• {{ wsManager.gameState.getResourceName(demand.resourceId) }}<br/>
+                  &nbsp;&nbsp;&nbsp;&nbsp;[{{ demand.amount }} шт.]<br/>
                 </template>
                 <br/>
               </template>
@@ -251,6 +252,7 @@ onMounted(() => {
                 {{ city2.name }} (↙)<br/>
                 <template v-for="demand in formatCityDemands(city2)" :key="demand.resourceId">
                   &nbsp;&nbsp;• {{ wsManager.gameState.getResourceName(demand.resourceId) }}<br/>
+                  &nbsp;&nbsp;&nbsp;&nbsp;[{{ demand.amount }} шт.]<br/>
                 </template>
               </template>
             </span>
@@ -261,6 +263,7 @@ onMounted(() => {
                 {{ city3.name }} (↗)<br/>
                 <template v-for="demand in formatCityDemands(city3)" :key="demand.resourceId">
                   &nbsp;&nbsp;• {{ wsManager.gameState.getResourceName(demand.resourceId) }}<br/>
+                  &nbsp;&nbsp;&nbsp;&nbsp;[{{ demand.amount }} шт.]<br/>
                 </template>
                 <br/>
               </template>
@@ -270,6 +273,7 @@ onMounted(() => {
                 {{ city4.name }} (↘)<br/>
                 <template v-for="demand in formatCityDemands(city4)" :key="demand.resourceId">
                   &nbsp;&nbsp;• {{ wsManager.gameState.getResourceName(demand.resourceId) }}<br/>
+                  &nbsp;&nbsp;&nbsp;&nbsp;[{{ demand.amount }} шт.]<br/>
                 </template>
               </template>
             </span>
