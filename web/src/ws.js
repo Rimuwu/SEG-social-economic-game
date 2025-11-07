@@ -636,6 +636,31 @@ export class WebSocketManager {
     // Events, contracts, winners are handled via broadcasts
   }
 
+  /**
+   * Fetch frequently updated data (without cities)
+   */
+  fetchFrequentData() {
+    // 1. Session state and time
+    this.get_session();
+    this.get_time_to_next_stage();
+    
+    // 2. Event data
+    this.get_session_event();
+    
+    // 3. Companies and users (can change frequently)
+    this.get_companies();
+    this.get_users();
+    
+    // 4. Contracts and exchanges (active data)
+    this.get_contracts();
+    this.get_exchanges();
+    
+    // 5. Item prices
+    this.get_all_item_prices();
+    
+    // Cities are fetched separately less frequently
+  }
+
   stopPolling() {
     if (this._pollInterval) {
       clearInterval(this._pollInterval);

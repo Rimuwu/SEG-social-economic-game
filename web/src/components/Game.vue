@@ -239,7 +239,7 @@ onMounted(() => {
             <span>
               <!-- City 1 -->
               <template v-if="city1">
-                {{ city1.name }} (ID: {{ city1.id }})<br/>
+                {{ city1.name }} (↖)<br/>
                 <template v-for="demand in formatCityDemands(city1)" :key="demand.resourceId">
                   &nbsp;&nbsp;• {{ wsManager.gameState.getResourceName(demand.resourceId) }}<br/>
                 </template>
@@ -248,7 +248,7 @@ onMounted(() => {
               
               <!-- City 2 -->
               <template v-if="city2">
-                {{ city2.name }} (ID: {{ city2.id }})<br/>
+                {{ city2.name }} (↙)<br/>
                 <template v-for="demand in formatCityDemands(city2)" :key="demand.resourceId">
                   &nbsp;&nbsp;• {{ wsManager.gameState.getResourceName(demand.resourceId) }}<br/>
                 </template>
@@ -258,7 +258,7 @@ onMounted(() => {
             <span>
               <!-- City 3 -->
               <template v-if="city3">
-                {{ city3.name }} (ID: {{ city3.id }})<br/>
+                {{ city3.name }} (↗)<br/>
                 <template v-for="demand in formatCityDemands(city3)" :key="demand.resourceId">
                   &nbsp;&nbsp;• {{ wsManager.gameState.getResourceName(demand.resourceId) }}<br/>
                 </template>
@@ -267,7 +267,7 @@ onMounted(() => {
               
               <!-- City 4 -->
               <template v-if="city4">
-                {{ city4.name }} (ID: {{ city4.id }})<br/>
+                {{ city4.name }} (↘)<br/>
                 <template v-for="demand in formatCityDemands(city4)" :key="demand.resourceId">
                   &nbsp;&nbsp;• {{ wsManager.gameState.getResourceName(demand.resourceId) }}<br/>
                 </template>
