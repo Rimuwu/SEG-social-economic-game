@@ -186,7 +186,8 @@ class Session(BaseClass):
 
             # Обновляем логистику
             logistics_list: list[Logistics] = await just_db.find(Logistics.__tablename__,
-                                          to_class=Logistics, session_id=self.session_id) # type: ignore
+                                          to_class=Logistics, session_id=self.session_id
+                                          )
             for logistics in logistics_list:
                 await logistics.on_new_turn()
 
@@ -210,15 +211,15 @@ class Session(BaseClass):
             self.step += 1
             await self.execute_step_schedule(self.step)
 
-            if self.step != 1:
-                await websocket_manager.broadcast({
-                    "type": "api-price_difference",
-                    "data": {
-                        "step": self.step,
-                        "session_id": self.session_id,
-                        "item_prices": item_prices
-                    }
-                })
+            # if self.step != 1:
+            await websocket_manager.broadcast({
+                "type": "api-price_difference",
+                "data": {
+                    "step": self.step,
+                    "session_id": self.session_id,
+                    "item_prices": item_prices
+                }
+            })
 
         elif new_stage == SessionStages.ChangeTurn:
             from game.company import Company

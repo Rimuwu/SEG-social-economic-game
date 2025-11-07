@@ -77,6 +77,9 @@ class Contract(BaseClass, SessionObject):
         if amount_per_turn <= 0 or duration_turns <= 0:
             raise ValueError("Количество и длительность должны быть положительными")
 
+        if duration_turns == 1:
+            raise ValueError("Длительность контракта должна быть больше одного хода")
+
         if payment_amount <= 0:
             raise ValueError("Сумма оплаты должна быть положительной")
 
@@ -224,13 +227,13 @@ class Contract(BaseClass, SessionObject):
                            ).reupdate()
         customer = await Company(id=self.customer_company_id
                            ).reupdate()
-        
+
         if not supplier or not customer:
             raise ValueError("Одна из компаний не найдена")
 
         if customer.balance < self.payment_amount:
             raise ValueError("У заказчика недостаточно средств для оплаты контракта")
-        
+
         try:
             await customer.remove_balance(self.payment_amount)
             await supplier.add_balance(self.payment_amount)
@@ -275,13 +278,13 @@ class Contract(BaseClass, SessionObject):
     async def cancel_with_refund(self, who_canceller: int):
         """ Отмена контракта с возвратом части денег и штрафом репутации """
         from game.company import Company
-        
+
         if not self.accepted:
             raise ValueError("Контракт не принят, чтобы его отменить")
-        
+
         if self.who_creator != who_canceller:
             raise ValueError("Нельзя отменить контракт, если вы его не создавали")
-        
+
         supplier = await Company(id=self.supplier_company_id).reupdate()
         customer = await Company(id=self.customer_company_id).reupdate()
 
@@ -338,7 +341,7 @@ class Contract(BaseClass, SessionObject):
             })
 
             await self.delete()
-            return True  # Контракт удален
+            return True
 
         else:
             if not self.delivered_this_turn:

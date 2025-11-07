@@ -226,13 +226,15 @@ async def test2():
     from game.contract import Contract
 
     # Очистка и создание сессии
-    if await session_manager.get_session('test'):
-        session = await session_manager.get_session('test')
+    if session := await session_manager.get_session('tess'):
         if session: await session.delete()
 
-    session = await session_manager.create_session('test')
+    session = await session_manager.create_session('tess',
+                                                   time_on_change_stage=0.5,
+                                                   time_on_game_stage=0.5
+                                                   )
 
-    await sleep(2)
+    await sleep(26)
 
     print("Session created")
 
@@ -259,21 +261,36 @@ async def test2():
     await comp1.set_position(0, 0)
     await comp2.set_position(0, 1)
 
-    await session.update_stage(SessionStages.Game)
-    for i in [session, comp1, comp2]:
-        await i.reupdate()
+    await sleep(1)
 
-    # await comp1.take_credit(1000, 3)
-    print('Taking credit...')
-    res = await handle_company_take_credit(
-        'test',
-        {
-            "company_id": str(comp1.id),
-            "amount": 1000,
-            "period": 3,
-            "password": getenv('UPDATE_PASSWORD')
-        }
-    )
+    await comp1.add_resource('nails', 20)
+
+    cities = await session.cities
+    city = cities[0]
+
+    city.demands['nails'] = {'amount': 100, 'price': 15}
+
+    await city.sell_resource(comp1.id, 'nails', 20)
     
-    print("Credit taken:", res)
-    # 666 коммит моооооой by AS1
+    await session.update_stage(SessionStages.ChangeTurn, True)
+    
+    # await stage_game_updater(session.session_id)
+
+    # await session.update_stage(SessionStages.Game)
+    # for i in [session, comp1, comp2]:
+    #     await i.reupdate()
+
+    # # await comp1.take_credit(1000, 3)
+    # print('Taking credit...')
+    # res = await handle_company_take_credit(
+    #     'test',
+    #     {
+    #         "company_id": str(comp1.id),
+    #         "amount": 1000,
+    #         "period": 3,
+    #         "password": getenv('UPDATE_PASSWORD')
+    #     }
+    # )
+    
+    # print("Credit taken:", res)
+    # # 666 коммит моооооой by AS1
