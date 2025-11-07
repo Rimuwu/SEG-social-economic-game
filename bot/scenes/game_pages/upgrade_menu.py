@@ -100,6 +100,10 @@ class UpgradeMenu(Page):
                     "text": f"{meta['emoji']} {meta['label']}",
                     "callback_data": callback_generator(self.scene.__scene_name__, "upgrade_select", key)
                 })
+                buttons.append({"text": "Логистика", "callback_data": callback_generator(self.scene.__scene_name__, "to_page", "upgrade-logistic-page")})
+                buttons.append({"text": "Перекомплектовка", "callback_data": callback_generator(self.scene.__scene_name__, "to_page", "upgrade-recompletion-page")})
+                buttons.append({"text": "Смена клетки", "callback_data": callback_generator(self.scene.__scene_name__, "to_page", "change-cell-page")})
+                buttons.append({"text": "Назад", "callback_data": callback_generator(self.scene.__scene_name__, "to_page", "main-page")})
         elif stage == "details":
             self.row_width = 1
             selected_type = page_data.get("selected_type")
