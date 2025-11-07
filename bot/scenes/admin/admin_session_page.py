@@ -314,6 +314,7 @@ class SessonChangeStage(Page):
         buttons = [
             create_buttons(self.scene.__scene_name__, "FreeUserConnect", "change_stage", "FreeUserConnect"),
             create_buttons(self.scene.__scene_name__, "CellSelect", "change_stage", "CellSelect"),
+            create_buttons(self.scene.__scene_name__, "ChangeTurn", "change_stage", "ChangeTurn"),
             create_buttons(self.scene.__scene_name__, "Game", "change_stage", "Game"),
             create_buttons(self.scene.__scene_name__, "End", "change_stage", "End")
         ]
@@ -337,8 +338,6 @@ class SessonChangeStage(Page):
     
 class SessionChangeSteps(Page):
     __page_name__ = "admin-session-change-steps-page"
-    
-    
     async def content_worker(self):
         session_id = self.scene.get_key("admin-session-info-page", "session_id")
         data = await get_session(session_id)
