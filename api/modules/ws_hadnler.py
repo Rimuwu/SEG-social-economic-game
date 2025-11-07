@@ -68,29 +68,33 @@ async def handle_message(client_id: str, message: dict):
         except Exception as e:
             print(traceback.format_exc())
             websocket_logger.error(f"Ошибка в обработчике {message_type}: {e}\n{traceback.format_exc()}")
-            error_message = {
-                "type": "error",
-                "message": f"Ошибка обработки сообщения типа {message_type}: {str(e)}",
-                "error": str(e)
-            }
-            await websocket_manager.send_message(client_id, error_message)
-            routers_logger.error(
-                f"Ошибка в роутере {message_type} для клиента {client_id}: {error_message}")
+            # Проверяем, что клиент все еще подключен перед отправкой ошибки
+            if websocket_manager.is_connected(client_id):
+                error_message = {
+                    "type": "error",
+                    "message": f"Ошибка обработки сообщения типа {message_type}: {str(e)}",
+                    "error": str(e)
+                }
+                await websocket_manager.send_message(client_id, error_message)
+                routers_logger.error(
+                    f"Ошибка в роутере {message_type} для клиента {client_id}: {error_message}")
 
     else:
         # Неизвестный тип сообщения
         websocket_logger.warning(f"Неизвестный тип сообщения от {client_id}: {message_type}")
 
-        available_types = []
-        for m_type in MESSAGE_HANDLERS.keys():
-            available_types.append(m_type)
+        # Проверяем, что клиент все еще подключен перед отправкой ошибки
+        if websocket_manager.is_connected(client_id):
+            available_types = []
+            for m_type in MESSAGE_HANDLERS.keys():
+                available_types.append(m_type)
 
-        error_message = {
-            "type": "error",
-            "message": f"Неизвестный тип сообщения: {message_type}",
-            "available_types": available_types
-        }
-        await websocket_manager.send_message(client_id, error_message)
+            error_message = {
+                "type": "error",
+                "message": f"Неизвестный тип сообщения: {message_type}",
+                "available_types": available_types
+            }
+            await websocket_manager.send_message(client_id, error_message)
 
 # Функция для получения списка зарегистрированных обработчиков
 def get_registered_handlers():
