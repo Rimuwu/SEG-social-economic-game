@@ -1,7 +1,7 @@
 from oms import Page
 from aiogram.types import Message, CallbackQuery
 from modules.utils import update_page, cell_into_xy, xy_into_cell
-from modules.ws_client import get_sessions_free_cells, set_company_position
+from modules.ws_client import get_sessions_free_cells, set_company_position, get_session
 from oms.utils import callback_generator
 
 
@@ -13,9 +13,13 @@ class SelectCell(Page):
    
     async def buttons_worker(self):
         buttons_o = []
-        
-        for i in range(7):
-            for y in range(7):
+        session_id = self.scene.get_key("scene", "session")
+        s = await get_session(session_id=session_id)
+        rows = s.get("map_size").get("rows")
+        cols = s.get("map_size").get("cols")
+
+        for i in range(rows):
+            for y in range(cols):
                 cell_position = xy_into_cell(i, y)
                 buttons_o.append(
                     {
@@ -28,7 +32,7 @@ class SelectCell(Page):
                     }
                 )
         
-        self.row_width = 7
+        self.row_width = 9
         buttons = []
         scene_data = self.scene.get_data('scene')
         session_id = scene_data.get('session')

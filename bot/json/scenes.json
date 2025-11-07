@@ -60,7 +60,7 @@
             },
             "main-page":{ 
                 "image": "img/main_company.png",
-                "content": "🏢 *Меню управления компанией*\n\n💰 Ваш баланс: {balance}\n⭐ Репутация: {reputation}\n💸 Налог: {tax}\n💳 Кол-во кредитов: {credit}\n📦 Инвентарь: {inventory_capacity}\n📋 Не принятые предложенные контракты: {contract_new}\n⚠️ Не выполненные контракты: {contract_not_delivered}",
+                "content": "🏢 *Меню управления компанией*\n\n💰 Ваш баланс: {balance}\n⭐ Репутация: {reputation}\n💸 Налог: {tax}\n💳 Кол-во кредитов: {credit}\n📦 Инвентарь: {inventory_capacity}\n📋 Не принятые предложенные контракты: {contract_new}\n⚠️ Не выполненные контракты: {contract_not_delivered}\n\nОсталось до конца этапа: {time}\n{progress_bar}",
                 "to_pages": {
                     "bank-menu": "🏦 Банк",
                     "exchange-main-page": "📈 Биржа",

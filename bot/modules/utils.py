@@ -64,11 +64,11 @@ async def go_to_page(session_id, old_page_name, new_page_name):
 
 
 def xy_into_cell(x, y):
-    alphabet = 'ABCDEFGH'
+    alphabet = 'ABCDEFGHIJKL'
     return f"{alphabet[y]}{x+1}"
 
 def cell_into_xy(cell):
-    alphabet = 'ABCDEFGH'
+    alphabet = 'ABCDEFGHIJKL'
     x = alphabet.index(cell[0].upper())
     y = int(cell[1:]) - 1
     return x, y
