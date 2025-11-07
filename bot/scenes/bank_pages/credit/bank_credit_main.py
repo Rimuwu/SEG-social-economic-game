@@ -7,39 +7,26 @@ from global_modules.load_config import ALL_CONFIGS
 
 
 class BankCreditMain(Page):
-    """Главная страница кредитов со списком активных кредитов"""
     
     __page_name__ = "bank-credit-main"
     
     async def content_worker(self):
         scene_data = self.scene.get_data('scene')
         company_id = scene_data.get('company_id')
-        
-        if not company_id:
-            return "❌ Ошибка: компания не найдена"
-        
-        # Получаем данные компании
-        company_data = await get_company(id=company_id)
-        
-        if isinstance(company_data, str):
-            return f"❌ Ошибка при получении данных: {company_data}"
-        
+    
+        company_data = await get_company(id=company_id)     
         reputation = company_data.get('reputation', 0)
         credits = company_data.get('credits', [])
         
-        # Получаем сообщение об успехе, если есть
         success_message = scene_data.get('success_message', '')
         
-        # Получаем условия кредитования
         try:
             conditions = get_credit_conditions(reputation)
             
-            # Параметры для шаблона
             percent = conditions.percent * 100
             without_interest = conditions.without_interest
             max_credits = ALL_CONFIGS['settings'].max_credits_per_company
             
-            # Формируем секцию с активными кредитами
             if credits and len(credits) > 0:
                 credits_list = "*Активные кредиты:*\n\n"
                 for i, credit in enumerate(credits, 1):
@@ -70,7 +57,6 @@ class BankCreditMain(Page):
             else:
                 active_credits_section = "_У вас нет активных кредитов_"
             
-            # Формируем текст из шаблона
             text = self.content.format(
                 percent=percent,
                 without_interest=without_interest,
@@ -82,7 +68,7 @@ class BankCreditMain(Page):
             
         except ValueError:
             # Если репутация недостаточна
-            text = f"💳 *Кредиты*\n\n❌ *Кредиты недоступны*\nМинимальная репутация для кредита: 11\nВаша репутация: {reputation} ⭐"
+            text = f"💳 *Кредиты*\n\n❌ *Кредиты недоступны*\nМинимальная репутация для кредита: 11s\nВаша репутация: {reputation} ⭐"
         
         # Добавляем сообщение об успехе, если есть
         if success_message:

@@ -100,7 +100,7 @@ class City(OneUserPage):
                     cell_position = xy_into_cell(x, y)
                     
                     # Проверяем, есть ли город в этой позиции
-                    if (x, y) in cities_map:
+                    if cell_position in ["B2", "B6", "F2", "F6"]:
                         city = cities_map[(x, y)]
                         buttons.append({
                             'text': '🏢',
@@ -384,7 +384,6 @@ class City(OneUserPage):
 
         return (
             f"🏙 **{name}**\n\n"
-            f"📍 Клетка: {cell}\n"
             f"🏭 Отрасль: {branch or '-'}\n\n"
             f"Город ищет {len(demands)} видов товаров. Выберите ресурс ниже."
         )

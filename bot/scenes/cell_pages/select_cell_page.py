@@ -10,79 +10,137 @@ class SelectCell(Page):
     __page_name__ = 'select-cell-page'
     
     row_width = 7
+    
+    async def data_preparate(self):
+        if self.scene.get_key(self.__page_name__, 'camera_x') is None:
+            await self.scene.update_key(self.__page_name__, 'camera_x', 0)
+        if self.scene.get_key(self.__page_name__, 'camera_y') is None:
+            await self.scene.update_key(self.__page_name__, 'camera_y', 0)
    
     async def buttons_worker(self):
-        buttons_o = []
-        session_id = self.scene.get_key("scene", "session")
-        s = await get_session(session_id=session_id)
-        rows = s.get("map_size").get("rows")
-        cols = s.get("map_size").get("cols")
-
-        for i in range(rows):
-            for y in range(cols):
-                cell_position = xy_into_cell(i, y)
-                buttons_o.append(
-                    {
-                        'text': cell_position,
-                        'callback_data': callback_generator(
-                    self.scene.__scene_name__, 
-                    'cell_select',
-                    cell_position
-                )
-                    }
-                )
-        
-        self.row_width = 9
-        buttons = []
         scene_data = self.scene.get_data('scene')
         session_id = scene_data.get('session')
+
+        s = await get_session(session_id=session_id)
+        map_size = s.get("map_size", {})
+        total_rows = map_size.get("rows", 7)
+        total_cols = map_size.get("cols", 7)
+
         free_cells = await get_sessions_free_cells(session_id=session_id)
-        
-        # Создаем множество свободных координат для быстрого поиска
         free_coords = set()
         if free_cells and "free_cells" in free_cells:
             for cell in free_cells["free_cells"]:
                 free_coords.add((cell[0], cell[1]))
+
+        camera_x = self.scene.get_key(self.__page_name__, 'camera_x') or 0
+        camera_y = self.scene.get_key(self.__page_name__, 'camera_y') or 0
+        view_size = 7
+        center_row = total_rows // 2
+        center_col = total_cols // 2
         
-        for b in buttons_o:
-            cell_text = b['text']
-            x, y = cell_into_xy(cell_text)
+        buttons = []
+        self.row_width = 7
+        for row in range(view_size):
+            for col in range(view_size):
+                real_row = camera_y + row
+                real_col = camera_x + col
+                if real_row < 0 or real_row >= total_rows or real_col < 0 or real_col >= total_cols:
+                    buttons.append({
+                        'text': '⬛',
+                        'callback_data': 'out_of_bounds'
+                    })
+                    continue
+                
+                cell_text = xy_into_cell(real_col, real_row)
+                if real_row == center_row and real_col == center_col:
+                    buttons.append({
+                        'text': '🏦',
+                        'callback_data': 'bank'
+                    })
+                elif (real_row == center_row - 2 and real_col == center_col - 2) or \
+                     (real_row == center_row - 2 and real_col == center_col + 2) or \
+                     (real_row == center_row + 2 and real_col == center_col - 2) or \
+                     (real_row == center_row + 2 and real_col == center_col + 2):
+                    buttons.append({
+                        'text': '🏢',
+                        'callback_data': 'city'
+                    })
+                elif (real_row, real_col) in free_coords:
+                    buttons.append({
+                        'text': f"{cell_text}",
+                        'callback_data': callback_generator(
+                            self.scene.__scene_name__,
+                            'cell_select',
+                            cell_text
+                        )
+                    })
+                else:
+                    buttons.append({
+                        'text': '❌',
+                        'callback_data': 'occupied'
+                    })
+        
+        can_move_up = camera_y > 0
+        can_move_down = camera_y + view_size < total_rows
+        can_move_left = camera_x > 0
+        can_move_right = camera_x + view_size < total_cols
+        if total_rows > 7:
+            buttons.append({'text': ' ', 'callback_data': 'empty', "next_line": True})
+            buttons.append({
+                'text': '⬆️',
+                'callback_data': callback_generator(self.scene.__scene_name__, 'move', 'up') if can_move_up else 'no_move'
+            })
+            buttons.append({'text': ' ', 'callback_data': 'empty'})
+
             
-            # Специальные ячейки (банк и города)
-            if cell_text == "D4":
-                buttons.append({
-                    'text': '🏦',
-                    'callback_data': "bank"
-                })
-            elif cell_text in ("B2", "F2", "B6", "F6"):
-                buttons.append({
-                    'text': '🏢',
-                    'callback_data': "city"
-                })
-            # Проверяем, есть ли координаты в списке свободных
-            elif (x, y) in free_coords:
-                buttons.append({
-                    'text': f"{cell_text}",
-                    'callback_data': callback_generator(
-                        self.scene.__scene_name__, 
-                        'cell_select',
-                        cell_text
-                    )
-                })
-            else:
-                # Занятая ячейка - крестик
-                buttons.append({
-                    'text': f"❌",
-                    'callback_data': "occupied"
-                })
+            buttons.append({
+                'text': '⬅️',
+                'callback_data': callback_generator(self.scene.__scene_name__, 'move', 'left') if can_move_left else 'no_move',
+                "next_line": True
+            })
+            buttons.append({'text': ' ', 'callback_data': 'center'})
+            buttons.append({
+                'text': '➡️',
+                'callback_data': callback_generator(self.scene.__scene_name__, 'move', 'right') if can_move_right else 'no_move'
+            })
+        
+        
+            buttons.append({'text': ' ', 'callback_data': 'empty', "next_line": True})
+            buttons.append({
+                'text': '⬇️',
+                'callback_data': callback_generator(self.scene.__scene_name__, 'move', 'down') if can_move_down else 'no_move'
+            })
+            buttons.append({'text': ' ', 'callback_data': 'empty'})
         
         return buttons
     
-    @Page.on_callback('cell_select')
-    async def my_callback_handler(self, callback: CallbackQuery, args: list):
-        # args[0] - это callback_type ('cell_select')
-        # args[1] - это первый аргумент, переданный в callback_generator (cell_name)
+    @Page.on_callback('move')
+    async def move_camera_handler(self, callback: CallbackQuery, args: list):
+        if len(args) < 2:
+            await callback.answer()
+            return
         
+        direction = args[1]
+        camera_x = self.scene.get_key(self.__page_name__, 'camera_x') or 0
+        camera_y = self.scene.get_key(self.__page_name__, 'camera_y') or 0
+        
+        if direction == 'up':
+            camera_y = max(0, camera_y - 1)
+        elif direction == 'down':
+            camera_y += 1
+        elif direction == 'left':
+            camera_x = max(0, camera_x - 1)
+        elif direction == 'right':
+            camera_x += 1
+        
+        await self.scene.update_key(self.__page_name__, 'camera_x', camera_x)
+        await self.scene.update_key(self.__page_name__, 'camera_y', camera_y)
+        
+        await self.scene.update_message()
+        await callback.answer()
+    
+    @Page.on_callback('cell_select')
+    async def my_callback_handler(self, callback: CallbackQuery, args: list):       
         cell_name = args[1] if len(args) > 1 else None
         if cell_name:
             y, x = cell_into_xy(cell_name)
@@ -94,8 +152,4 @@ class SelectCell(Page):
                 self.content = "Данная клетка уже занята, выберите другую:"
                 await self.scene.update_message()
                 return
-
-            # WebSocket обработчик "api-company_set_position" автоматически переведёт 
-            # всех пользователей компании на страницу "wait-game-stage-page"
-            # Но для владельца переходим сразу, не дожидаясь WebSocket события
             await self.scene.update_page("wait-game-stage-page")
