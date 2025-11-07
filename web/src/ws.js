@@ -149,6 +149,8 @@ export class WebSocketManager {
         this.join_session(storedSessionId, (response) => {
           if (response.success) {
             console.log('[WS] Successfully rejoined stored session');
+            // Initialize all game data after successful reconnection
+            this.initializeSession();
           } else {
             console.log('[WS] Failed to rejoin stored session, clearing it');
             localStorage.removeItem(this.SESSION_STORAGE_KEY);
@@ -731,6 +733,12 @@ export class WebSocketManager {
       // Load map if available
       if (message.data.cells && message.data.map_size) {
         this.loadMapToDOM();
+      }
+
+      // Initialize session data after joining/connecting
+      if (requestId.startsWith('join_session_')) {
+        console.log('[WS] Session joined successfully, initializing game data...');
+        this.initializeSession();
       }
 
       if (callback) {
