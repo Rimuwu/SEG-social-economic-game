@@ -1,8 +1,16 @@
 <script setup>
+import LeaveButton from './LeaveButton.vue'
 import { ref, onMounted, inject, computed } from 'vue'
+
+const emit = defineEmits(['navigateTo'])
 
 const pageRef = ref(null)
 const wsManager = inject('wsManager', null)
+
+// Handle leave button click
+const handleLeave = () => {
+  emit('navigateTo', 'Introduction')
+}
 
 // Get AUTHORS from environment, with fallback
 const AUTHORS = import.meta.env.VITE_AUTHORS || 'SEG Development Team';
@@ -68,6 +76,9 @@ onMounted(() => {
         <span id="authors"></span>
       </p>
     </div>
+    
+    <!-- Leave Button -->
+    <LeaveButton @leave="handleLeave" />
   </div>
 
 </template>

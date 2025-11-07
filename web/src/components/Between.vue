@@ -1,13 +1,26 @@
 <script setup>
 import Map from './Map.vue'
+import LeaveButton from './LeaveButton.vue'
 import { onMounted, ref, inject, computed } from 'vue'
+
+const emit = defineEmits(['navigateTo'])
 
 const pageRef = ref(null)
 const wsManager = inject('wsManager', null)
 
+// Handle leave button click
+const handleLeave = () => {
+  emit('navigateTo', 'Introduction')
+}
+
 // Computed properties for time and turn display
 const timeToNextStage = computed(() => {
-  return wsManager?.gameState?.getFormattedTimeToNextStage() || '--:--'
+  // Access the reactive state directly for proper reactivity
+  const time = wsManager?.gameState?.state?.timeToNextStage
+  if (time === null || time === undefined) return '--:--'
+  const minutes = Math.floor(time / 60)
+  const seconds = time % 60
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
 })
 
 const turnInfo = computed(() => {
@@ -126,9 +139,11 @@ const formatNumber = (num) => {
 
 // Event computed property
 const currentEvent = computed(() => {
-  const event = wsManager?.gameState?.getEvent() || null
+  // Access the reactive state directly for proper reactivity
+  const event = wsManager?.gameState?.state?.event
   console.log('[Between.vue] Current event:', event)
-  return event
+  // Return event only if it has an ID (meaning it exists)
+  return event && event.id ? event : null
 })
 
 // Helper to get event status text
@@ -214,6 +229,9 @@ onMounted(() => {
       </div>
 
     </div>
+    
+    <!-- Leave Button -->
+    <LeaveButton @leave="handleLeave" />
   </div>
 </template>
 

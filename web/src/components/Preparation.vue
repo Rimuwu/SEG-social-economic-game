@@ -1,7 +1,10 @@
 <script setup>
 import './mapScripts.js'
 import Map from './Map.vue'
+import LeaveButton from './LeaveButton.vue'
 import { onMounted, onUnmounted, ref, inject, reactive, watch, computed } from 'vue'
+
+const emit = defineEmits(['navigateTo'])
 
 /**
  * Ref to the root page container for animation and event handling.
@@ -13,6 +16,13 @@ const pageRef = ref(null)
  * @type {WebSocketManager}
  */
 const wsManager = inject('wsManager', null)
+
+/**
+ * Handle leave button click
+ */
+const handleLeave = () => {
+  emit('navigateTo', 'Introduction')
+}
 
 /**
  * Reactive state for the list of companies displayed in the columns.
@@ -124,6 +134,9 @@ onUnmounted(() => {
         </div>
       </div>
     </div>
+    
+    <!-- Leave Button -->
+    <LeaveButton @leave="handleLeave" />
   </div>
 </template>
 

@@ -1,13 +1,26 @@
 <script setup>
 import Map from './Map.vue'
+import LeaveButton from './LeaveButton.vue'
 import { onMounted, ref, inject, computed } from 'vue'
+
+const emit = defineEmits(['navigateTo'])
 
 const pageRef = ref(null)
 const wsManager = inject('wsManager', null)
 
+// Handle leave button click
+const handleLeave = () => {
+  emit('navigateTo', 'Introduction')
+}
+
 // Computed properties for time and turn display
 const timeToNextStage = computed(() => {
-  return wsManager?.gameState?.getFormattedTimeToNextStage() || '--:--'
+  // Access the reactive state directly for proper reactivity
+  const time = wsManager?.gameState?.state?.timeToNextStage
+  if (time === null || time === undefined) return '--:--'
+  const minutes = Math.floor(time / 60)
+  const seconds = time % 60
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
 })
 
 const turnInfo = computed(() => {
@@ -58,14 +71,10 @@ const formatCityDemands = (city) => {
   return formatted;
 }
 
-// Computed property for exchanges (latest 4, newest first)
+// Computed property for exchanges (latest 3 activities, newest first)
 const latestExchanges = computed(() => {
-  const exchanges = wsManager?.gameState?.state?.exchanges || []
-  const sessionExchanges = exchanges.filter(e => 
-    e.session_id === wsManager?.gameState?.state?.session?.id
-  )
-  // Get the last 4 exchanges (most recent) and reverse to show newest first
-  return sessionExchanges.slice(-4).reverse()
+  // Use the recent activity list instead of the offers list
+  return wsManager?.gameState?.getRecentExchangeActivity(3) || []
 })
 
 // Helper function to get company name by ID
@@ -74,18 +83,33 @@ const getCompanyName = (companyId) => {
   return company?.name || `Компания ${companyId}`
 }
 
-// Helper function to format exchange text (matching the existing format)
-const formatExchangeText = (exchange) => {
-  const companyName = getCompanyName(exchange.company_id)
-  const resourceName = wsManager?.gameState?.getResourceName(exchange.sell_resource)
-  
-  if (exchange.offer_type === 'money') {
-    return `${companyName} выставила на продажу ${resourceName}`
-  } else if (exchange.offer_type === 'barter') {
-    const barterResourceName = wsManager?.gameState?.getResourceName(exchange.barter_resource)
-    return `${companyName} меняет ${resourceName} на ${barterResourceName}`
+// Helper function to format exchange text based on activity type
+const formatExchangeText = (activity) => {
+  if (activity.type === 'offer_created') {
+    const companyName = activity.companyName || getCompanyName(activity.companyId)
+    const resourceName = wsManager?.gameState?.getResourceName(activity.resource)
+    
+    if (activity.offerType === 'money') {
+      return `Компания ${companyName} выставила на продажу продукт ${resourceName}`
+    } else if (activity.offerType === 'barter') {
+      const barterResourceName = wsManager?.gameState?.getResourceName(activity.barterResource)
+      return `Компания ${companyName} предлагает бартер товара ${resourceName} на ${barterResourceName}`
+    }
+    return `Компания ${companyName} выставила на продажу продукт ${resourceName}`
+  } else if (activity.type === 'trade_completed') {
+    const sellerName = activity.companyName || getCompanyName(activity.companyId)
+    const buyerName = activity.buyerName || getCompanyName(activity.buyerId)
+    const resourceName = wsManager?.gameState?.getResourceName(activity.resource)
+    
+    if (activity.offerType === 'money') {
+      return `Компания ${buyerName} выкупила продукт ${resourceName} у компании ${sellerName}`
+    } else if (activity.offerType === 'barter') {
+      const barterResourceName = wsManager?.gameState?.getResourceName(activity.barterResource)
+      return `Компания ${buyerName} обменяла ${barterResourceName} на ${resourceName} с компанией ${sellerName}`
+    }
+    return `Компания ${buyerName} купила продукт ${resourceName} у компании ${sellerName}`
   }
-  return `${companyName} выставила на продажу ${resourceName}`
+  return ''
 }
 
 // Computed property for contracts (latest 2, newest first)
@@ -129,9 +153,11 @@ const formatUpgradeText = (upgrade) => {
 
 // Event computed property
 const currentEvent = computed(() => {
-  const event = wsManager?.gameState?.getEvent() || null
+  // Access the reactive state directly for proper reactivity
+  const event = wsManager?.gameState?.state?.event
   console.log('[Game.vue] Current event:', event)
-  return event
+  // Return event only if it has an ID (meaning it exists)
+  return event && event.id ? event : null
 })
 
 // Helper to get event status text
@@ -270,6 +296,9 @@ onMounted(() => {
 
       </div>
     </div>
+    
+    <!-- Leave Button -->
+    <LeaveButton @leave="handleLeave" />
   </div>
 </template>
 
