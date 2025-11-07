@@ -458,9 +458,14 @@ class Session(BaseClass):
 
         await self.save_to_base()
         
+        if self.cell_counts.get('city', 0) == 0:
+            self.cells = []
+            await self.generate_cells()
+            return
+
         # Создаём города на клетках с типом 'city'
         await self._create_cities()
-        
+
         return self.cells
 
     async def _create_cities(self):

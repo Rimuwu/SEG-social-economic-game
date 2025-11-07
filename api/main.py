@@ -264,8 +264,8 @@ async def test2():
             )
             await user.add_to_company(comp.secret_code)
 
-    await sleep(10)
-    await session.update_stage(SessionStages.CellSelect)
+    # await sleep(10)
+    # await session.update_stage(SessionStages.CellSelect)
     # for i in [session, comp1, comp2]:
     #     await i.reupdate()
     
