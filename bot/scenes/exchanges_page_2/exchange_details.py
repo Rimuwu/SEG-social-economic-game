@@ -1,6 +1,6 @@
 from scenes.utils.oneuser_page import OneUserPage
 from aiogram.types import CallbackQuery
-from modules.ws_client import get_exchange, get_company, buy_exchange_offer
+from modules.ws_client import get_exchange, get_company, buy_exchange_offer, cancel_exchange_offer
 from oms.utils import callback_generator
 from global_modules.load_config import ALL_CONFIGS, Resources
 
@@ -80,7 +80,7 @@ class ExchangeDetails(OneUserPage):
             offer_conditions = ""
         
         # Информация о времени создания
-        created_at = exchange.get('created_at', 0)
+        created_at = exchange.get('created_at_step', 0)
         
         return self.content.format(
             seller_name=seller_name,
@@ -128,10 +128,18 @@ class ExchangeDetails(OneUserPage):
             else:
                 # Информация о том, что это наше предложение
                 buttons.append({
-                    'text': '⚠️ Ваше предложение',
+                    'text': '🗑️ Отменить ваше предложение',
                     'callback_data': callback_generator(
                         self.scene.__scene_name__,
-                        'own_offer'
+                        'own_offer',
+                        str(exchange_id)
+                    )
+                })
+                buttons.append({
+                    'text': '✏️ Изменить предложение',
+                    'callback_data': callback_generator(
+                        self.scene.__scene_name__,
+                        'edit_offer'
                     )
                 })
         
@@ -190,10 +198,31 @@ class ExchangeDetails(OneUserPage):
     @OneUserPage.on_callback('own_offer')
     async def own_offer_handler(self, callback: CallbackQuery, args: list):
         """Обработка нажатия на своё предложение"""
-        await callback.answer(
-            "ℹ️ Это ваше предложение. Вы не можете купить его.",
-            show_alert=False
-        )
+        print(args[1])
+        result = await cancel_exchange_offer(offer_id=int(args[1]))
+        if "error" in result:
+            await callback.answer(f"❌ Ошибка: {result['error']}", show_alert=True)
+            return
+        scene_data = self.scene.get_data('scene')
+        
+        # Очищаем кеш деталей предложения
+        exchange_id = scene_data.get('selected_exchange_id')
+        if exchange_id:
+            cache_key = f'exchange_details_{exchange_id}'
+            if cache_key in scene_data:
+                del scene_data[cache_key]
+        
+        scene_data['selected_exchange_id'] = None
+        await self.scene.set_data('scene', scene_data)
+        
+        await self.scene.update_page('exchange-main-page')
+        await callback.answer("✅ Ваше предложение отменено!")
+    
+    @OneUserPage.on_callback('edit_offer')
+    async def edit_offer_handler(self, callback: CallbackQuery, args: list):
+        """Переход на страницу редактирования предложения"""
+        await self.scene.update_page('exchange-update-page')
+        await callback.answer()
     
     @OneUserPage.on_callback('back_to_list')
     async def back_to_list_handler(self, callback: CallbackQuery, args: list):
