@@ -327,7 +327,6 @@ class SessonChangeStage(Page):
         add_shedule = self.scene.get_key(self.__page_name__, "add_shedule")
         await update_session_stage(session_id, args[1], add_shedule=add_shedule)
         await callback.answer("✅ Этап сессии изменён!", show_alert=True)
-        await self.scene.update_page("admin-session-info-page")
     
     @Page.on_callback("toggle_shedule")
     async def toggle_shedule(self, callback, args: list):

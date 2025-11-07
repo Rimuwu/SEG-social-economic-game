@@ -260,6 +260,7 @@
                 }
             },
             "contract-main-page": {
+                "image": "img/contracts.png",
                 "title": "",
                 "content": "На данной странице вы можете принять, создать или выполнить контракт.",
                 "to_pages": {
@@ -267,6 +268,7 @@
                 }
             },
             "contract-view-page": {
+                "image": "img/contracts.png",
                 "title": "",
                 "content": "📜 *Контракты на рассмотрении*\n{overview_text}{details_text}{error_text}",
                 "to_pages": {
@@ -274,28 +276,28 @@
                 }
             },
             "contract-create-page": {
-                "image": "img/exchange.png",
-                "content": "📜 *Создание контракта*\n\n🤝 *Ваша роль:* {role_text}\n🏭 *Поставщик:* {supplier_text}\n🏬 *Покупатель:* {customer_text}\n📦 *Ресурс:* {resource_text}\n📈 *Количество за ход:* {amount_text}\n⏱️ *Длительность:* {duration_text}\n💰 *Оплата за ход:* {payment_text}{error_text}",
+                "image": "img/contracts.png",
+                "content": "📜 *Создание контракта*\n\n🤝 *Ваша роль:* {role_text}\n🏭 *Поставщик:* {supplier_text}\n🏬 *Покупатель:* {customer_text}\n📦 *Ресурс:* {resource_text}\n📈 *Количество за ход:* {amount_text}\n⏱️ *Длительность:* {duration_text}\n💰 *Цена:* {payment_text}{error_text}",
                 "to_pages": {
                     "contract-main-page": "↪️ Назад"
                 }
             },
             "contract-create-select-company-page": {
-                "image": "img/exchange.png",
+                "image": "img/contracts.png",
                 "content": "🏬 *Выбор компании*\n\n{description_text}{error_text}\n📝 Выберите компанию из списка:",
                 "to_pages": {
                     "contract-create-page": "↪️ Назад"
                 }
             },
             "contract-create-select-resource-page": {
-                "image": "img/exchange.png",
+                "image": "img/contracts.png",
                 "content": "📦 *Выбор ресурса*\n\n{supplier_text}{error_text}\n📝 Выберите ресурс, который будет поставляться по контракту:",
                 "to_pages": {
                     "contract-create-page": "↪️ Назад"
                 }
             },
             "contract-execute-page": {
-                "image": "img/exchange.png",
+                "image": "img/contracts.png",
                 "content": "🚚 *Выполнение контрактов*\n{overview_text}{details_text}{error_text}",
                 "to_pages": {
                     "contract-main-page": "↪️ Назад"

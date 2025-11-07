@@ -441,3 +441,33 @@ async def docs(message: Message):
     
     result = await get_factories()
     pprint(result)
+
+@ws_client.on_message("api-contract_declined")
+async def on_contract_deleted(message: dict):
+    data = message.get('data', {})
+    print("="*20)
+    print(f"[api-contract_declined] Contract {data}")
+    print("="*20)
+
+
+@ws_client.on_message("api-contract_expired")
+async def on_contract_deleted(message: dict):
+    data = message.get('data', {})
+    print("="*20)
+    print(f"[api-contract_expired] Contract {data}")
+    print("="*20)
+
+
+@ws_client.on_message("api-contract_executed")
+async def on_contract_deleted(message: dict):
+    data = message.get('data', {})
+    print("="*20)
+    print(f"[api-contract_executed] Contract {data}")
+    print("="*20)
+
+@ws_client.on_message("api-contract_deleted")
+async def on_contract_deleted(message: dict):
+    data = message.get('data', {})
+    print("="*20)
+    print(f"[api-contract_deleted] Contract {data}")
+    print("="*20)

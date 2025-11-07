@@ -429,7 +429,7 @@ class ContractViewPage(OneUserPage):
             f"🏬 Покупатель: {contract.get('customer_company_name')}",
             f"📈 Количество за ход: {amount_text}",
             f"⏱️ Длительность: {duration_text} ходов",
-            f"💰 Оплата за ход: {payment_text}",
+            f"💰 Цена: {payment_text}",
             f"🛠️ Создатель: {contract.get('creator_name')}",
         ]
         return "\n".join(details)
