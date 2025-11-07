@@ -721,7 +721,8 @@ class Session(BaseClass):
                 for user in await comp.users:
                     uid = user.id
 
-                    user: Optional[dict] = await just_db.find_one("users", id=uid) # type: ignore
+                    user: Optional[dict] = await just_db.find_one(
+                            "users", id=uid)
                     if user:
                         game_logger.info(
                             f"Пользователь {user['username']} ({user['id']}) - победитель в сессии {self.session_id}")
@@ -758,24 +759,24 @@ class Session(BaseClass):
             ) # type: ignore
         if get_schedule:
             return int((datetime.fromisoformat(
-                get_schedule['execute_at']) - datetime.now()).total_seconds())
+                get_schedule['execute_at']) - datetime.now()).total_seconds()) + 1
         return 0
 
     async def set_event(self, event_id: str, start_step: int, end_step: int):
         """ Устанавливает событие в сессии и запускает шедулер этапов для его удаления
-        
+
         Args:
             event_id: ID события из конфига
             start_step: этап начала события
             end_step: этап окончания события
         """
         from game.stages import clear_session_event
-        
+
         # Проверяем, что событие существует в конфиге
         if not EVENTS or event_id not in EVENTS.events:
             game_logger.error(f"Попытка установить несуществующее событие '{event_id}' в сессии {self.session_id}.")
             raise ValueError(f"Событие '{event_id}' не найдено в конфигурации")
-            
+
         self.event_type = event_id
         self.event_start = start_step
         self.event_end = end_step
@@ -820,10 +821,12 @@ class Session(BaseClass):
             "end_step": self.event_end,
             "current_step": self.step,
             "is_active": self.event_start <= self.step <= self.event_end if self.event_start and self.event_end else False,
-            "steps_until_start": max(0, self.event_start - self.step) if self.event_start else 0,
-            "steps_until_end": max(0, self.event_end - self.step) if self.event_end else 0
+            "steps_until_start": max(
+                0, self.event_start - self.step) if self.event_start else 0,
+            "steps_until_end": max(0, self.event_end - self.step
+                                   ) if self.event_end else 0
         }
-    
+
     def get_event_effects(self) -> dict:
         """ Возвращает только эффекты текущего события для применения в игре
         
@@ -832,7 +835,8 @@ class Session(BaseClass):
         """
         event_data = self.get_event()
         if event_data and event_data.get("is_active"):
-            return {k: v for k, v in event_data.get("effects", {}).items() if v is not None}
+            return {k: v for k, v in event_data.get("effects", {}
+                                                    ).items() if v is not None}
         return {}
 
     def public_event_data(self) -> dict:

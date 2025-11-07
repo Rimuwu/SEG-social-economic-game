@@ -133,6 +133,7 @@ async def handle_update_session_stage(client_id: str, message: dict):
         "FreeUserConnect": SessionStages.FreeUserConnect,
         "CellSelect": SessionStages.CellSelect,
         "Game": SessionStages.Game,
+        "ChangeTurn": SessionStages.ChangeTurn,
         "End": SessionStages.End
     }
 

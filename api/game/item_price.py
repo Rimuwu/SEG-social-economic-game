@@ -50,7 +50,8 @@ class ItemPrice(BaseClass, SessionObject):
         # Попытка найти в базе
         data = await just_db.find_one(self.__tablename__, id=item_id, session_id=session_id)
         if data:
-            return self.load_from_base(data) # type: ignore
+            self.load_from_base(data)
+            return self
 
         self.current_price = RESOURCES.resources[item_id].basePrice
         self.prices = [self.current_price]

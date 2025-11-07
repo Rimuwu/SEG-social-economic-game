@@ -663,7 +663,8 @@ class Company(BaseClass, SessionObject):
         credit = self.credits[credit_index]
 
         if amount < credit["need_pay"]:
-            raise ValueError("Сумма платежа должна быть не менее требуемой для этого хода.")
+            raise ValueError(
+                "Сумма платежа должна быть не менее требуемой для этого хода.")
 
         # Досрочное закрытие кредита - можно заплатить больше чем need_pay
         remaining_debt = credit["total_to_pay"] - credit["paid"]
@@ -680,7 +681,11 @@ class Company(BaseClass, SessionObject):
         # Если кредит полностью выплачен, удаляем его
         if credit["paid"] >= credit["total_to_pay"]:
             await self.remove_credit(credit_index)
-            await self.add_reputation(REPUTATION.credit.gained)
+
+            max_credit = CAPITAL.bank.credit.max
+            max_rep = REPUTATION.credit.gained
+            reputation_gain = int((amount / max_credit) * max_rep)
+            await self.add_reputation(reputation_gain)
         else:
             self.credits[credit_index] = credit
             await self.save_to_base()
