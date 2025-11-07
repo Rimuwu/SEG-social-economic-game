@@ -399,6 +399,13 @@
                     "admin-session-info-page": "↪️ Назад"
                 }
             },
+            "admin-session-change-steps-page": {
+                "image": "img/end_game.png",
+                "content": "⚠️ *Смена количества этапов сессии*\nТекущий этап: {step}\nВведите шаг, на который хотите переключить сессию:",
+                "to_pages": {
+                    "admin-session-info-page": "↪️ Назад"
+                }
+            },
             "city-page": {
                 "image": "img/cities.png",
                 "content": ""
@@ -460,6 +467,13 @@
                 "to_pages": {
                     "admin-session-info-page": "↪️ Назад"
                 }
+            },
+            "admin-session-change-steps-page": {
+                "image": "img/end_game.png",
+                "content": "⚠️ *Смена количества этапов сессии*\nТекущий этап: {step}\nВведите шаг, на который хотите переключить сессию:",
+                "to_pages": {
+                    "admin-session-info-page": "↪️ Назад"
+                }
             }
         }
     },
@@ -511,6 +525,13 @@
             "admin-session-change-stage-page": {
                 "image": "img/end_game.png",
                 "content": "⚠️ *Смена этапа сессии*\n\nТекущий этап: {current_stage}\n\nВыберите этап, на который хотите переключить сессию:",
+                "to_pages": {
+                    "admin-session-info-page": "↪️ Назад"
+                }
+            },
+            "admin-session-change-steps-page": {
+                "image": "img/end_game.png",
+                "content": "⚠️ *Смена количества этапов сессии*\nТекущий этап: {step}\nВведите шаг, на который хотите переключить сессию:",
                 "to_pages": {
                     "admin-session-info-page": "↪️ Назад"
                 }

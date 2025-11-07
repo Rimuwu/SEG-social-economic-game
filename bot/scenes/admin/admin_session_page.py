@@ -202,7 +202,7 @@ class SessionDell(Page):
     async def dell_session(self, callback, args):
         flag = True
         try:
-            if await get_user(id=self.scene.user_id).get("session_id") == value:
+            if await get_user(id=self.scene.user_id).get("session_id") == args[1]:
                 flag = False
         except:
             pass
@@ -264,7 +264,7 @@ class SessionInfo(Page):
         if session is not None:
             self.row_width = 1
             buttons.append(create_buttons(self.scene.__scene_name__, "Сменить этап", "to_p", "admin-session-change-stage-page"))
-            buttons.append(create_buttons(self.scene.__scene_name__, "Сменить кол-во ходов", "to_p", "admin-session-update-steps-page"))
+            buttons.append(create_buttons(self.scene.__scene_name__, "Сменить кол-во ходов", "to_p", "admin-session-change-steps-page"))
             buttons.append(create_buttons(self.scene.__scene_name__, "↪ К выбору", "back_to_s", ignore_row=True))
         else:
             result = await get_sessions()
@@ -333,3 +333,20 @@ class SessonChangeStage(Page):
         add_shedule = self.scene.get_key(self.__page_name__, "add_shedule")
         await self.scene.update_key(self.__page_name__, "add_shedule", not add_shedule)
         await self.scene.update_message()
+    
+    
+class SessionChangeSteps(Page):
+    __page_name__ = "admin-session-change-steps-page"
+    
+    
+    async def content_worker(self):
+        session_id = self.scene.get_key("admin-session-info-page", "session_id")
+        data = await get_session(session_id)
+        steps = f'{data.get("step")}/{data.get("max_steps")}'
+        return self.content.format(step=steps)
+    
+    @Page.on_text("int")
+    async def handle_int(self, message, value: int):
+        session_id = self.scene.get_key("admin-session-info-page", "session_id")
+        await notforgame_update_session_max_steps(session_id, value)
+        await self.scene.update_page("admin-session-info-page")
