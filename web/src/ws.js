@@ -798,14 +798,17 @@ export class WebSocketManager {
     const callback = this.pendingCallbacks.get(requestId);
     
     console.log('[WS] Event response received:', message);
+    console.log('[WS] Event response - data exists:', !!message.data);
+    console.log('[WS] Event response - event property exists:', message.data && 'event' in message.data);
+    console.log('[WS] Event response - event value:', message.data?.event);
     
     if (message.data && message.data.event !== undefined) {
       // Check if event has data
       const eventData = message.data.event;
       
-      if (eventData && Object.keys(eventData).length > 0) {
+      if (eventData && eventData.id && Object.keys(eventData).length > 0) {
         // Update event in game state
-        console.log('[WS] Updating event:', eventData);
+        console.log('[WS] Updating event with ID:', eventData.id, eventData);
         this.gameState.updateEvent(eventData);
         
         if (callback) {
@@ -1197,6 +1200,11 @@ export class WebSocketManager {
   handleBroadcast(message) {
     console.log('[WS] Broadcast received:', message.type, message.data);
     
+    // DEBUGGING: Log all event-related broadcasts
+    if (message.type.includes('event') || (message.data && message.data.event !== undefined)) {
+      console.log('[WS] EVENT BROADCAST DETECTED:', message.type, message.data);
+    }
+    
     // Handle different broadcast types
     switch (message.type) {
       case 'api-create_company':
@@ -1340,9 +1348,36 @@ export class WebSocketManager {
         break;
       
       case 'api-event_generated':
-        // Refresh event data when a new event is generated
-        this.get_session_event();
+      case 'api-event_started':
+      case 'api-event_ended':
+      case 'api-event_updated':
+      case 'event_update':
+        console.log('[WS] EVENT BROADCAST: Refreshing event data for type:', message.type);
+        
+        // If broadcast contains event data directly, use it
+        if (message.data && message.data.event !== undefined) {
+          console.log('[WS] Event data found in broadcast:', message.data.event);
+          if (message.data.event && Object.keys(message.data.event).length > 0) {
+            this.gameState.updateEvent(message.data.event);
+          } else {
+            this.gameState.clearEvent();
+          }
+        } else {
+          // Otherwise refresh event data from server
+          this.get_session_event();
+        }
         break;
+    }
+    
+    // Check if any broadcast message contains event data
+    if (message.data && message.data.event !== undefined && 
+        !['api-event_generated', 'api-event_started', 'api-event_ended', 'api-event_updated', 'event_update'].includes(message.type)) {
+      console.log('[WS] UNEXPECTED EVENT DATA in broadcast type:', message.type, message.data.event);
+      if (message.data.event && Object.keys(message.data.event).length > 0) {
+        this.gameState.updateEvent(message.data.event);
+      } else {
+        this.gameState.clearEvent();
+      }
     }
     
     // Dispatch custom event for components that need raw broadcast data

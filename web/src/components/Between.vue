@@ -1,7 +1,7 @@
 <script setup>
 import Map from './Map.vue'
 import LeaveButton from './LeaveButton.vue'
-import { onMounted, ref, inject, computed } from 'vue'
+import { onMounted, onUnmounted, ref, inject, computed } from 'vue'
 
 const emit = defineEmits(['navigateTo'])
 
@@ -163,6 +163,7 @@ const currentEvent = computed(() => {
     console.log('[Between.vue] - starts_next_turn:', event.starts_next_turn)
     console.log('[Between.vue] - predictable:', event.predictable)
     console.log('[Between.vue] - start_step:', event.start_step)
+    console.log('[Between.vue] - end_step:', event.end_step)
     console.log('[Between.vue] - All event keys:', Object.keys(event))
   } else {
     console.log('[Between.vue] Event is null/undefined')
@@ -206,7 +207,22 @@ const eventStatusText = computed(() => {
     const currentStep = wsManager?.gameState?.state?.session?.step
     const stepsUntil = event.start_step - currentStep
     console.log('[Between.vue] Predictable event - current step:', currentStep, 'start step:', event.start_step, 'steps until:', stepsUntil)
-    statusText = `Начнётся через ${stepsUntil} ход${stepsUntil === 1 ? '' : stepsUntil < 5 ? 'а' : 'ов'}`
+    console.log('[Between.vue] Event end_step:', event.end_step)
+    
+    if (stepsUntil <= 0) {
+      // Событие уже началось, показываем когда закончится
+      const stepsUntilEnd = event.end_step ? (event.end_step - currentStep) : null
+      console.log('[Between.vue] Steps until end:', stepsUntilEnd)
+      
+      if (stepsUntilEnd && stepsUntilEnd > 0) {
+        statusText = `Закончится через ${stepsUntilEnd} ход${stepsUntilEnd === 1 ? '' : stepsUntilEnd < 5 ? 'а' : 'ов'}`
+      } else {
+        statusText = 'Заканчивается в этом ходу'
+      }
+    } else {
+      // Событие ещё не началось
+      statusText = `Начнётся через ${stepsUntil} ход${stepsUntil === 1 ? '' : stepsUntil < 5 ? 'а' : 'ов'}`
+    }
     console.log('[Between.vue] Status: Predictable -', statusText)
   } else {
     console.log('[Between.vue] No status matched')
@@ -217,6 +233,33 @@ const eventStatusText = computed(() => {
   
   return statusText
 })
+
+// Function to refresh event data
+const refreshEventData = () => {
+  if (wsManager && wsManager.get_session_event) {
+    console.log('[Between.vue] Refreshing event data...')
+    wsManager.get_session_event((response) => {
+      console.log('[Between.vue] Event refresh response:', response)
+      
+      if (response && response.success) {
+        const eventData = response.data
+        
+        if (eventData && eventData.id) {
+          console.log('[Between.vue] Valid event received - updating state:', eventData)
+          wsManager.gameState.updateEvent(eventData)
+        } else {
+          console.log('[Between.vue] Empty/null event data - event has ended, clearing from state')
+          wsManager.gameState.clearEvent()
+        }
+      } else {
+        console.log('[Between.vue] Event request failed:', response)
+      }
+    })
+  }
+}
+
+// Интервал для периодической проверки событий
+let eventCheckInterval = null
 
 onMounted(() => {
   console.log('[Between.vue] Component mounted - checking initial state')
@@ -229,7 +272,26 @@ onMounted(() => {
   if (wsManager?.gameState?.state) {
     console.log('[Between.vue] Full state keys:', Object.keys(wsManager.gameState.state))
   }
+
+  // Запрашиваем актуальное событие при загрузке межэтапа
+  refreshEventData()
+
+  // Добавляем интервал для периодической проверки событий каждые 30 секунд
+  eventCheckInterval = setInterval(() => {
+    console.log('[Between.vue] Periodic event check...')
+    refreshEventData()
+  }, 30000) // 30 секунд
 })
+
+// Очистка интервала при размонтировании компонента
+onUnmounted(() => {
+  if (eventCheckInterval) {
+    clearInterval(eventCheckInterval)
+    eventCheckInterval = null
+  }
+})
+
+
 </script>
 
 
@@ -295,11 +357,7 @@ onMounted(() => {
 
       <!-- Events section moved below grid -->
       <div class="events">
-        <!-- Debug info (remove in production) -->
-        <div style="font-size: 1.5rem; margin-bottom: 20px; opacity: 0.7;">
-          Debug: Event={{ !!currentEvent }}, ID={{ currentEvent?.id }}, Name={{ currentEvent?.name }}
-        </div>
-        
+
         <div v-if="currentEvent && currentEvent.id" class="event-content">
           <div class="event-name">{{ currentEvent.name }}</div>
           <div class="event-status" v-if="eventStatusText">{{ eventStatusText }}</div>
