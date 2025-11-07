@@ -56,7 +56,7 @@ class Logistics(BaseClass, SessionObject):
         if not session:
             mod = 1.0
         else:
-            mod = session.get_event_effects().get( # await
+            mod = session.get_event_effects().get(
                 'cell_logistics', 1.0
             )
 
