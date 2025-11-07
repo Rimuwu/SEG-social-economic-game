@@ -63,7 +63,8 @@
                 "content": "Меню управления компанией",
                 "to_pages": {
                     "bank-menu": "🏦 Банк",
-                    "exchange-page": "📈 Биржа",
+                    "exchange-main-page": "📈 Биржа",
+                    "contract-main-page": "📃 Контракты",
                     "factory-menu": "🏭 Управление заводами",
                     "upgrade-menu": "🔧 Улучшения",
                     "about-info-menu": "👥 Общая информация",
@@ -104,34 +105,141 @@
                     "main-page": "↪️ Назад"
                 }
             },
-            "bank-credit-page": {
+            "bank-credit-main": {
                 "image": "img/bank.png",
-                "content": "",
+                "content": "💳 *Кредиты*\n\n*Ваши условия:*\nПроцентная ставка: {percent}%\nЛьготный период: {without_interest} ход(ов)\nРепутация: {reputation} ⭐\nЛимит кредитов: {credits_count}/{max_credits}\n\n{active_credits_section}",
                 "to_pages": {
                     "bank-menu": "↪️ Назад"
                 }
             },
-            "bank-credit-amount": {
+            "bank-credit-take-period": {
                 "image": "img/bank.png",
-                "content": "",
+                "content": "⏱ *Взятие кредита*\n\n*Шаг 1: Введите срок кредита*\n\nНа какое количество ходов хотите взять кредит?\nМинимум: 2 ход\nМаксимум: {max_period} ход(ов)\n(Текущий ход: {current_step}, до конца игры: {max_period})",
                 "to_pages": {
-                    "bank-credit-page": "↪️ Назад"
+                    "bank-credit-main": "↪️ Назад"
                 }
             },
-            "bank-credit-period": {
+            "bank-credit-take-amount": {
                 "image": "img/bank.png",
-                "content": "",
+                "content": "💰 *Взятие кредита*\n\n✅ Срок: {credit_period} ход(ов)\n\n*Шаг 2: Введите сумму кредита*\n\nМинимум: {min_credit} 💰\nМаксимум: {max_credit} 💰",
                 "to_pages": {
-                    "bank-credit-amount": "↪️ Назад"
+                    "bank-credit-take-period": "↪️ Назад"
                 }
             },
-            "bank-deposit-page": {
+            "bank-credit-take-confirm": {
                 "image": "img/bank.png",
-                "content": ""
+                "content": "💳 *Подтверждение кредита*\n\n*Параметры кредита:*\nСумма: {credit_amount} 💰\nСрок: {credit_period} ход(ов)\n\n*Условия:*\nПроцентная ставка: {percent}%\nЛьготный период: {without_interest} ход(ов)\nХодов с процентами: {extra}\n\n*К оплате:*\nВсего к возврату: {total} 💰\nПлатеж за ход: {pay_per_turn} 💰\n\nПодтвердите взятие кредита:",
+                "to_pages": {
+                    "bank-credit-take-amount": "↪️ Назад"
+                }
             },
-            "exchange-page": {
+            "bank-credit-pay": {
+                "image": "img/bank.png",
+                "content": "💸 *Оплата кредита #{credit_index}*\n\n*Информация о кредите:*\nОсталось выплатить: {remaining} 💰\nТекущий платеж: {need_pay} 💰\nВаш баланс: {balance} 💰\n\n*Введите сумму для оплаты:*\n\nМинимум: {need_pay} 💰 (текущий платеж)\nМаксимум: {remaining} 💰 (весь остаток)",
+                "to_pages": {
+                    "bank-credit-main": "↪️ Назад"
+                }
+            },
+            "bank-deposit-main": {
+                "image": "img/bank.png",
+                "content": "🏦 *Вклады*\n\n*Ваши условия:*\n💰 Баланс: {balance} 💰\n📈 Процентная ставка: {percent}% в ход\n⭐ Репутация: {reputation}\n⏱ Минимальный срок: 3 хода\n\n{availability_section}{active_deposits_section}",
+                "to_pages": {
+                    "bank-menu": "↪️ Назад"
+                }
+            },
+            "bank-deposit-view": {
+                "image": "img/bank.png",
+                "content": "{status_icon} *Вклад #{deposit_index}*\n\n*Финансовая информация:*\n💵 Начальная сумма: {initial_sum} 💰\n💰 Текущий баланс: {current_balance} 💰\n📈 Заработано: {total_earned} 💰 (+{profit_percent}%)\n💸 Доход за ход: {income_per_turn} 💰\n\n*Информация о сроках:*\n⏱ Общий срок вклада: {steps_total} ход(ов)\n⏳ Прошло ходов: {steps_now} / {steps_total}\n🔄 Осталось ходов: {steps_left}\n\n*Статус:*\n{status_text}\n\n_Вклад можно забрать через 3 хода после открытия, независимо от общего срока_",
+                "to_pages": {
+                    "bank-deposit-main": "↪️ Назад"
+                }
+            },
+            "bank-deposit-open-amount": {
+                "image": "img/bank.png",
+                "content": "💰 *Открытие вклада*\n\n*Шаг 1: Введите сумму вклада*\n\nВаш баланс: {balance} 💰\nМинимум: {min_deposit} 💰\nМаксимум: {max_deposit} 💰\n\nВведите сумму, которую хотите внести на вклад:",
+                "to_pages": {
+                    "bank-deposit-main": "↪️ Назад"
+                }
+            },
+            "bank-deposit-open-period": {
+                "image": "img/bank.png",
+                "content": "⏱ *Открытие вклада*\n\n✅ Сумма вклада: {deposit_amount} 💰\n📈 Процентная ставка: {percent}% в ход\n\n*Шаг 2: Введите срок вклада*\n\nМинимум: 3 хода (минимальный срок блокировки)\nМаксимум: {max_period} ход(ов)\n(Текущий ход: {current_step}, до конца игры: {max_period})\n\nВведите количество ходов:",
+                "to_pages": {
+                    "bank-deposit-open-amount": "↪️ Назад"
+                }
+            },
+            "bank-deposit-open-confirm": {
+                "image": "img/bank.png",
+                "content": "🏦 *Подтверждение вклада*\n\n*Параметры вклада:*\n💵 Сумма вклада: {deposit_amount} 💰\n⏱ Срок: {deposit_period} ход(ов)\n\n*Условия:*\n📈 Процентная ставка: {percent}% в ход\n🔒 Минимальный срок: 3 хода\n(Забрать вклад можно будет через 3 хода)\n\n*Доход:*\n📈 Доход за ход: {income_per_turn} 💰\n✅ Общий доход: {total_income} 💰\n💰 Итоговая сумма: {final_sum} 💰\n\nПодтвердите открытие вклада:",
+                "to_pages": {
+                    "bank-deposit-open-period": "↪️ Назад"
+                }
+            },
+            "exchange-main-page": {
                 "image": "img/exchange.png",
+                "content": "📈 *Биржа*\n\n{success_message}{filter_text}{offers_text}"
+                
+            },
+            "exchange-details-page": {
+                "image": "img/exchange.png",
+                "content": "📋 *Детали предложения*\n\n🏢 *Продавец:* {seller_name}\n\n*Товар:* {sell_emoji} {sell_name}\n*За одну сделку:* {sell_amount} шт.\n*Всего в наличии:* {total_stock} шт.\n*Доступно сделок:* {available_trades}\n\n{offer_conditions}\n\n⏰ *Создано на ходу:* {created_at}"
+            },
+            "exchange-filter-page": {
+                "image": "img/exchange.png",
+                "content": "🔍 *Выберите ресурс для поиска*\n\nВыберите ресурс, чтобы увидеть только предложения с этим товаром:"
+            },
+            "exchange-create-page": {
+                "image": "img/exchange.png",
+                "content": "➕ *Создание предложения*\n\n📦 *Товар:* {sell_text} x{sell_amount}\n📊 *Количество сделок:* {count_offers}\n� *Тип:* {type_text}\n💼 *Условия:*\n{conditions_text}{error_text}",
+                "to_pages": {
+                    "exchange-main-page": "↪️ Назад к бирже"
+                }
+            },
+            "exchange-create-select-sell": {
+                "image": "img/exchange.png",
+                "content": "➕ *Создание предложения*\n\nТип: {offer_type_text}\n\nВыберите товар для продажи со склада:"
+            },
+            "exchange-create-input-amount": {
+                "image": "img/exchange.png",
+                "content": "➕ *Создание предложения*\n\n{sell_info}💬 *Введите количество товара за одну сделку*\n\nПример: `10` - за одну сделку будет продаваться 10 единиц товара"
+            },
+            "exchange-create-input-count": {
+                "image": "img/exchange.png",
+                "content": "➕ *Создание предложения*\n\n{sell_info}💬 *Введите количество сделок*\n\nПример: `5` - будет создано 5 сделок по {sell_amount} единиц\nВсего будет выставлено на продажу: {sell_amount} × 5 = {total_amount} единиц"
+            },
+            "exchange-create-input-price": {
+                "image": "img/exchange.png",
+                "content": "➕ *Создание предложения*\n\nТовар: {sell_emoji} {sell_name}\nЗа сделку: {sell_amount} шт.\nКоличество сделок: {count_offers}\n\n💬 *Введите цену за одну сделку*\n\nПример: `1000` - покупатель заплатит 1000 монет за одну сделку{item_price_info}"
+            },
+            "exchange-create-select-barter": {
+                "image": "img/exchange.png",
+                "content": "➕ *Создание предложения*\n\nПродаёте: {sell_emoji} {sell_name} x{sell_amount}\nКоличество сделок: {count_offers}\n\nВыберите ресурс, который хотите получить в обмен:"
+            },
+            "exchange-create-input-barter-amount": {
+                "image": "img/exchange.png",
+                "content": "➕ *Создание предложения*\n\nПродаёте: {sell_emoji} {sell_name} x{sell_amount}\nВ обмен на: {barter_emoji} {barter_name}\n\n💬 *Введите количество ресурса для обмена*\n\nПример: `5` - покупатель отдаст 5 единиц ресурса за одну сделку"
+            },
+            "exchange-create-confirm": {
+                "image": "img/exchange.png",
+                "content": "➕ *Подтверждение создания предложения*\n\n*Продаёте:*\n└ {sell_emoji} {sell_name} x{sell_amount} за сделку\n└ Количество сделок: {count_offers}\n└ Всего: {total_sell} единиц\n\n*Условия:*\n{conditions_text}\n\n⚠️ *Подтвердите создание предложения*"
+            },
+            "exchange-sellect-confirm-page": {
+                "title": "",
                 "content": ""
+            },
+            "exchange-create-set-barter-page": {
+                "image": "img/exchange.png",
+                "content": "⇄ *Установка количества ресурса*\n\n{barter_emoji} {barter_name}\n\n💬 Введите количество ресурса, которое покупатель должен отдать за одну сделку",
+                "to_pages": {
+                    "exchange-create-page": "↪️ Назад"
+                }
+            },
+            "exchange-create-set-sell-page": {
+                "image": "img/exchange.png",
+                "content": "📦 *Установка количества товара*\n\n{sell_emoji} {sell_name}\n\n💬 Введите количество товара за одну сделку\n\nДоступно на складе: *{max_amount} шт.*",
+                "to_pages": {
+                    "exchange-create-page": "↪️ Назад"
+                }
             },
             "upgrade-menu": {
                 "image": "img/upgrade.png",
@@ -146,41 +254,98 @@
             },
             "factory-menu": {
                 "image": "img/main_company.png",
-                "content": "",
+                "content": "🏭 *Меню управления заводами*\n\n📊 *Всего заводов:* {total}\n{recomplecting_text}{auto_text}{manual_text}{idle_text}{empty_message}",
+                "to_pages": {
+                    "main-page": "↪️ Назад"
+                }
+            },
+            "contract-main-page": {
+                "title": "",
+                "content": "На данной странице вы можете принять, создать или выполнить контракт.",
                 "to_pages": {
                     "main-page": "↪️ Назад"
                 }
             },
             "contract-view-page": {
                 "title": "",
-                "content": "",
+                "content": "📜 *Контракты на рассмотрении*\n{overview_text}{details_text}{error_text}",
+                "to_pages": {
+                    "contract-main-page": "↪️ Назад"
+                }
+            },
+            "contract-create-page": {
+                "image": "img/exchange.png",
+                "content": "📜 *Создание контракта*\n\n🤝 *Ваша роль:* {role_text}\n🏭 *Поставщик:* {supplier_text}\n🏬 *Покупатель:* {customer_text}\n📦 *Ресурс:* {resource_text}\n📈 *Количество за ход:* {amount_text}\n⏱️ *Длительность:* {duration_text}\n💰 *Оплата за ход:* {payment_text}{error_text}",
+                "to_pages": {
+                    "contract-main-page": "↪️ Назад"
+                }
+            },
+            "contract-create-select-company-page": {
+                "image": "img/exchange.png",
+                "content": "🏬 *Выбор компании*\n\n{description_text}{error_text}\n📝 Выберите компанию из списка:",
+                "to_pages": {
+                    "contract-create-page": "↪️ Назад"
+                }
+            },
+            "contract-create-select-resource-page": {
+                "image": "img/exchange.png",
+                "content": "📦 *Выбор ресурса*\n\n{supplier_text}{error_text}\n📝 Выберите ресурс, который будет поставляться по контракту:",
+                "to_pages": {
+                    "contract-create-page": "↪️ Назад"
+                }
+            },
+            "contract-execute-page": {
+                "image": "img/exchange.png",
+                "content": "🚚 *Выполнение контрактов*\n{overview_text}{details_text}{error_text}",
                 "to_pages": {
                     "contract-main-page": "↪️ Назад"
                 }
             },
             "factory-change-mode": {
                 "image": "img/main_company.png",
-                "content": ""
+                "content": "🔄 *Изменение режима производства*\n\nВыберите тип заводов для изменения:\n\n🤖 *Автоматические:* {auto_count} шт.\n   _Можно сделать неавтоматическими_\n\n👤 *Неавтоматические:* {manual_count} шт.\n   _Можно сделать автоматическими_",
+                "to_pages": {
+                    "factory-menu": "↪️ Назад"
+                }
             },
             "factory-rekit-groups": {
                 "image": "img/main_company.png",
-                "content": ""
+                "content": "🔄 *Перекомплектация заводов*\n\nВыберите группу заводов для перекомплектации:\n\n{groups_text}",
+                "to_pages": {
+                    "factory-menu": "↪️ Назад"
+                }
             },
             "factory-rekit-count": {
                 "image": "img/main_company.png",
-                "content": ""
+                "content": "🔄 *Количество заводов*\n\n{group_info}Укажите количество заводов для перекомплектации:\n\nДоступно: *{available}* шт.",
+                "to_pages": {
+                    "factory-rekit-resource": "↪️ Назад"
+                }
             },
             "factory-rekit-resource": {
                 "image": "img/main_company.png",
-                "content": ""
+                "content": "🔄 *Выбор ресурса*\n\n{current_group_text}Выберите ресурс для перекомплектации:",
+                "to_pages": {
+                    "factory-rekit-groups": "↪️ Назад"
+                }
             },
             "factory-rekit-produce": {
                 "image": "img/main_company.png",
-                "content": ""
+                "content": "🔄 *Подтверждение перекомплектации*\n\n{summary}\n\n⚠️ *Внимание!*\nПерекомплектация займёт {stages} ход(-ов).\n\nПродолжить?",
+                "to_pages": {
+                    "factory-rekit-count": "↪️ Назад"
+                }
             },
             "factory-start-groups": {
                 "image": "img/main_company.png",
-                "content": ""
+                "content": "🏭 *Запуск заводов*\n\n⏸️ Заводов готовых к запуску: {startable_count}\n▶️ Не автоматических заводов работает: {working_manual_count}\n\n{groups_text}",
+                "to_pages": {
+                    "factory-menu": "↪️ Назад"
+                }
+            },
+            "factory-select-mode": {
+                "image": "img/main_company.png",
+                "content": "🏭 *Перекомплектация заводов*\n\nВыберите режим заводов для перекомплектации:\n\n⚪️ *Простаивающие:* {idle_count} шт.\n🤖 *Автоматические:* {auto_count} шт.\n👤 *Неавтоматические:* {manual_count} шт."
             },
             "change-turn-page": {
                 "image": "img/mejturn.png",
@@ -194,9 +359,45 @@
                 "image": "img/end_game.png",
                 "content": "Игра завершена!"
             },
-            "admin-panel-page": {
+            "admin-main-page": {
                 "image": "img/end_game.png",
                 "content": "Админ панель"
+            },
+            "admin-session-main-page": {
+                "image": "img/end_game.png",
+                "content": "📋 *Сессии:*\n\n{sessions}",
+                "to_pages": {
+                    "admin-session-add-page": "➕ Создать",
+                    "admin-session-dell-page": "➖ Удалить",
+                    "admin-session-info-page": "ℹ️ Инфо",
+                    "admin-main-page": "↪️ Назад"
+                },
+                "row_width": 1
+            },
+            "admin-session-add-page": {
+                "image": "img/end_game.png",
+                "content": "ID: {session_id}\nMap pattern: {map_pattern}\nSize map: {size}\nMax Steps: {max_steps}\nSession group URL: {session_group_url}\n Max Companies: {max_companies}\nMax player in Company: {max_player_in_company}\nTime on game stage: {time_on_game_stage}\nTime on change stage: {time_on_change_stage}",
+                "to_pages": {
+                    "admin-session-main-page": "↪️ Назад"
+                }
+            },
+            "admin-session-dell-page": {
+                "image": "img/end_game.png",
+                "content": "🗑 *Удаление сессии*\nНажмите кнопку ниже и сессия с данным id удалится, или введите айди вручную",
+                "to_pages": {
+                    "admin-session-main-page": "↪️ Назад"
+                }
+            },
+            "admin-session-info-page": {
+                "image": "img/end_game.png",
+                "content": "ID: {session_id}\nMap pattern: {map_pattern}\nSize map: {size}x{size}\nSteps: {max_steps}\nStage: {stage}\nEvent: {event_type}\nCompanies: {max_companies}\nUsers: {user}\nTime to next stage: {time_to_next_stage}"
+            },
+            "admin-session-change-stage-page": {
+                "image": "img/end_game.png",
+                "content": "⚠️ *Смена этапа сессии*\n\nТекущий этап: {current_stage}\n\nВыберите этап, на который хотите переключить сессию:",
+                "to_pages": {
+                    "admin-session-info-page": "↪️ Назад"
+                }
             },
             "city-page": {
                 "image": "img/cities.png",
@@ -220,9 +421,101 @@
             "game-info-page": {
                 "content": ""
             },
-            "admin-panel-page": {
+           "admin-main-page": {
+                "image": "img/end_game.png",
                 "content": "Админ панель"
+            },
+            "admin-session-main-page": {
+                "image": "img/end_game.png",
+                "content": "📋 *Сессии:*\n\n{sessions}",
+                "to_pages": {
+                    "admin-session-add-page": "➕ Создать",
+                    "admin-session-dell-page": "➖ Удалить",
+                    "admin-session-info-page": "ℹ️ Инфо",
+                    "admin-main-page": "↪️ Назад"
+                },
+                "row_width": 1
+            },
+            "admin-session-add-page": {
+                "image": "img/end_game.png",
+                "content": "ID: {session_id}\nMap pattern: {map_pattern}\nSize map: {size}\nMax Steps: {max_steps}\nSession group URL: {session_group_url}\n Max Companies: {max_companies}\nMax player in Company: {max_player_in_company}\nTime on game stage: {time_on_game_stage}\nTime on change stage: {time_on_change_stage}",
+                "to_pages": {
+                    "admin-session-main-page": "↪️ Назад"
+                }
+            },
+            "admin-session-dell-page": {
+                "image": "img/end_game.png",
+                "content": "🗑 *Удаление сессии*\nНажмите кнопку ниже и сессия с данным id удалится, или введите айди вручную",
+                "to_pages": {
+                    "admin-session-main-page": "↪️ Назад"
+                }
+            },
+            "admin-session-info-page": {
+                "image": "img/end_game.png",
+                "content": "ID: {session_id}\nMap pattern: {map_pattern}\nSize map: {size}x{size}\nSteps: {max_steps}\nStage: {stage}\nEvent: {event_type}\nCompanies: {max_companies}\nUsers: {user}\nTime to next stage: {time_to_next_stage}"
+            },
+            "admin-session-change-stage-page": {
+                "image": "img/end_game.png",
+                "content": "⚠️ *Смена этапа сессии*\n\nТекущий этап: {current_stage}\n\nВыберите этап, на который хотите переключить сессию:",
+                "to_pages": {
+                    "admin-session-info-page": "↪️ Назад"
+                }
             }
+        }
+    },
+    "admin-scene-manager": {
+        "settings": {
+            "parse_mode": "Markdown",
+            "delete_after_send": true
+        },
+        "pages": {
+            "admin-main-page": {
+                "image": "img/end_game.png",
+                "content": "Админ панель",
+                "to_pages": {
+                    "admin-session-main-page": "↪️ Сессии",
+                    "admin-company-main-page": "↪️ Компании",
+                    "admin-user-main-page": "↪️ Пользователи"
+                },
+                "row_width": 2
+            },
+            "admin-session-main-page": {
+                "image": "img/end_game.png",
+                "content": "📋 *Сессии:*\n\n{sessions}",
+                "to_pages": {
+                    "admin-session-add-page": "➕ Создать",
+                    "admin-session-dell-page": "➖ Удалить",
+                    "admin-session-info-page": "ℹ️ Инфо",
+                    "admin-main-page": "↪️ Назад"
+                },
+                "row_width": 1
+            },
+            "admin-session-add-page": {
+                "image": "img/end_game.png",
+                "content": "ID: {session_id}\nMap pattern: {map_pattern}\nSize map: {size}\nMax Steps: {max_steps}\nSession group URL: {session_group_url}\n Max Companies: {max_companies}\nMax player in Company: {max_player_in_company}\nTime on game stage: {time_on_game_stage}\nTime on change stage: {time_on_change_stage}",
+                "to_pages": {
+                    "admin-session-main-page": "↪️ Назад"
+                }
+            },
+            "admin-session-dell-page": {
+                "image": "img/end_game.png",
+                "content": "🗑 *Удаление сессии*\nНажмите кнопку ниже и сессия с данным id удалится, или введите айди вручную",
+                "to_pages": {
+                    "admin-session-main-page": "↪️ Назад"
+                }
+            },
+            "admin-session-info-page": {
+                "image": "img/end_game.png",
+                "content": "ID: {session_id}\nMap pattern: {map_pattern}\nSize map: {size}x{size}\nSteps: {max_steps}\nStage: {stage}\nEvent: {event_type}\nCompanies: {max_companies}\nUsers: {user}\nTime to next stage: {time_to_next_stage}"
+            },
+            "admin-session-change-stage-page": {
+                "image": "img/end_game.png",
+                "content": "⚠️ *Смена этапа сессии*\n\nТекущий этап: {current_stage}\n\nВыберите этап, на который хотите переключить сессию:",
+                "to_pages": {
+                    "admin-session-info-page": "↪️ Назад"
+                }
+            }
+
         }
     }
 }

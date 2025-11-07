@@ -122,7 +122,7 @@ onUnmounted(() => {
 
     <div class="right">
       <div class="acronym">
-        <span>S — SIMPLE</span>
+        <span>S — SOCIAL</span>
         <span>E — ECONOMIC</span>
         <span>G — GAME</span>
       </div>

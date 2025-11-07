@@ -347,7 +347,7 @@ class Company(BaseClass, SessionObject):
         session = await self.get_session()
         if not session: return None
 
-        index = x * session.map_size["cols"] + y
+        index = y * session.map_size["cols"] + x
 
         if index < 0 or index >= len(session.cells):
             return None

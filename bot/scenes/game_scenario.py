@@ -1,76 +1,40 @@
-from scenes.start_page import Start
-from scenes.name_page import UserName
-from scenes.company_create_page import CompanyCreate
-from scenes.company_join_page import CompanyJoin
-from scenes.main_page import MainPage
-from scenes.wait_game_page import WaitStart
-from scenes.wait_game_stage_page import WaitGameStagePage
-from scenes.wait_select_cell_page import WaitSelectCellPage
-from scenes.select_cell_page import SelectCell
-from scenes.about_info_page import AboutInfo
-from scenes.cells_info_page import CellsInfo
-from scenes.inventory_page import InventoryPage
-from scenes.bank_page import BankPage
-from scenes.bank_credit_page import BankCreditPage
-from scenes.bank_deposit_page import BankDepositPage
-from scenes.contract_main_page import ContractMainPage
-from scenes.city_page import City
-from scenes.upgrade_menu import UpgradeMenu
-from scenes.logistics_menu import LogisticsMenu
-from scenes.factory_menu_page import FactoryMenu
-from scenes.factory_rekit_groups import FactoryRekitGroups
-from scenes.factory_rekit_count import FactoryRekitCount
-from scenes.factory_rekit_resource import FactoryRekitResource
-from scenes.factory_rekit_produce import FactoryRekitProduce
-from scenes.factory_start_groups import FactoryStartGroups
-from scenes.factory_change_mode import FactoryChangeMode
-from scenes.exchange_page import ExchangePage
-from scenes.change_turn_page import ChangeTurnPage
-from scenes.prison_page import PrisonPage
-from scenes.end_game_page import EndGamePage
-from scenes.admin_panel_page import AdminPanelPage
+
+
+from scenes.admin import __admin__
+from scenes.admin import AdminMainPage
+from scenes.bank_pages import __bank__
+from scenes.cell_pages import __cell__
+from scenes.company_pages import __company__
+from scenes.contractc_pages import __contract__
+# from scenes.exchange_pages import __exchange__
+from scenes.exchanges_page_2 import __exchange__
+from scenes.factory_pages import __factory__
+from scenes.game_pages import __game__, __gameinfo__
+from scenes.info_pages import __info__
+from scenes.logistics_pages import __logistics__
+from scenes.start_game_pages import __startgame__
+
+
 from scenes.base_scene import AdminScene
-from scenes.about_turn_page import AboutTurnPage
 from modules.db import db
 
 
 class GameManager(AdminScene):
 
     __scene_name__ = 'scene-manager'
-    __pages__ = [
-        Start,
-        UserName,
-        CompanyCreate,
-        CompanyJoin,
-        MainPage,
-        WaitStart,
-        WaitGameStagePage,
-        WaitSelectCellPage,
-        SelectCell,
-        AboutInfo,
-        CellsInfo,
-        InventoryPage,
-        BankPage,
-        BankCreditPage,
-        BankDepositPage,
-        UpgradeMenu,
-        LogisticsMenu,
-        FactoryMenu,
-        FactoryRekitGroups,
-        FactoryRekitCount,
-        FactoryRekitResource,
-        FactoryRekitProduce,
-        FactoryStartGroups,
-        FactoryChangeMode,
-        ChangeTurnPage,
-        PrisonPage,
-        EndGamePage,
-        AdminPanelPage,
-        ExchangePage,
-        City,
-        AboutTurnPage
-    ]
+    __pages__ = [AdminMainPage]
     
+    __pages__.extend(__contract__)
+    __pages__.extend(__admin__)
+    __pages__.extend(__bank__)
+    __pages__.extend(__cell__)
+    __pages__.extend(__company__)
+    __pages__.extend(__exchange__)
+    __pages__.extend(__factory__)
+    __pages__.extend(__game__)
+    __pages__.extend(__info__)
+    __pages__.extend(__logistics__)
+    __pages__.extend(__startgame__)
     @staticmethod
     async def insert_to_db(user_id: int, data: dict):
         await db.insert('scenes', data)

@@ -1,15 +1,16 @@
-from scenes.game_info_page import GameInfo
-from scenes.admin_panel_page import AdminPanelPage
+from scenes.admin import AdminMainPage
+from scenes.admin import __admin__
+from scenes.game_pages import __gameinfo__
 from scenes.base_scene import AdminScene
 from modules.db import db
 
 
 class StartManager(AdminScene):
     __scene_name__ = 'start-scene-manager'
-    __pages__ = [
-        GameInfo,
-        AdminPanelPage
-    ]
+    __pages__ = [AdminMainPage]
+    
+    __pages__.extend(__gameinfo__)
+    __pages__.extend(__admin__)
     
     @staticmethod
     async def insert_to_db(user_id: int, data: dict):

@@ -389,6 +389,149 @@ async def get_company_users(company_id: int):
         wait_for_response=True
     )
 
+async def company_get_statistics(company_id: int, session_id: str):
+    """Получение статистики компании"""
+    return await ws_client.send_message(
+        "company-get-statistics",
+        company_id=company_id,
+        session_id=session_id,
+        wait_for_response=True
+    )
+
+async def get_company_balance(company_id: int):
+    """Получение баланса компании"""
+    return await ws_client.send_message(
+        "get-company-balance",
+        company_id=company_id,
+        wait_for_response=True
+    )
+
+async def get_company_reputation(company_id: int):
+    """Получение репутации компании"""
+    return await ws_client.send_message(
+        "get-company-reputation",
+        company_id=company_id,
+        wait_for_response=True
+    )
+
+async def get_company_warehouse(company_id: int):
+    """Получение данных склада компании"""
+    return await ws_client.send_message(
+        "get-company-warehouse",
+        company_id=company_id,
+        wait_for_response=True
+    )
+
+async def get_company_credits(company_id: int):
+    """Получение данных по кредитам компании"""
+    return await ws_client.send_message(
+        "get-company-credits",
+        company_id=company_id,
+        wait_for_response=True
+    )
+
+async def get_company_deposits(company_id: int):
+    """Получение данных по депозитам компании"""
+    return await ws_client.send_message(
+        "get-company-deposits",
+        company_id=company_id,
+        wait_for_response=True
+    )
+
+async def get_company_taxes(company_id: int):
+    """Получение данных по налогам компании"""
+    return await ws_client.send_message(
+        "get-company-taxes",
+        company_id=company_id,
+        wait_for_response=True
+    )
+
+async def get_company_position(company_id: int):
+    """Получение позиции компании на карте"""
+    return await ws_client.send_message(
+        "get-company-position",
+        company_id=company_id,
+        wait_for_response=True
+    )
+
+async def get_company_prison_status(company_id: int):
+    """Получение статуса тюрьмы компании"""
+    return await ws_client.send_message(
+        "get-company-prison-status",
+        company_id=company_id,
+        wait_for_response=True
+    )
+
+async def get_company_basic_info(company_id: int):
+    """Получение базовой информации о компании"""
+    return await ws_client.send_message(
+        "get-company-basic-info",
+        company_id=company_id,
+        wait_for_response=True
+    )
+
+async def get_company_factories(company_id: int):
+    """Получение фабрик компании"""
+    return await ws_client.send_message(
+        "get-company-factories",
+        company_id=company_id,
+        wait_for_response=True
+    )
+
+async def get_company_exchanges(company_id: int):
+    """Получение бирж компании"""
+    return await ws_client.send_message(
+        "get-company-exchanges",
+        company_id=company_id,
+        wait_for_response=True
+    )
+
+async def get_company_production(company_id: int):
+    """Получение производственной информации компании"""
+    return await ws_client.send_message(
+        "get-company-production",
+        company_id=company_id,
+        wait_for_response=True
+    )
+
+async def set_fast_logistic(company_id: int):
+    """Установка быстрой логистики"""
+    return await ws_client.send_message(
+        "set-fast-logistic",
+        company_id=company_id,
+        password=UPDATE_PASSWORD,
+        wait_for_response=True
+    )
+
+async def set_fast_complectation(company_id: int):
+    """Установка быстрой комплектации"""
+    return await ws_client.send_message(
+        "set-fast-complectation",
+        company_id=company_id,
+        password=UPDATE_PASSWORD,
+        wait_for_response=True
+    )
+
+async def change_position(company_id: int, x: int, y: int):
+    """Изменение позиции компании на карте (платная услуга)"""
+    return await ws_client.send_message(
+        "change-position",
+        company_id=company_id,
+        x=x,
+        y=y,
+        password=UPDATE_PASSWORD,
+        wait_for_response=True
+    )
+
+async def notforgame_company_prison(company_id: int):
+    """Отправление компании в тюрьму. НЕ ИСПОЛЬЗОВАТЬ В ИГРОВОМ ПРОЦЕССЕ!"""
+    return await ws_client.send_message(
+        "notforgame-compny-prison",
+        company_id=company_id,
+        password=UPDATE_PASSWORD,
+        wait_for_response=True
+    )
+
 async def notforgame_update_company_balance(company_id: int, balance_change: int):
     """Обновление баланса компании. НЕ ИСПОЛЬЗОВАТЬ В ИГРОВОМ ПРОЦЕССЕ!
     
@@ -507,11 +650,39 @@ async def get_session(session_id: Optional[str] = None, stage: Optional[str] = N
         wait_for_response=True
     )
 
-async def create_session(session_id: Optional[str] = None):
-    """Создание сессии"""
+async def create_session(session_id: Optional[str] = None, 
+                        map_pattern: Optional[str] = None,
+                        size: Optional[int] = None,
+                        max_steps: Optional[int] = None,
+                        session_group_url: Optional[str] = None,
+                        max_companies: Optional[int] = None,
+                        max_players_in_company: Optional[int] = None,
+                        time_on_game_stage: Optional[int] = None,
+                        time_on_change_stage: Optional[int] = None):
+    """Создание сессии
+    
+    Args:
+        session_id: ID сессии (опционально)
+        map_pattern: Паттерн карты (опционально)
+        size: Размер карты (опционально)
+        max_steps: Максимальное количество ходов (опционально)
+        session_group_url: URL группы сессии (опционально)
+        max_companies: Максимальное количество компаний (опционально)
+        max_players_in_company: Максимальное количество игроков в компании (опционально)
+        time_on_game_stage: Время на игровой стадии (опционально)
+        time_on_change_stage: Время на стадии смены (опционально)
+    """
     return await ws_client.send_message(
         "create-session",
         session_id=session_id,
+        map_pattern=map_pattern,
+        size=size,
+        max_steps=max_steps,
+        session_group_url=session_group_url,
+        max_companies=max_companies,
+        max_players_in_company=max_players_in_company,
+        time_on_game_stage=time_on_game_stage,
+        time_on_change_stage=time_on_change_stage,
         password=UPDATE_PASSWORD,
         wait_for_response=True
     )
@@ -570,6 +741,23 @@ async def get_item_price(session_id: str, item_id: str):
         wait_for_response=True
     )
 
+async def get_items_price(session_id: str):
+    """Получение цен товаров в городе (алиас для get_all_item_prices)"""
+    return await ws_client.send_message(
+        "get-items-price",
+        session_id=session_id,
+        wait_for_response=True
+    )
+
+async def get_item_price_by_id(session_id: str, item_id: str):
+    """Получение цены товара по ID (алиас для get_item_price)"""
+    return await ws_client.send_message(
+        "get-item-price-by-id",
+        session_id=session_id,
+        item_id=item_id,
+        wait_for_response=True
+    )
+
 async def get_all_item_prices(session_id: str):
     """Получение всех цен товаров в сессии"""
     return await ws_client.send_message(
@@ -595,6 +783,95 @@ async def get_session_leaders(session_id: str):
     return await ws_client.send_message(
         "get-session-leaders",
         session_id=session_id,
+        wait_for_response=True
+    )
+
+async def get_all_session_statistics(session_id: str):
+    """Получение всех статистических данных сессии
+    
+    Args:
+        session_id: ID сессии
+    """
+    return await ws_client.send_message(
+        "get-all-session-statistics",
+        session_id=session_id,
+        wait_for_response=True
+    )
+
+async def get_session_basic_info(session_id: str):
+    """Получение базовой информации о сессии
+    
+    Args:
+        session_id: ID сессии
+    """
+    return await ws_client.send_message(
+        "get-session-basic-info",
+        session_id=session_id,
+        wait_for_response=True
+    )
+
+async def get_session_map_info(session_id: str):
+    """Получение информации о карте сессии
+    
+    Args:
+        session_id: ID сессии
+    """
+    return await ws_client.send_message(
+        "get-session-map-info",
+        session_id=session_id,
+        wait_for_response=True
+    )
+
+async def get_session_companies(session_id: str, full_data: Optional[bool] = None):
+    """Получение компаний сессии
+    
+    Args:
+        session_id: ID сессии
+        full_data: Получить полные данные о компаниях
+    """
+    return await ws_client.send_message(
+        "get-session-companies",
+        session_id=session_id,
+        full_data=full_data,
+        wait_for_response=True
+    )
+
+async def get_session_users(session_id: str):
+    """Получение пользователей сессии
+    
+    Args:
+        session_id: ID сессии
+    """
+    return await ws_client.send_message(
+        "get-session-users",
+        session_id=session_id,
+        wait_for_response=True
+    )
+
+async def get_session_cities(session_id: str):
+    """Получение городов сессии
+    
+    Args:
+        session_id: ID сессии
+    """
+    return await ws_client.send_message(
+        "get-session-cities",
+        session_id=session_id,
+        wait_for_response=True
+    )
+
+async def notforgame_update_session_max_steps(session_id: str, max_steps: int):
+    """Обновление максимального количества этапов сессии. НЕ ИСПОЛЬЗОВАТЬ В ИГРОВОМ ПРОЦЕССЕ!
+    
+    Args:
+        session_id: ID сессии
+        max_steps: Новое максимальное количество этапов
+    """
+    return await ws_client.send_message(
+        "notforgame-update-session-max-steps",
+        session_id=session_id,
+        max_steps=max_steps,
+        password=UPDATE_PASSWORD,
         wait_for_response=True
     )
 
