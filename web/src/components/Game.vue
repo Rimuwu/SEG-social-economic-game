@@ -29,21 +29,39 @@ const turnInfo = computed(() => {
   return `${step}/${maxSteps}`
 })
 
-// Computed properties for cities
+// Computed properties for cities - get first 4 cities from the array
+const allCities = computed(() => {
+  const cities = wsManager?.gameState?.state?.cities || []
+  console.log('[Game.vue] All cities:', cities)
+  return cities
+})
+
 const city1 = computed(() => {
-  return wsManager?.gameState?.getCityById(1) || null
+  const cities = allCities.value
+  const city = cities.length > 0 ? cities[0] : null
+  console.log('[Game.vue] City 1 (first city):', city)
+  return city
 })
 
 const city2 = computed(() => {
-  return wsManager?.gameState?.getCityById(2) || null
+  const cities = allCities.value
+  const city = cities.length > 1 ? cities[1] : null
+  console.log('[Game.vue] City 2 (second city):', city)
+  return city
 })
 
 const city3 = computed(() => {
-  return wsManager?.gameState?.getCityById(3) || null
+  const cities = allCities.value
+  const city = cities.length > 2 ? cities[2] : null
+  console.log('[Game.vue] City 3 (third city):', city)
+  return city
 })
 
 const city4 = computed(() => {
-  return wsManager?.gameState?.getCityById(4) || null
+  const cities = allCities.value
+  const city = cities.length > 3 ? cities[3] : null
+  console.log('[Game.vue] City 4 (fourth city):', city)
+  return city
 })
 
 // Helper function to format city demands
@@ -57,17 +75,22 @@ const formatCityDemands = (city) => {
   
   console.log('[Game.vue] City demands object:', city.demands);
   
-  // Filter demands with amount > 0 and get only 2
-  const formatted = Object.entries(city.demands)
-    .filter(([_, demand]) => demand.amount > 0)
-    .slice(0, 2)
+  // Show all demands for debugging (remove amount > 0 filter temporarily)
+  const allDemands = Object.entries(city.demands)
     .map(([resourceId, demand]) => ({
       resourceId,
-      amount: demand.amount,
-      price: demand.price
+      amount: demand.amount || 0,
+      price: demand.price || 0
     }));
   
-  console.log('[Game.vue] Formatted demands:', formatted);
+  console.log('[Game.vue] All demands:', allDemands);
+  
+  // Filter demands with amount > 0 and get only 2
+  const formatted = allDemands
+    .filter(demand => demand.amount > 0)
+    .slice(0, 2);
+  
+  console.log('[Game.vue] Filtered demands (amount > 0):', formatted);
   return formatted;
 }
 
@@ -177,7 +200,18 @@ const eventStatusText = computed(() => {
 })
 
 onMounted(() => {
-  // Component mounted
+  console.log('[Game.vue] Component mounted')
+  console.log('[Game.vue] wsManager:', !!wsManager)
+  console.log('[Game.vue] gameState:', !!wsManager?.gameState)
+  console.log('[Game.vue] cities array:', wsManager?.gameState?.state?.cities)
+  
+  // Watch for cities changes
+  if (wsManager?.gameState) {
+    console.log('[Game.vue] Setting up cities watcher')
+    const stopWatcher = wsManager.gameState.state.cities && typeof wsManager.gameState.state.cities === 'object' 
+      ? () => {} // Already reactive
+      : () => {}
+  }
 })
 </script>
 
@@ -200,55 +234,47 @@ onMounted(() => {
       <div class="grid">
         
         <div class="cities grid-item">
-          <p class="title">ГОРОДА</p>
+          <p class="title">ГОРОДА ({{ allCities.length }})</p>
           <div class="content">
             <span>
               <!-- City 1 -->
               <template v-if="city1">
-                {{ city1.name }}<br/>
+                {{ city1.name }} (↖)<br/>
                 <template v-for="demand in formatCityDemands(city1)" :key="demand.resourceId">
                   &nbsp;&nbsp;• {{ wsManager.gameState.getResourceName(demand.resourceId) }}<br/>
+                  &nbsp;&nbsp;&nbsp;&nbsp;[{{ demand.amount }} шт.]<br/>
                 </template>
+                <br/>
               </template>
-              <template v-else>
-                Город 1<br/>
-              </template>
-              <br/>
               
               <!-- City 2 -->
               <template v-if="city2">
-                {{ city2.name }}<br/>
+                {{ city2.name }} (↙)<br/>
                 <template v-for="demand in formatCityDemands(city2)" :key="demand.resourceId">
                   &nbsp;&nbsp;• {{ wsManager.gameState.getResourceName(demand.resourceId) }}<br/>
+                  &nbsp;&nbsp;&nbsp;&nbsp;[{{ demand.amount }} шт.]<br/>
                 </template>
-              </template>
-              <template v-else>
-                Город 2<br/>
               </template>
             </span>
 
             <span>
               <!-- City 3 -->
               <template v-if="city3">
-                {{ city3.name }}<br/>
+                {{ city3.name }} (↗)<br/>
                 <template v-for="demand in formatCityDemands(city3)" :key="demand.resourceId">
                   &nbsp;&nbsp;• {{ wsManager.gameState.getResourceName(demand.resourceId) }}<br/>
+                  &nbsp;&nbsp;&nbsp;&nbsp;[{{ demand.amount }} шт.]<br/>
                 </template>
+                <br/>
               </template>
-              <template v-else>
-                Город 3<br/>
-              </template>
-              <br/>
               
               <!-- City 4 -->
               <template v-if="city4">
-                {{ city4.name }}<br/>
+                {{ city4.name }} (↘)<br/>
                 <template v-for="demand in formatCityDemands(city4)" :key="demand.resourceId">
                   &nbsp;&nbsp;• {{ wsManager.gameState.getResourceName(demand.resourceId) }}<br/>
+                  &nbsp;&nbsp;&nbsp;&nbsp;[{{ demand.amount }} шт.]<br/>
                 </template>
-              </template>
-              <template v-else>
-                Город 4<br/>
               </template>
             </span>
           </div>

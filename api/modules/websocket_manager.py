@@ -1,5 +1,5 @@
 from fastapi import WebSocket, WebSocketDisconnect
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 import json
 from modules.logs import websocket_logger
 
@@ -100,11 +100,12 @@ class WebSocketManager:
             return False
         except Exception as e:
             websocket_logger.error(f"Ошибка при отправке сообщения клиенту {client_id}: {e}\nmessage: {message}")
-            # await self.disconnect(client_id)
+            # Отключаем клиента при ошибке, чтобы избежать цикла повторных попыток
+            await self.disconnect(client_id)
             return False
 
     async def broadcast(self, message: Any, 
-                        exclude: List[str] = None) -> int:
+                        exclude: Optional[List[str]] = None) -> int:
         """
         Отправить сообщение всем подключенным клиентам
 

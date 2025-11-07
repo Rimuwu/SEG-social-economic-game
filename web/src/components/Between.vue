@@ -1,7 +1,7 @@
 <script setup>
 import Map from './Map.vue'
 import LeaveButton from './LeaveButton.vue'
-import { onMounted, ref, inject, computed } from 'vue'
+import { onMounted, onUnmounted, ref, inject, computed } from 'vue'
 
 const emit = defineEmits(['navigateTo'])
 
@@ -29,25 +29,18 @@ const turnInfo = computed(() => {
   return `${step}/${maxSteps}`
 })
 
-// Store randomly selected product IDs
-const randomProductIds = ref([])
-
-// Products computed property
+// Products computed property - show all 16 products
 const products = computed(() => {
   if (!wsManager || !wsManager.gameState) return []
   
   const prices = wsManager.gameState.state.itemPrices || {}
   const allIds = Object.keys(prices)
   
-  // If we don't have random IDs yet, or if products changed significantly, pick new ones
-  if (randomProductIds.value.length === 0 || randomProductIds.value.length > allIds.length) {
-    const shuffled = [...allIds].sort(() => Math.random() - 0.5)
-    randomProductIds.value = shuffled.slice(0, Math.min(10, allIds.length))
-  }
+  console.log(`[Between.vue] All item IDs:`, allIds)
+  console.log(`[Between.vue] Item prices:`, prices)
   
-  // Map the selected IDs to product objects with localized names
-  return randomProductIds.value
-    .filter(itemId => prices[itemId] !== undefined) // Ensure item still exists
+  // Map all available products to objects with localized names
+  return allIds
     .map(itemId => {
       const price = prices[itemId]
       // Get localized name from GameState
@@ -61,6 +54,18 @@ const products = computed(() => {
         price: price
       }
     })
+    .sort((a, b) => a.name.localeCompare(b.name)) // Sort alphabetically
+})
+
+// Split products into two columns for table display
+const productsColumn1 = computed(() => {
+  const prods = products.value
+  return prods.slice(0, Math.ceil(prods.length / 2))
+})
+
+const productsColumn2 = computed(() => {
+  const prods = products.value
+  return prods.slice(Math.ceil(prods.length / 2))
 })
 
 // Leaders computed property
@@ -139,32 +144,154 @@ const formatNumber = (num) => {
 
 // Event computed property
 const currentEvent = computed(() => {
+  console.log('[Between.vue] === EVENT DEBUG START ===')
+  console.log('[Between.vue] wsManager exists:', !!wsManager)
+  console.log('[Between.vue] gameState exists:', !!wsManager?.gameState)
+  console.log('[Between.vue] state exists:', !!wsManager?.gameState?.state)
+  
   // Access the reactive state directly for proper reactivity
   const event = wsManager?.gameState?.state?.event
-  console.log('[Between.vue] Current event:', event)
+  console.log('[Between.vue] Raw event object:', event)
+  console.log('[Between.vue] Event type:', typeof event)
+  
+  if (event) {
+    console.log('[Between.vue] Event properties:')
+    console.log('[Between.vue] - id:', event.id)
+    console.log('[Between.vue] - name:', event.name)
+    console.log('[Between.vue] - description:', event.description)
+    console.log('[Between.vue] - is_active:', event.is_active)
+    console.log('[Between.vue] - starts_next_turn:', event.starts_next_turn)
+    console.log('[Between.vue] - predictable:', event.predictable)
+    console.log('[Between.vue] - start_step:', event.start_step)
+    console.log('[Between.vue] - end_step:', event.end_step)
+    console.log('[Between.vue] - All event keys:', Object.keys(event))
+  } else {
+    console.log('[Between.vue] Event is null/undefined')
+  }
+  
+  // Check the condition
+  const hasId = event && event.id
+  console.log('[Between.vue] Has ID check:', hasId)
+  console.log('[Between.vue] Final result:', hasId ? event : null)
+  console.log('[Between.vue] === EVENT DEBUG END ===')
+  
   // Return event only if it has an ID (meaning it exists)
-  return event && event.id ? event : null
+  return hasId ? event : null
 })
 
 // Helper to get event status text
 const eventStatusText = computed(() => {
   const event = currentEvent.value
-  if (!event || !event.id) return null
+  console.log('[Between.vue] === EVENT STATUS DEBUG START ===')
+  console.log('[Between.vue] Event for status:', event)
+  
+  if (!event || !event.id) {
+    console.log('[Between.vue] No event or no ID, returning null')
+    return null
+  }
+  
+  console.log('[Between.vue] Event status check:')
+  console.log('[Between.vue] - is_active:', event.is_active)
+  console.log('[Between.vue] - starts_next_turn:', event.starts_next_turn)
+  console.log('[Between.vue] - predictable:', event.predictable)
+  
+  let statusText = null
   
   if (event.is_active) {
-    return 'Действует сейчас'
+    statusText = 'Действует сейчас'
+    console.log('[Between.vue] Status: Active')
   } else if (event.starts_next_turn) {
-    return 'Начнётся на следующем ходу'
+    statusText = 'Начнётся на следующем ходу'
+    console.log('[Between.vue] Status: Starts next turn')
   } else if (event.predictable) {
-  const stepsUntil = event.start_step - wsManager?.gameState?.state?.session?.step
-    return `Начнётся через ${stepsUntil} ход${stepsUntil === 1 ? '' : stepsUntil < 5 ? 'а' : 'ов'}`
+    const currentStep = wsManager?.gameState?.state?.session?.step
+    const stepsUntil = event.start_step - currentStep
+    console.log('[Between.vue] Predictable event - current step:', currentStep, 'start step:', event.start_step, 'steps until:', stepsUntil)
+    console.log('[Between.vue] Event end_step:', event.end_step)
+    
+    if (stepsUntil <= 0) {
+      // Событие уже началось, показываем когда закончится
+      const stepsUntilEnd = event.end_step ? (event.end_step - currentStep) : null
+      console.log('[Between.vue] Steps until end:', stepsUntilEnd)
+      
+      if (stepsUntilEnd && stepsUntilEnd > 0) {
+        statusText = `Закончится через ${stepsUntilEnd} ход${stepsUntilEnd === 1 ? '' : stepsUntilEnd < 5 ? 'а' : 'ов'}`
+      } else {
+        statusText = 'Заканчивается в этом ходу'
+      }
+    } else {
+      // Событие ещё не началось
+      statusText = `Начнётся через ${stepsUntil} ход${stepsUntil === 1 ? '' : stepsUntil < 5 ? 'а' : 'ов'}`
+    }
+    console.log('[Between.vue] Status: Predictable -', statusText)
+  } else {
+    console.log('[Between.vue] No status matched')
   }
-  return null
+  
+  console.log('[Between.vue] Final status text:', statusText)
+  console.log('[Between.vue] === EVENT STATUS DEBUG END ===')
+  
+  return statusText
 })
 
+// Function to refresh event data
+const refreshEventData = () => {
+  if (wsManager && wsManager.get_session_event) {
+    console.log('[Between.vue] Refreshing event data...')
+    wsManager.get_session_event((response) => {
+      console.log('[Between.vue] Event refresh response:', response)
+      
+      if (response && response.success) {
+        const eventData = response.data
+        
+        if (eventData && eventData.id) {
+          console.log('[Between.vue] Valid event received - updating state:', eventData)
+          wsManager.gameState.updateEvent(eventData)
+        } else {
+          console.log('[Between.vue] Empty/null event data - event has ended, clearing from state')
+          wsManager.gameState.clearEvent()
+        }
+      } else {
+        console.log('[Between.vue] Event request failed:', response)
+      }
+    })
+  }
+}
+
+// Интервал для периодической проверки событий
+let eventCheckInterval = null
+
 onMounted(() => {
-  // Component mounted
+  console.log('[Between.vue] Component mounted - checking initial state')
+  console.log('[Between.vue] wsManager on mount:', !!wsManager)
+  console.log('[Between.vue] gameState on mount:', !!wsManager?.gameState)
+  console.log('[Between.vue] state on mount:', !!wsManager?.gameState?.state)
+  console.log('[Between.vue] event on mount:', wsManager?.gameState?.state?.event)
+  
+  // Log the entire gameState structure for debugging
+  if (wsManager?.gameState?.state) {
+    console.log('[Between.vue] Full state keys:', Object.keys(wsManager.gameState.state))
+  }
+
+  // Запрашиваем актуальное событие при загрузке межэтапа
+  refreshEventData()
+
+  // Добавляем интервал для периодической проверки событий каждые 30 секунд
+  eventCheckInterval = setInterval(() => {
+    console.log('[Between.vue] Periodic event check...')
+    refreshEventData()
+  }, 30000) // 30 секунд
 })
+
+// Очистка интервала при размонтировании компонента
+onUnmounted(() => {
+  if (eventCheckInterval) {
+    clearInterval(eventCheckInterval)
+    eventCheckInterval = null
+  }
+})
+
+
 </script>
 
 
@@ -188,10 +315,19 @@ onMounted(() => {
         <div class="products grid-item">
           <p class="title">ТОВАРЫ</p>
           <div class="content">
-            <section v-for="product in products" :key="product.id">
-              <p class="name">{{ product.name }} — {{ product.price }}</p>
-            </section>
-            <section v-if="products.length === 0">
+            <div v-if="products.length > 0" class="products-table">
+              <div class="products-column">
+                <section v-for="product in productsColumn1" :key="product.id">
+                  <p class="name">{{ product.name }} — {{ product.price }}</p>
+                </section>
+              </div>
+              <div class="products-column">
+                <section v-for="product in productsColumn2" :key="product.id">
+                  <p class="name">{{ product.name }} — {{ product.price }}</p>
+                </section>
+              </div>
+            </div>
+            <section v-else>
               <p class="desc">Цены на товары загружаются...</p>
             </section>
           </div>
@@ -219,7 +355,9 @@ onMounted(() => {
         </div>
       </div>
 
+      <!-- Events section moved below grid -->
       <div class="events">
+
         <div v-if="currentEvent && currentEvent.id" class="event-content">
           <div class="event-name">{{ currentEvent.name }}</div>
           <div class="event-status" v-if="eventStatusText">{{ eventStatusText }}</div>
@@ -315,6 +453,20 @@ onMounted(() => {
 
 .products .content {
   gap: 10px;
+}
+
+.products-table {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+  justify-content: space-between;
+}
+
+.products-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .products section,

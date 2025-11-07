@@ -236,44 +236,60 @@ async def test2():
 
     print("Session created")
 
-    user1 = await User().create(
-        1,
-        session_id=session.session_id,
-        username="User 1"
-    )
+    # user1 = await User().create(
+    #     1,
+    #     session_id=session.session_id,
+    #     username="User 1"
+    # )
 
-    user2 = await User().create(
-        2,
-        session_id=session.session_id,
-        username="User 2"
-    )
-    
-    comp1 = await user1.create_company("Company 1")
-    comp2 = await user2.create_company("Company 2")
+    # user2 = await User().create(
+    #     2,
+    #     session_id=session.session_id,
+    #     username="User 2"
+    # )
 
+    for i in range(44):
+        # await asyncio.sleep(0.5)
+        user1 = await User().create(
+            i,
+            session_id=session.session_id,
+            username=f"User {i}"
+        )
+        comp = await user1.create_company(f"Company {i}")
+        for j in range(4):
+            user = await User().create(
+                i*100 + j + 1,
+                session_id=session.session_id,
+                username=f"User {i*10 + j + 1}n"
+            )
+            await user.add_to_company(comp.secret_code)
 
+    await sleep(10)
     await session.update_stage(SessionStages.CellSelect)
-    for i in [session, comp1, comp2]:
-        await i.reupdate()
+    # for i in [session, comp1, comp2]:
+    #     await i.reupdate()
     
-    await comp1.set_position(0, 0)
-    await comp2.set_position(0, 1)
-
+    await sleep(10)
     await session.update_stage(SessionStages.Game)
-    for i in [session, comp1, comp2]:
-        await i.reupdate()
+    
+    # await comp1.set_position(0, 0)
+    # await comp2.set_position(0, 1)
+
+    # await session.update_stage(SessionStages.Game)
+    # for i in [session, comp1, comp2]:
+    #     await i.reupdate()
 
     # await comp1.take_credit(1000, 3)
-    print('Taking credit...')
-    res = await handle_company_take_credit(
-        'test',
-        {
-            "company_id": str(comp1.id),
-            "amount": 1000,
-            "period": 3,
-            "password": getenv('UPDATE_PASSWORD')
-        }
-    )
+    # print('Taking credit...')
+    # res = await handle_company_take_credit(
+    #     'test',
+    #     {
+    #         "company_id": str(comp1.id),
+    #         "amount": 1000,
+    #         "period": 3,
+    #         "password": getenv('UPDATE_PASSWORD')
+    #     }
+    # )
     
-    print("Credit taken:", res)
-    # 666 коммит моооооой by AS1
+    # print("Credit taken:", res)
+    # # 666 коммит моооооой by AS1
