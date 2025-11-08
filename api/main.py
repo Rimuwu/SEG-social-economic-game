@@ -340,7 +340,7 @@ async def test3():
         username="User 2"
     )
 
-    comp1 = await user1.create_company("Company 1")
+    comp1 = await user1.create_company("12345678901234567890")
     comp2 = await user2.create_company("Company 2")
     
     await comp1.add_resource("wood", 20, True)
@@ -359,18 +359,14 @@ async def test3():
         await i.reupdate()
 
     await sleep(5)
-    await comp1.improve('contracts')
     
-    item_wood = ItemPrice('wood')
-    item_wood.session_id = session.session_id
-    await item_wood.reupdate()
+    for i in range(10):
+        
+        await session.update_stage(SessionStages.ChangeTurn)
 
-    await item_wood.add_price(100)
-    await item_wood.add_price(100)
-    await item_wood.add_price(100)
-    await item_wood.add_price(100)
-
-    await item_wood.add_price(100)
-    await item_wood.add_price(10)
-    await item_wood.add_price(10)
-    await item_wood.add_price(10)
+        print(session.public_event_data())
+        
+        await sleep(10)
+        await session.update_stage(SessionStages.Game)
+        for i in [session, comp1, comp2]:
+            await i.reupdate()

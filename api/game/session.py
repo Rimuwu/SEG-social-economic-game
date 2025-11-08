@@ -783,8 +783,8 @@ class Session(BaseClass):
             raise ValueError(f"Событие '{event_id}' не найдено в конфигурации")
 
         self.event_type = event_id
-        self.event_start = start_step
-        self.event_end = end_step
+        self.event_start = start_step + 1
+        self.event_end = end_step + 1
 
         await self.save_to_base()
 
