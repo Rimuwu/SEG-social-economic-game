@@ -1,7 +1,7 @@
 <script setup>
 import './mapScripts.js'
 import Map from './Map.vue'
-import LeaveButton from './LeaveButton.vue'
+import NavigationButtons from './NavigationButtons.vue'
 import { onMounted, onUnmounted, ref, inject, reactive, watch, computed } from 'vue'
 
 const emit = defineEmits(['navigateTo'])
@@ -19,10 +19,14 @@ const pageRef = ref(null)
 const wsManager = inject('wsManager', null)
 
 /**
- * Handle leave button click
+ * Handle navigation
  */
 const handleLeave = () => {
   emit('navigateTo', 'Introduction')
+}
+
+const handleAbout = () => {
+  emit('navigateTo', 'About')
 }
 
 /**
@@ -262,8 +266,8 @@ onUnmounted(() => {
       </div>
     </div>
     
-    <!-- Leave Button -->
-    <LeaveButton @leave="handleLeave" />
+    <!-- Navigation Buttons -->
+    <NavigationButtons @leave="handleLeave" @showAbout="handleAbout" />
   </div>
 </template>
 

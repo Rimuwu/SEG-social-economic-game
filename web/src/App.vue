@@ -19,6 +19,7 @@ import Preparation from './components/Preparation.vue'
 import Game from './components/Game.vue'
 import Between from './components/Between.vue'
 import Endgame from './components/Endgame.vue'
+import About from './components/About.vue'
 import AdminPanel from './components/AdminPanel.vue'
 
 import { WebSocketManager } from './ws'
@@ -351,6 +352,24 @@ globalThis.reconnect = () => {
 }
 
 /**
+ * Get current view name
+ * Usage: getCurrentView()
+ */
+globalThis.getCurrentView = () => {
+  console.log('👁️ Current view:', currentView.value)
+  return currentView.value
+}
+
+/**
+ * Switch to a specific view
+ * Usage: showView('About')
+ */
+globalThis.showView = (viewName) => {
+  console.log(`🎬 Switching to view: ${viewName}`)
+  handleShow(viewName)
+}
+
+/**
  * Show available debug commands
  * Usage: debugHelp()
  */
@@ -415,6 +434,7 @@ provide('wsManager', wsManager)
           currentView === 'Preparation' ? Preparation :
             currentView === 'Between' ? Between :
               currentView === 'Endgame' ? Endgame :
+                currentView === 'About' ? About :
                 Game
         " :key="currentView" @navigateTo="handleShow" />
 
