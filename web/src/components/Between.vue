@@ -288,17 +288,17 @@ onUnmounted(() => {
           <p class="title">ЛИДЕРЫ</p>
           <div class="content">
             <section>
-              <p class="name">ПО КАПИТАЛУ</p>
+              <p class="name">КАПИТАЛ</p>
               <p class="desc" v-if="leaders.capital">{{ leaders.capital.name }} ({{ formatNumber(leaders.capital.balance) }})</p>
               <p class="desc" v-else>—</p>
             </section>
             <section>
-              <p class="name">ПО РЕПУТАЦИИ</p>
+              <p class="name">РЕПУТАЦИЯ</p>
               <p class="desc" v-if="leaders.reputation">{{ leaders.reputation.name }} ({{ leaders.reputation.reputation }})</p>
               <p class="desc" v-else>—</p>
             </section>
             <section>
-              <p class="name">ПО ЭКОНОМИЧЕСКОМУ УРОВНЮ</p>
+              <p class="name">ЭКОНОМИЧЕСКИЙ УРОВЕНЬ</p>
               <p class="desc" v-if="leaders.economic">{{ leaders.economic.name }} ({{ leaders.economic.economic_power }})</p>
               <p class="desc" v-else>—</p>
             </section>
