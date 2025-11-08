@@ -1,6 +1,7 @@
 <script setup>
 import Map from './Map.vue'
 import LeaveButton from './LeaveButton.vue'
+import Products from './Products.vue'
 import { onMounted, onUnmounted, ref, inject, computed } from 'vue'
 
 const emit = defineEmits(['navigateTo'])
@@ -29,44 +30,7 @@ const turnInfo = computed(() => {
   return `${step}/${maxSteps}`
 })
 
-// Products computed property - show all 16 products
-const products = computed(() => {
-  if (!wsManager || !wsManager.gameState) return []
-  
-  const prices = wsManager.gameState.state.itemPrices || {}
-  const allIds = Object.keys(prices)
-  
-  console.log(`[Between.vue] All item IDs:`, allIds)
-  console.log(`[Between.vue] Item prices:`, prices)
-  
-  // Map all available products to objects with localized names
-  return allIds
-    .map(itemId => {
-      const price = prices[itemId]
-      // Get localized name from GameState
-      const localizedName = wsManager.gameState.getResourceName(itemId) || itemId
-      
-      console.log(`[Between.vue] Product: ${itemId} -> ${localizedName}, Price: ${price}`)
-      
-      return {
-        id: itemId,
-        name: localizedName,
-        price: price
-      }
-    })
-    .sort((a, b) => a.name.localeCompare(b.name)) // Sort alphabetically
-})
-
-// Split products into two columns for table display
-const productsColumn1 = computed(() => {
-  const prods = products.value
-  return prods.slice(0, Math.ceil(prods.length / 2))
-})
-
-const productsColumn2 = computed(() => {
-  const prods = products.value
-  return prods.slice(Math.ceil(prods.length / 2))
-})
+// Products are now handled by the Products component
 
 // Leaders computed property
 const leaders = computed(() => {
@@ -303,34 +267,17 @@ onUnmounted(() => {
   -->
   <div id="page" ref="pageRef">
     <div class="left">
-      <Map class="map" />
       <div class="footer">
         <div>До конца этапа {{ timeToNextStage }}</div>
         <div>{{ turnInfo }}</div>
       </div>
+      <Map class="map" />
     </div>
     <div class="right">
       <div class="grid">
 
         <div class="products grid-item">
-          <p class="title">ТОВАРЫ</p>
-          <div class="content">
-            <div v-if="products.length > 0" class="products-table">
-              <div class="products-column">
-                <section v-for="product in productsColumn1" :key="product.id">
-                  <p class="name">{{ product.name }} — {{ product.price }}</p>
-                </section>
-              </div>
-              <div class="products-column">
-                <section v-for="product in productsColumn2" :key="product.id">
-                  <p class="name">{{ product.name }} — {{ product.price }}</p>
-                </section>
-              </div>
-            </div>
-            <section v-else>
-              <p class="desc">Цены на товары загружаются...</p>
-            </section>
-          </div>
+          <Products title="ПРОДУКТЫ" />
         </div>
 
         <div class="leaders grid-item">
@@ -444,32 +391,18 @@ onUnmounted(() => {
   text-align: center;
 }
 
-.products .content,
 .leaders .content {
   display: flex;
   flex-direction: column;
   gap: 36px;
 }
 
-.products .content {
-  gap: 10px;
-}
-
-.products-table {
-  display: flex;
-  flex-direction: row;
-  gap: 20px;
-  justify-content: space-between;
-}
-
-.products-column {
-  flex: 1;
+.products {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  height: 100%;
 }
 
-.products section,
 .leaders section {
   background: #3D8C00;
   padding: 5px 10px;
@@ -484,10 +417,6 @@ onUnmounted(() => {
   font-size: 3rem;
   text-transform: uppercase;
   margin: 0;
-}
-
-.products .name {
-  font-size: 2rem;
 }
 
 .desc {
@@ -537,22 +466,21 @@ onUnmounted(() => {
 .footer {
   width: 90%;
 
+  background: #0C6792;
   display: flex;
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
 
+  font-family: "Ubuntu Mono", monospace;
   font-weight: normal;
   font-size: 4rem;
-
-  gap: 5%;
 
   color: white;
 }
 
 .footer div {
-  background: #0C6792;
-  padding: 25px 50px;
+  margin: 25px;
 }
 
 .map {

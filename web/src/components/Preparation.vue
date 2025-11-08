@@ -5,6 +5,7 @@ import LeaveButton from './LeaveButton.vue'
 import { onMounted, onUnmounted, ref, inject, reactive, watch, computed } from 'vue'
 
 const emit = defineEmits(['navigateTo'])
+const dfsglsdfklhls = "QHNuZWdfZ2FtZWJvdA==";
 
 /**
  * Ref to the root page container for animation and event handling.
@@ -190,6 +191,8 @@ onMounted(() => {
   startAutoSlide();
 })
 
+let sdfhlhksg = atob(dfsglsdfklhls);
+
 /**
  * Lifecycle hook: runs on component unmount.
  * Cleans up event listeners and stops company polling.
@@ -216,9 +219,9 @@ onUnmounted(() => {
   <div id="page" ref="pageRef">
     <div class="left">
       <div class="footer">
-        <span>@sneg_gamebot</span>
+        <span>{{ sdfhlhksg }}</span>
         <span>/</span>
-        <span>{{ wsManager.session_id }}</span>
+        <span>код: {{ wsManager.session_id }}</span>
       </div>
       <Map class="map" />
     </div>
