@@ -139,6 +139,28 @@ class SelectCell(Page):
         await self.scene.update_message()
         await callback.answer()
     
+    
+    @Page.on_text("str")
+    async def text_handler(self, message: Message, value):
+        cell_name = value
+        if cell_name:
+            try:
+                y, x = cell_into_xy(cell_name)
+                data = self.scene.get_data('scene')
+                company_id = data.get('company_id')
+                response = await set_company_position(company_id=company_id, x=x, y=y)
+            
+                if "error" in response:
+                    self.content = "Данная клетка уже занята, выберите другую:"
+                    await self.scene.update_message()
+                    return
+                await self.scene.update_page("wait-game-stage-page")
+            except:
+                self.content += "\n❌ Некорректный ввод. Введите правильное название клетки (например, A1, B3 и т.д.):"
+                await self.scene.update_message()
+                return
+    
+    
     @Page.on_callback('cell_select')
     async def my_callback_handler(self, callback: CallbackQuery, args: list):       
         cell_name = args[1] if len(args) > 1 else None

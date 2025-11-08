@@ -1,7 +1,6 @@
 from oms import Page
 from aiogram.types import Message
 from modules.ws_client import get_company, get_company_users
-from pprint import pprint
 
 class AboutInfo(Page):
     

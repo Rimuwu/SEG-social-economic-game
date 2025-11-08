@@ -101,7 +101,6 @@ class City(OneUserPage):
                     
                     # Проверяем, есть ли город в этой позиции
                     if cell_position in ["B2", "B6", "F2", "F6"]:
-                        city = cities_map[(x, y)]
                         buttons.append({
                             'text': '🏢',
                             'callback_data': callback_generator(

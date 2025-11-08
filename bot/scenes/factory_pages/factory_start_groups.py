@@ -168,17 +168,6 @@ class FactoryStartGroups(Page):
         if not factories:
             await callback.answer("❌ Ошибка загрузки заводов", show_alert=True)
             return
-        
-        # Логируем для отладки
-        print(f"=== START GROUP DEBUG for resource: {resource_key} ===")
-        for f in factories:
-            if f.get('complectation') == resource_key:
-                print(f"Factory {f.get('id')}: complectation={f.get('complectation')}, "
-                      f"stages={f.get('complectation_stages', 0)}, "
-                      f"is_auto={f.get('is_auto', False)}, "
-                      f"produce={f.get('produce', False)}, "
-                      f"is_working={f.get('is_working', False)}")
-        
         # Фильтруем заводы этой группы, готовые к запуску
         target_factories = [
             f['id'] for f in factories 
@@ -187,8 +176,6 @@ class FactoryStartGroups(Page):
             and not f.get('is_auto', False)
             and not f.get('produce', False)
         ]
-        
-        print(f"Target factories to start: {target_factories}")
         
         if not target_factories:
             await callback.answer("❌ Нет заводов для запуска в этой группе", show_alert=True)

@@ -207,10 +207,8 @@ class SessionDell(Page):
         except:
             pass
         users = await get_users(session_id=args[1])
-        print(users)
         for user in users:
             scene = scene_manager.get_scene(user['id'])
-            print(user["id"])
             if scene:
                 await scene.end()
         await delete_session(args[1], really=True)

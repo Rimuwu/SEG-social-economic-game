@@ -198,7 +198,6 @@ class ExchangeDetails(OneUserPage):
     @OneUserPage.on_callback('own_offer')
     async def own_offer_handler(self, callback: CallbackQuery, args: list):
         """Обработка нажатия на своё предложение"""
-        print(args[1])
         result = await cancel_exchange_offer(offer_id=int(args[1]))
         if "error" in result:
             await callback.answer(f"❌ Ошибка: {result['error']}", show_alert=True)
