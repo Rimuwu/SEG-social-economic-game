@@ -64,14 +64,57 @@ async def go_to_page(session_id, old_page_name, new_page_name):
 
 
 def xy_into_cell(x, y):
-    alphabet = 'ABCDEFGHIJKL'
+    alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
     return f"{alphabet[y]}{x+1}"
 
 def cell_into_xy(cell):
-    alphabet = 'ABCDEFGHIJKL'
+    alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
     x = alphabet.index(cell[0].upper())
     y = int(cell[1:]) - 1
     return x, y
+
+
+def do_matrix(list_matrix: list):
+    len_one_line = int(len(list_matrix) ** 0.5)
+    new_matrix = []
+    line = []
+    c = 0
+    for i in list_matrix:
+        line.append(i)
+        c += 1
+        if c == len_one_line:
+            new_matrix.append(line)
+            line = []
+            c = 0
+    return new_matrix
+
+
+def do_cell_emoji(cell: str):
+    cell_emoji = {
+        "mountain": "⛰️",
+        "water": "🌊",
+        "forest": "🌲",
+        "field": "🌾"
+    }
+    return cell_emoji[cell]
+
+
+def do_matrix_7x7_with_large(matrix: list):
+    n, m = len(matrix), len(matrix[0])
+    center_i, center_j = n // 2, m // 2
+    
+    row_start = center_i - 3
+    row_end = center_i + 4
+    col_start = center_j - 3
+    col_end = center_j + 4
+    new_matrix = []
+    for i in range(row_start, row_end):
+        row = []
+        for j in range(col_start, col_end):
+            if 0 <= i < n and 0 <= j < m:
+                row.append(matrix[i][j])
+        new_matrix.append(row)
+    return new_matrix
 
 
 def create_buttons(scene_name, text: str, callback_data: str, *args, ignore_row=False, next_line=False):

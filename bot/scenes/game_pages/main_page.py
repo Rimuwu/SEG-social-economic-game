@@ -1,6 +1,10 @@
 from oms import Page
 from aiogram.types import Message, CallbackQuery
 from modules.ws_client import get_company, get_company_contracts, get_company_warehouse, get_session
+from global_modules.load_config import ALL_CONFIGS, Events
+
+
+EVENT: Events = ALL_CONFIGS["events"]
 
 class MainPage(Page):
 
@@ -39,6 +43,8 @@ class MainPage(Page):
         max_time = self.scene.get_key(self.__page_name__, "max_time")
         field = int(((max_time - time_to_next_stage) / max_time) * 15)
         progress_bar = "█" * field + "░" * (15 - field)
+        event = s.get("event_type")
+        event_text = "Нет" if event is None else EVENT.events[event].name
         return self.content.format(
             balance=balance,
             reputation=reputation,
@@ -47,6 +53,7 @@ class MainPage(Page):
             inventory_capacity=inventory_capacity,
             contract_new=contract_new,
             contract_not_delivered=contract_not_delivered,
+            event_text=event_text,
             time=time,
             progress_bar=progress_bar
         )
