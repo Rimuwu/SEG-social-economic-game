@@ -77,6 +77,9 @@ export class GameState {
         economic: null
       },
 
+      // Statistics data (for end game)
+      statistics: [],
+
       // Connection status
       connected: false,
       connecting: false,
@@ -826,6 +829,73 @@ export class GameState {
     return this.state.winners;
   }
 
+  // ==================== STATISTICS METHODS ====================
+
+  /**
+   * Update statistics data (for end game)
+   * Transforms flat array into company-organized structure with arrays for each metric
+   * @param {Array} statisticsData - Array of statistic objects from server
+   */
+  updateStatistics(statisticsData) {
+    if (!Array.isArray(statisticsData)) {
+      console.warn('[GameState] Invalid statistics data:', statisticsData);
+      return;
+    }
+    
+    // Transform statistics into company-organized structure
+    const companiesStats = {};
+    
+    // Group statistics by company
+    statisticsData.forEach(stat => {
+      const companyId = stat.company_id;
+      
+      if (!companiesStats[companyId]) {
+        companiesStats[companyId] = {
+          company_id: companyId,
+          balance: Array(15).fill(0),
+          reputation: Array(15).fill(0),
+          economic_power: Array(15).fill(0)
+        };
+      }
+      
+      // Add data to arrays (sorted by step)
+      companiesStats[companyId].balance[stat.step - 1] = stat.balance;
+      companiesStats[companyId].reputation[stat.step - 1] = stat.reputation;
+      companiesStats[companyId].economic_power[stat.step - 1] = stat.economic_power;
+    });
+    
+    // Store as array of company statistics
+    this.state.statistics = Object.values(companiesStats);
+    
+    console.log('[GameState] Statistics updated:', this.state.statistics.length, 'companies');
+    console.log('[GameState] Statistics structure:', this.state.statistics);
+  }
+
+  /**
+   * Get all statistics (organized by company)
+   * @returns {Array} Array of company statistics objects
+   */
+  getStatistics() {
+    return this.state.statistics;
+  }
+
+  /**
+   * Get statistics for a specific company
+   * @param {number} companyId
+   * @returns {Object|null} Company statistics with arrays for balance, reputation, economic_power
+   */
+  getStatisticsByCompany(companyId) {
+    return this.state.statistics.find(s => s.company_id === companyId) || null;
+  }
+
+  /**
+   * Get all company IDs that have statistics
+   * @returns {Array} Array of company IDs
+   */
+  getStatisticsCompanyIds() {
+    return this.state.statistics.map(s => s.company_id);
+  }
+
   // ==================== CONNECTION METHODS ====================
 
   /**
@@ -994,6 +1064,12 @@ export class GameState {
       loaded: false
     };
     this.state.timeToNextStage = null;
+    this.state.winners = {
+      capital: null,
+      reputation: null,
+      economic: null
+    };
+    this.state.statistics = [];
     this.state.connected = false;
     this.state.connecting = false;
     this.state.lastError = null;
