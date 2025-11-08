@@ -6,6 +6,7 @@ import random
 from fastapi import FastAPI, Request
 from contextlib import asynccontextmanager
 
+from game.item_price import ItemPrice
 from game.statistic import Statistic
 from game.logistics import Logistics
 from game.stages import stage_game_updater
@@ -230,7 +231,10 @@ async def test2():
         session = await session_manager.get_session('test')
         if session: await session.delete()
 
-    session = await session_manager.create_session('test')
+    session = await session_manager.create_session('test',
+                                                   time_on_change_stage=0.5,
+                                                   time_on_game_stage=0.5
+                                                   )
 
     await sleep(2)
 
@@ -247,8 +251,10 @@ async def test2():
     #     session_id=session.session_id,
     #     username="User 2"
     # )
+    
+    comps = []
 
-    for i in range(44):
+    for i in range(43):
         # await asyncio.sleep(0.5)
         user1 = await User().create(
             i,
@@ -256,6 +262,7 @@ async def test2():
             username=f"User {i}"
         )
         comp = await user1.create_company(f"Company {i}")
+        comps.append(comp)
         for j in range(4):
             user = await User().create(
                 i*100 + j + 1,
@@ -264,13 +271,18 @@ async def test2():
             )
             await user.add_to_company(comp.secret_code)
 
-    await sleep(10)
+    # await sleep(10)
     await session.update_stage(SessionStages.CellSelect)
     # for i in [session, comp1, comp2]:
     #     await i.reupdate()
     
-    await sleep(10)
+    await sleep(5)
     await session.update_stage(SessionStages.Game)
+    
+    # await sleep(5)
+    
+    
+    
     
     # await comp1.set_position(0, 0)
     # await comp2.set_position(0, 1)
@@ -307,7 +319,10 @@ async def test3():
         session = await session_manager.get_session('test3')
         if session: await session.delete()
 
-    session = await session_manager.create_session('test3')
+    session = await session_manager.create_session('test3',
+                                                   time_on_change_stage=0.5,
+                                                   time_on_game_stage=0.5
+                                                   )
 
     await sleep(2)
 
@@ -337,21 +352,25 @@ async def test3():
     for i in [session, comp1, comp2]:
         await i.reupdate()
 
-    cr = await Contract().create(
-        supplier_company_id=comp1.id,
-        customer_company_id=comp2.id,
-        session_id=session.session_id,
-        who_creator=comp1.id,
-        resource="wood",
-        amount_per_turn=10,
-        duration_turns=2,
-        payment_amount=10000
-    )
-    
-    await cr.accept_contract(comp2.id)
-    
     await session.update_stage(SessionStages.ChangeTurn)
-    
+
     await session.update_stage(SessionStages.Game)
     for i in [session, comp1, comp2]:
         await i.reupdate()
+
+    await sleep(5)
+    await comp1.improve('contracts')
+    
+    item_wood = ItemPrice('wood')
+    item_wood.session_id = session.session_id
+    await item_wood.reupdate()
+
+    await item_wood.add_price(100)
+    await item_wood.add_price(100)
+    await item_wood.add_price(100)
+    await item_wood.add_price(100)
+
+    await item_wood.add_price(100)
+    await item_wood.add_price(10)
+    await item_wood.add_price(10)
+    await item_wood.add_price(10)
