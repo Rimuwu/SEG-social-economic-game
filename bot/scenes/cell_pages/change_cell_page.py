@@ -20,6 +20,12 @@ class ChangeCell(Page):
         if self.scene.get_key(self.__page_name__, 'map_open') is None:
             await self.scene.update_key(self.__page_name__, 'map_open', False)
    
+    async def content_worker(self):
+        company_id = self.scene.get_key('scene', 'company_id')
+        company = await get_company(id=company_id)
+        cost = SETTINGS.change_location_price[company.get("business_type")]
+        return self.content.format(cost=cost)
+   
     async def buttons_worker(self):
         scene_data = self.scene.get_data('scene')
         session_id = scene_data.get('session')
@@ -162,14 +168,13 @@ class ChangeCell(Page):
             try:
                 company_id = self.scene.get_key('scene', 'company_id')
                 company = await get_company(id=company_id)
+                print(company.get("business_type"))
                 if company.get("balance") < SETTINGS.change_location_price[company.get("business_type")]:
                     self.clear_content()
                     self.content += f"\n\n❌ Недостаточно средств для смены клетки (требуется {SETTINGS.change_location_price[company.get('business_type')]})"
                     await self.scene.update_message()
                 else:
                     x, y = cell_into_xy(cell_name)
-                    data = self.scene.get_data('scene')
-                    company_id = data.get('company_id')
                     response = await change_position(company_id=company_id, x=y, y=x)
 
                     if "error" in response:
@@ -194,13 +199,11 @@ class ChangeCell(Page):
             cell_name = args[1] if len(args) > 1 else None
             if cell_name:
                 y, x = cell_into_xy(cell_name)
-                data = self.scene.get_data('scene')
-                company_id = data.get('company_id')
                 response = await change_position(company_id=company_id, x=y, y=x)
 
                 if "error" in response:
                     self.clear_content()
-                    self.content += response["error"]
+                    self.content += f'\n\n{response["error"]}'
                     await self.scene.update_message()
                     return
                 await callback.answer("Поздравляем! Клетка успешно изменена, средства списаны с вашего счёта", show_alert=True)
