@@ -1,3 +1,4 @@
+from typing import Optional
 from game.session import SessionObject
 from global_modules.db.baseclass import BaseClass
 from modules.db import just_db
@@ -42,14 +43,15 @@ class Statistic(BaseClass, SessionObject):
         self.session_id = session_id
         self.step = step
 
-        find_res: dict = await just_db.find_one(self.__tablename__,
+        find_res = await just_db.find_one(self.__tablename__,
                                   company_id=company_id,
                                   session_id=session_id,
                                   step=step
-                                  ) # type: ignore
+                                  )
 
         if find_res is not None:
-            return self.load_from_base(find_res)
+            if self.load_from_base(find_res):
+                return self
 
         for key, value in data.items():
             if hasattr(self, key):
@@ -88,27 +90,28 @@ class Statistic(BaseClass, SessionObject):
         rows: list[Statistic] = await just_db.find(cls.__tablename__, 
                                   session_id=session_id, company_id=company_id,
                                   to_class=Statistic
-                                  ) # type: ignore
+                                  )
 
         return rows
 
     @classmethod
     async def get_all_by_session(cls, session_id: str) -> list['Statistic']:
         rows: list[dict] = await just_db.find(cls.__tablename__, 
-                                  session_id=session_id) # type: ignore
+                                  session_id=session_id)
         statistics = []
 
         for row in rows:
             stat = cls()
-            stat = stat.load_from_base(row)
+            stat.load_from_base(row)
             statistics.append(stat)
 
         return statistics
-    
+
     @classmethod
     async def get_latest_by_company(cls, session_id: str, company_id: int) -> 'Statistic | None':
 
-        session: Optional[dict] = await just_db.find_one("sessions", id=session_id)  # type: ignore
+        session: Optional[dict] = await just_db.find_one(
+            "sessions", id=session_id)
         if session is None: return None
 
         step = session.get("step", 0)
@@ -121,7 +124,7 @@ class Statistic(BaseClass, SessionObject):
         if row is None: return None
 
         stat = cls()
-        stat = stat.load_from_base(row)
+        stat.load_from_base(row)
         return stat
 
     @classmethod

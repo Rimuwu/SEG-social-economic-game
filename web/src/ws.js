@@ -1404,6 +1404,16 @@ export class WebSocketManager {
         this.get_contracts();
         this.get_companies();
         break;
+        
+      case 'api-item_price_updated':
+        console.log('[WS] Item price updated broadcast received:', message.data);
+        // Update item prices in game state if needed
+        if (message.data && message.data.item_id && message.data.price !== undefined) {
+          this.gameState.updateItemPrice(message.data.item_id, message.data.price);
+        }
+        // Refresh all item prices to stay in sync
+        this.get_all_item_prices();
+        break;
       
       case 'api-event_generated':
       case 'api-event_started':

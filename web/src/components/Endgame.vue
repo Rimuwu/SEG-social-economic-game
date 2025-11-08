@@ -1,5 +1,5 @@
 <script setup>
-import LeaveButton from './LeaveButton.vue'
+import NavigationButtons from './NavigationButtons.vue'
 import { ref, onMounted, inject, computed } from 'vue'
 
 const emit = defineEmits(['navigateTo'])
@@ -7,9 +7,13 @@ const emit = defineEmits(['navigateTo'])
 const pageRef = ref(null)
 const wsManager = inject('wsManager', null)
 
-// Handle leave button click
+// Handle navigation
 const handleLeave = () => {
   emit('navigateTo', 'Introduction')
+}
+
+const handleAbout = () => {
+  emit('navigateTo', 'About')
 }
 
 // Get AUTHORS from environment, with fallback
@@ -77,8 +81,8 @@ onMounted(() => {
       </p>
     </div>
     
-    <!-- Leave Button -->
-    <LeaveButton @leave="handleLeave" />
+    <!-- Navigation Buttons -->
+    <NavigationButtons @leave="handleLeave" @showAbout="handleAbout" />
   </div>
 
 </template>

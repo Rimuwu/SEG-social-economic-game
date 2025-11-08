@@ -1,6 +1,7 @@
 <script setup>
 import Map from './Map.vue'
-import LeaveButton from './LeaveButton.vue'
+import NavigationButtons from './NavigationButtons.vue'
+import Products from './Products.vue'
 import { onMounted, onUnmounted, ref, inject, computed } from 'vue'
 
 const emit = defineEmits(['navigateTo'])
@@ -8,9 +9,13 @@ const emit = defineEmits(['navigateTo'])
 const pageRef = ref(null)
 const wsManager = inject('wsManager', null)
 
-// Handle leave button click
+// Handle navigation
 const handleLeave = () => {
   emit('navigateTo', 'Introduction')
+}
+
+const handleAbout = () => {
+  emit('navigateTo', 'About')
 }
 
 // Computed properties for time and turn display
@@ -29,44 +34,7 @@ const turnInfo = computed(() => {
   return `${step}/${maxSteps}`
 })
 
-// Products computed property - show all 16 products
-const products = computed(() => {
-  if (!wsManager || !wsManager.gameState) return []
-  
-  const prices = wsManager.gameState.state.itemPrices || {}
-  const allIds = Object.keys(prices)
-  
-  console.log(`[Between.vue] All item IDs:`, allIds)
-  console.log(`[Between.vue] Item prices:`, prices)
-  
-  // Map all available products to objects with localized names
-  return allIds
-    .map(itemId => {
-      const price = prices[itemId]
-      // Get localized name from GameState
-      const localizedName = wsManager.gameState.getResourceName(itemId) || itemId
-      
-      console.log(`[Between.vue] Product: ${itemId} -> ${localizedName}, Price: ${price}`)
-      
-      return {
-        id: itemId,
-        name: localizedName,
-        price: price
-      }
-    })
-    .sort((a, b) => a.name.localeCompare(b.name)) // Sort alphabetically
-})
-
-// Split products into two columns for table display
-const productsColumn1 = computed(() => {
-  const prods = products.value
-  return prods.slice(0, Math.ceil(prods.length / 2))
-})
-
-const productsColumn2 = computed(() => {
-  const prods = products.value
-  return prods.slice(Math.ceil(prods.length / 2))
-})
+// Products are now handled by the Products component
 
 // Leaders computed property
 const leaders = computed(() => {
@@ -144,94 +112,65 @@ const formatNumber = (num) => {
 
 // Event computed property
 const currentEvent = computed(() => {
-  console.log('[Between.vue] === EVENT DEBUG START ===')
-  console.log('[Between.vue] wsManager exists:', !!wsManager)
-  console.log('[Between.vue] gameState exists:', !!wsManager?.gameState)
-  console.log('[Between.vue] state exists:', !!wsManager?.gameState?.state)
-  
-  // Access the reactive state directly for proper reactivity
-  const event = wsManager?.gameState?.state?.event
-  console.log('[Between.vue] Raw event object:', event)
-  console.log('[Between.vue] Event type:', typeof event)
-  
-  if (event) {
-    console.log('[Between.vue] Event properties:')
-    console.log('[Between.vue] - id:', event.id)
-    console.log('[Between.vue] - name:', event.name)
-    console.log('[Between.vue] - description:', event.description)
-    console.log('[Between.vue] - is_active:', event.is_active)
-    console.log('[Between.vue] - starts_next_turn:', event.starts_next_turn)
-    console.log('[Between.vue] - predictable:', event.predictable)
-    console.log('[Between.vue] - start_step:', event.start_step)
-    console.log('[Between.vue] - end_step:', event.end_step)
-    console.log('[Between.vue] - All event keys:', Object.keys(event))
-  } else {
-    console.log('[Between.vue] Event is null/undefined')
+  if (!wsManager?.gameState?.state) {
+    return null
   }
   
-  // Check the condition
-  const hasId = event && event.id
-  console.log('[Between.vue] Has ID check:', hasId)
-  console.log('[Between.vue] Final result:', hasId ? event : null)
-  console.log('[Between.vue] === EVENT DEBUG END ===')
+  const eventData = wsManager.gameState.state.event
+  console.log('[Between.vue] Current event from state:', eventData)
   
-  // Return event only if it has an ID (meaning it exists)
-  return hasId ? event : null
+  // Проверяем, не завернуто ли событие в дополнительный объект
+  if (eventData && eventData.event) {
+    console.log('[Between.vue] Event is wrapped, extracting inner event:', eventData.event)
+    return eventData.event
+  }
+  
+  // Возвращаем событие как есть
+  return eventData
 })
 
 // Helper to get event status text
 const eventStatusText = computed(() => {
   const event = currentEvent.value
-  console.log('[Between.vue] === EVENT STATUS DEBUG START ===')
-  console.log('[Between.vue] Event for status:', event)
+  console.log('[Between.vue] eventStatusText - event:', event)
   
-  if (!event || !event.id) {
-    console.log('[Between.vue] No event or no ID, returning null')
+  if (!event) {
+    console.log('[Between.vue] eventStatusText - no event')
     return null
   }
   
-  console.log('[Between.vue] Event status check:')
-  console.log('[Between.vue] - is_active:', event.is_active)
-  console.log('[Between.vue] - starts_next_turn:', event.starts_next_turn)
-  console.log('[Between.vue] - predictable:', event.predictable)
+  console.log('[Between.vue] eventStatusText - checking status:', {
+    is_active: event.is_active,
+    starts_next_turn: event.starts_next_turn,
+    predictable: event.predictable,
+    start_step: event.start_step
+  })
   
-  let statusText = null
-  
+  // Отображаем статус как есть, без сложной логики
   if (event.is_active) {
-    statusText = 'Действует сейчас'
-    console.log('[Between.vue] Status: Active')
+    return 'Действует сейчас'
   } else if (event.starts_next_turn) {
-    statusText = 'Начнётся на следующем ходу'
-    console.log('[Between.vue] Status: Starts next turn')
-  } else if (event.predictable) {
-    const currentStep = wsManager?.gameState?.state?.session?.step
+    return 'Начнётся на следующем ходу'
+  } else if (event.predictable && event.start_step !== undefined) {
+    const currentStep = wsManager?.gameState?.state?.session?.step || 0
     const stepsUntil = event.start_step - currentStep
-    console.log('[Between.vue] Predictable event - current step:', currentStep, 'start step:', event.start_step, 'steps until:', stepsUntil)
-    console.log('[Between.vue] Event end_step:', event.end_step)
+    
+    console.log('[Between.vue] eventStatusText - predictable event, currentStep:', currentStep, 'stepsUntil:', stepsUntil)
     
     if (stepsUntil <= 0) {
-      // Событие уже началось, показываем когда закончится
       const stepsUntilEnd = event.end_step ? (event.end_step - currentStep) : null
-      console.log('[Between.vue] Steps until end:', stepsUntilEnd)
-      
       if (stepsUntilEnd && stepsUntilEnd > 0) {
-        statusText = `Закончится через ${stepsUntilEnd} ход${stepsUntilEnd === 1 ? '' : stepsUntilEnd < 5 ? 'а' : 'ов'}`
+        return `Закончится через ${stepsUntilEnd} ход${stepsUntilEnd === 1 ? '' : stepsUntilEnd < 5 ? 'а' : 'ов'}`
       } else {
-        statusText = 'Заканчивается в этом ходу'
+        return 'Заканчивается в этом ходу'
       }
     } else {
-      // Событие ещё не началось
-      statusText = `Начнётся через ${stepsUntil} ход${stepsUntil === 1 ? '' : stepsUntil < 5 ? 'а' : 'ов'}`
+      return `Начнётся через ${stepsUntil} ход${stepsUntil === 1 ? '' : stepsUntil < 5 ? 'а' : 'ов'}`
     }
-    console.log('[Between.vue] Status: Predictable -', statusText)
-  } else {
-    console.log('[Between.vue] No status matched')
   }
   
-  console.log('[Between.vue] Final status text:', statusText)
-  console.log('[Between.vue] === EVENT STATUS DEBUG END ===')
-  
-  return statusText
+  console.log('[Between.vue] eventStatusText - no status match')
+  return null
 })
 
 // Function to refresh event data
@@ -243,18 +182,21 @@ const refreshEventData = () => {
       
       if (response && response.success) {
         const eventData = response.data
+        console.log('[Between.vue] Event data received:', eventData)
         
-        if (eventData && eventData.id) {
-          console.log('[Between.vue] Valid event received - updating state:', eventData)
-          wsManager.gameState.updateEvent(eventData)
+        // Напрямую записываем данные события без проверок
+        if (wsManager.gameState && wsManager.gameState.state) {
+          console.log('[Between.vue] Setting event in state:', eventData)
+          wsManager.gameState.state.event = eventData
         } else {
-          console.log('[Between.vue] Empty/null event data - event has ended, clearing from state')
-          wsManager.gameState.clearEvent()
+          console.error('[Between.vue] GameState or state not available')
         }
       } else {
-        console.log('[Between.vue] Event request failed:', response)
+        console.log('[Between.vue] Event request failed or no success:', response)
       }
     })
+  } else {
+    console.log('[Between.vue] WebSocket manager or get_session_event not available')
   }
 }
 
@@ -276,11 +218,11 @@ onMounted(() => {
   // Запрашиваем актуальное событие при загрузке межэтапа
   refreshEventData()
 
-  // Добавляем интервал для периодической проверки событий каждые 30 секунд
+  // Добавляем интервал для периодической проверки событий каждые 10 секунд
   eventCheckInterval = setInterval(() => {
     console.log('[Between.vue] Periodic event check...')
     refreshEventData()
-  }, 30000) // 30 секунд
+  }, 10000) // 10 секунд
 })
 
 // Очистка интервала при размонтировании компонента
@@ -303,51 +245,34 @@ onUnmounted(() => {
   -->
   <div id="page" ref="pageRef">
     <div class="left">
-      <Map class="map" />
       <div class="footer">
         <div>До конца этапа {{ timeToNextStage }}</div>
         <div>{{ turnInfo }}</div>
       </div>
+      <Map class="map" />
     </div>
     <div class="right">
       <div class="grid">
 
         <div class="products grid-item">
-          <p class="title">ТОВАРЫ</p>
-          <div class="content">
-            <div v-if="products.length > 0" class="products-table">
-              <div class="products-column">
-                <section v-for="product in productsColumn1" :key="product.id">
-                  <p class="name">{{ product.name }} — {{ product.price }}</p>
-                </section>
-              </div>
-              <div class="products-column">
-                <section v-for="product in productsColumn2" :key="product.id">
-                  <p class="name">{{ product.name }} — {{ product.price }}</p>
-                </section>
-              </div>
-            </div>
-            <section v-else>
-              <p class="desc">Цены на товары загружаются...</p>
-            </section>
-          </div>
+          <Products title="ПРОДУКТЫ" />
         </div>
 
         <div class="leaders grid-item">
           <p class="title">ЛИДЕРЫ</p>
           <div class="content">
             <section>
-              <p class="name">ПО КАПИТАЛУ</p>
+              <p class="name">КАПИТАЛ</p>
               <p class="desc" v-if="leaders.capital">{{ leaders.capital.name }} ({{ formatNumber(leaders.capital.balance) }})</p>
               <p class="desc" v-else>—</p>
             </section>
             <section>
-              <p class="name">ПО РЕПУТАЦИИ</p>
+              <p class="name">РЕПУТАЦИЯ</p>
               <p class="desc" v-if="leaders.reputation">{{ leaders.reputation.name }} ({{ leaders.reputation.reputation }})</p>
               <p class="desc" v-else>—</p>
             </section>
             <section>
-              <p class="name">ПО ЭКОНОМИЧЕСКОМУ УРОВНЮ</p>
+              <p class="name">ЭКОНОМИЧЕСКИЙ УРОВЕНЬ</p>
               <p class="desc" v-if="leaders.economic">{{ leaders.economic.name }} ({{ leaders.economic.economic_power }})</p>
               <p class="desc" v-else>—</p>
             </section>
@@ -355,21 +280,21 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <!-- Events section moved below grid -->
-      <div class="events">
-
-        <div v-if="currentEvent && currentEvent.id" class="event-content">
-          <div class="event-name">{{ currentEvent.name }}</div>
-          <div class="event-status" v-if="eventStatusText">{{ eventStatusText }}</div>
-          <div class="event-description">{{ currentEvent.description }}</div>
-        </div>
-        <span v-else>Нет событий</span>
+      <!-- Events section -->
+      <div v-if="currentEvent" class="event-block">
+        <div class="event-header">СОБЫТИЕ</div>
+        <div class="event-title">{{ currentEvent.name }}</div>
+        <div class="event-description">{{ currentEvent.description }}</div>
+      </div>
+      
+      <div v-else class="no-events-block">
+        Нет событий
       </div>
 
     </div>
     
-    <!-- Leave Button -->
-    <LeaveButton @leave="handleLeave" />
+    <!-- Navigation Buttons -->
+    <NavigationButtons @leave="handleLeave" @showAbout="handleAbout" />
   </div>
 </template>
 
@@ -400,32 +325,31 @@ onUnmounted(() => {
 
 .right {
   background-color: #0C6892;
-
   color: black;
   padding: 90px 50px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100vh;
+  box-sizing: border-box;
 }
 
 .grid {
-  margin: auto;
   display: flex;
   flex-direction: row;
   gap: 5%;
-  padding: 0;
-  margin: 0;
-
   width: 100%;
-
-  justify-items: stretch;
-  align-items: stretch;
-  align-content: stretch;
   justify-content: space-between;
+  align-items: stretch;
+  flex: 1;
   margin-bottom: 40px;
 }
 
 .grid-item {
-  width: 100%;
-  height: 100%;
-  /* background: #0f0; */
+  width: 47.5%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
 }
 
 .content {
@@ -437,42 +361,30 @@ onUnmounted(() => {
 .title {
   font-size: 4rem;
   margin: 0;
-  margin-bottom: 10px;
-  text-transform: uppercase;
   margin-bottom: 20px;
+  text-transform: uppercase;
   color: white;
   text-align: center;
+  font-family: "Ubuntu Mono", monospace;
 }
 
-.products .content,
 .leaders .content {
   display: flex;
   flex-direction: column;
   gap: 36px;
 }
 
-.products .content {
-  gap: 10px;
-}
-
-.products-table {
-  display: flex;
-  flex-direction: row;
-  gap: 20px;
-  justify-content: space-between;
-}
-
-.products-column {
-  flex: 1;
+.products {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  height: 100%;
 }
 
-.products section,
 .leaders section {
   background: #3D8C00;
-  padding: 5px 10px;
+  padding: 15px 20px;
+  border-radius: 8px;
+  margin-bottom: 15px;
 }
 
 .content {
@@ -481,78 +393,88 @@ onUnmounted(() => {
 }
 
 .name {
-  font-size: 3rem;
+  font-size: 2.2rem;
   text-transform: uppercase;
   margin: 0;
-}
-
-.products .name {
-  font-size: 2rem;
-}
-
-.desc {
-  opacity: 80%;
-  margin: 0;
-
-}
-
-.events {
-  font-size: 5rem;
-  text-transform: uppercase;
-
-  text-align: center;
-  justify-content: center;
-
-  padding: 40px 0;
-
-  background-color: #3D8C00;
-
-  color: white;
-  font-family: "Ubuntu Mono", monospace;
-}
-
-.event-content {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.event-name {
-  font-size: 5rem;
+  margin-bottom: 8px;
   font-weight: bold;
 }
 
-.event-status {
+.desc {
+  opacity: 90%;
+  margin: 0;
+  font-size: 1.8rem;
+  line-height: 1.3;
+}
+
+.event-block {
+  background-color: #3D8C00;
+  border-radius: 12px;
+  padding: 0;
+  flex-shrink: 0;
+  color: white;
+  font-family: "Ubuntu Mono", monospace;
+  margin-top: 20px;
+  overflow: hidden;
+}
+
+.event-header {
+  background-color: rgba(0, 0, 0, 0.2);
+  padding: 8px 15px;
+  font-size: 1.4rem;
+  text-transform: uppercase;
+  font-weight: bold;
+  text-align: left;
+  margin: 0;
+}
+
+.event-title {
+  padding: 20px 25px 10px 25px;
   font-size: 2.5rem;
-  opacity: 0.8;
-  font-style: italic;
+  font-weight: bold;
+  text-transform: uppercase;
+  text-align: center;
+  margin: 0;
 }
 
 .event-description {
+  padding: 0 25px 25px 25px;
+  font-size: 1.8rem;
+  line-height: 1.4;
+  text-align: center;
+  margin: 0;
+}
+
+.no-events-block {
+  background-color: #3D8C00;
+  border-radius: 12px;
+  padding: 40px 20px;
+  flex-shrink: 0;
+  color: white;
+  font-family: "Ubuntu Mono", monospace;
   font-size: 3rem;
-  opacity: 0.9;
-  margin-top: 10px;
+  text-align: center;
+  margin-top: 20px;
 }
 
 .footer {
   width: 90%;
 
+  background: #0C6792;
   display: flex;
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
 
+  font-family: "Ubuntu Mono", monospace;
   font-weight: normal;
   font-size: 4rem;
-
-  gap: 5%;
 
   color: white;
 }
 
 .footer div {
-  background: #0C6792;
-  padding: 25px 50px;
+  margin: 25px;
 }
 
 .map {

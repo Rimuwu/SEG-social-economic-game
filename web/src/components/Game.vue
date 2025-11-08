@@ -1,6 +1,7 @@
 <script setup>
 import Map from './Map.vue'
-import LeaveButton from './LeaveButton.vue'
+import NavigationButtons from './NavigationButtons.vue'
+import Products from './Products.vue'
 import { onMounted, ref, inject, computed } from 'vue'
 
 const emit = defineEmits(['navigateTo'])
@@ -8,9 +9,13 @@ const emit = defineEmits(['navigateTo'])
 const pageRef = ref(null)
 const wsManager = inject('wsManager', null)
 
-// Handle leave button click
+// Handle navigation
 const handleLeave = () => {
   emit('navigateTo', 'Introduction')
+}
+
+const handleAbout = () => {
+  emit('navigateTo', 'About')
 }
 
 // Computed properties for time and turn display
@@ -224,11 +229,11 @@ onMounted(() => {
   -->
   <div id="page" ref="pageRef">
     <div class="left">
-      <Map class="map" />
       <div class="footer">
         <div>До конца этапа {{ timeToNextStage }}</div>
         <div>{{ turnInfo }}</div>
       </div>
+      <Map class="map" />
     </div>
     <div class="right">
       <div class="grid">
@@ -306,25 +311,15 @@ onMounted(() => {
             </template>
           </div>
         </div>
-        <div class="contracts grid-item">
-          <p class="title">КОНТРАКТЫ</p>
-          <div class="content">
-            <template v-if="latestContracts.length > 0">
-              <span v-for="contract in latestContracts" :key="contract.id">
-                {{ formatContractText(contract) }}
-              </span>
-            </template>
-            <template v-else>
-              <span>На данный момент контракты отсутсвуют</span>
-            </template>
-          </div>
+        <div class="products grid-item">
+          <Products title="ПРОДУКТЫ" />
         </div>
 
       </div>
     </div>
     
-    <!-- Leave Button -->
-    <LeaveButton @leave="handleLeave" />
+    <!-- Navigation Buttons -->
+    <NavigationButtons @leave="handleLeave" @showAbout="handleAbout" />
   </div>
 </template>
 
@@ -407,17 +402,23 @@ onMounted(() => {
   justify-content: space-between;
   text-align: left;
   line-height: 1.5;
-  background: #3D8C00;
+  background: #3D8C00 ;
 }
 
-.stock .content, .upgrades .content, .contracts .content {
+.stock .content, .upgrades .content {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
-.stock span, .upgrades span, .contracts span {
-  background: #3D8C00;
+.stock span, .upgrades span {
+  background: #3D8C00 ;
   padding: 5px 10px;
+}
+
+.products {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .events {
@@ -430,7 +431,7 @@ onMounted(() => {
   padding: 40px 0;
   margin-top: 40px;
 
-  background-color: #3D8C00;
+  background-color: #3D8C00 ;
 
   color: white;
   font-family: "Ubuntu Mono", monospace;
@@ -462,22 +463,21 @@ onMounted(() => {
 .footer {
   width: 90%;
 
+  background: #0C6792;
   display: flex;
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
 
+  font-family: "Ubuntu Mono", monospace;
   font-weight: normal;
   font-size: 4rem;
-
-  gap: 5%;
 
   color: white;
 }
 
 .footer div {
-  background: #0C6792;
-  padding: 25px 50px;
+  margin: 25px;
 }
 
 .map {

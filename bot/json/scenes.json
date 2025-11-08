@@ -268,14 +268,35 @@
             },
             "contract-view-page": {
                 "title": "",
-                "content": "",
+                "content": "📜 *Контракты на рассмотрении*\n{overview_text}{details_text}{error_text}",
                 "to_pages": {
                     "contract-main-page": "↪️ Назад"
                 }
             },
             "contract-create-page": {
-                "title": "",
-                "content": "",
+                "image": "img/exchange.png",
+                "content": "📜 *Создание контракта*\n\n🤝 *Ваша роль:* {role_text}\n🏭 *Поставщик:* {supplier_text}\n🏬 *Покупатель:* {customer_text}\n📦 *Ресурс:* {resource_text}\n📈 *Количество за ход:* {amount_text}\n⏱️ *Длительность:* {duration_text}\n💰 *Оплата за ход:* {payment_text}{error_text}",
+                "to_pages": {
+                    "contract-main-page": "↪️ Назад"
+                }
+            },
+            "contract-create-select-company-page": {
+                "image": "img/exchange.png",
+                "content": "🏬 *Выбор компании*\n\n{description_text}{error_text}\n📝 Выберите компанию из списка:",
+                "to_pages": {
+                    "contract-create-page": "↪️ Назад"
+                }
+            },
+            "contract-create-select-resource-page": {
+                "image": "img/exchange.png",
+                "content": "📦 *Выбор ресурса*\n\n{supplier_text}{error_text}\n📝 Выберите ресурс, который будет поставляться по контракту:",
+                "to_pages": {
+                    "contract-create-page": "↪️ Назад"
+                }
+            },
+            "contract-execute-page": {
+                "image": "img/exchange.png",
+                "content": "🚚 *Выполнение контрактов*\n{overview_text}{details_text}{error_text}",
                 "to_pages": {
                     "contract-main-page": "↪️ Назад"
                 }
@@ -338,9 +359,45 @@
                 "image": "img/end_game.png",
                 "content": "Игра завершена!"
             },
-            "admin-panel-page": {
+            "admin-main-page": {
                 "image": "img/end_game.png",
                 "content": "Админ панель"
+            },
+            "admin-session-main-page": {
+                "image": "img/end_game.png",
+                "content": "📋 *Сессии:*\n\n{sessions}",
+                "to_pages": {
+                    "admin-session-add-page": "➕ Создать",
+                    "admin-session-dell-page": "➖ Удалить",
+                    "admin-session-info-page": "ℹ️ Инфо",
+                    "admin-main-page": "↪️ Назад"
+                },
+                "row_width": 1
+            },
+            "admin-session-add-page": {
+                "image": "img/end_game.png",
+                "content": "ID: {session_id}\nMap pattern: {map_pattern}\nSize map: {size}\nMax Steps: {max_steps}\nSession group URL: {session_group_url}\n Max Companies: {max_companies}\nMax player in Company: {max_player_in_company}\nTime on game stage: {time_on_game_stage}\nTime on change stage: {time_on_change_stage}",
+                "to_pages": {
+                    "admin-session-main-page": "↪️ Назад"
+                }
+            },
+            "admin-session-dell-page": {
+                "image": "img/end_game.png",
+                "content": "🗑 *Удаление сессии*\nНажмите кнопку ниже и сессия с данным id удалится, или введите айди вручную",
+                "to_pages": {
+                    "admin-session-main-page": "↪️ Назад"
+                }
+            },
+            "admin-session-info-page": {
+                "image": "img/end_game.png",
+                "content": "ID: {session_id}\nMap pattern: {map_pattern}\nSize map: {size}x{size}\nSteps: {max_steps}\nStage: {stage}\nEvent: {event_type}\nCompanies: {max_companies}\nUsers: {user}\nTime to next stage: {time_to_next_stage}"
+            },
+            "admin-session-change-stage-page": {
+                "image": "img/end_game.png",
+                "content": "⚠️ *Смена этапа сессии*\n\nТекущий этап: {current_stage}\n\nВыберите этап, на который хотите переключить сессию:",
+                "to_pages": {
+                    "admin-session-info-page": "↪️ Назад"
+                }
             },
             "city-page": {
                 "image": "img/cities.png",
@@ -364,9 +421,101 @@
             "game-info-page": {
                 "content": ""
             },
-            "admin-panel-page": {
+           "admin-main-page": {
+                "image": "img/end_game.png",
                 "content": "Админ панель"
+            },
+            "admin-session-main-page": {
+                "image": "img/end_game.png",
+                "content": "📋 *Сессии:*\n\n{sessions}",
+                "to_pages": {
+                    "admin-session-add-page": "➕ Создать",
+                    "admin-session-dell-page": "➖ Удалить",
+                    "admin-session-info-page": "ℹ️ Инфо",
+                    "admin-main-page": "↪️ Назад"
+                },
+                "row_width": 1
+            },
+            "admin-session-add-page": {
+                "image": "img/end_game.png",
+                "content": "ID: {session_id}\nMap pattern: {map_pattern}\nSize map: {size}\nMax Steps: {max_steps}\nSession group URL: {session_group_url}\n Max Companies: {max_companies}\nMax player in Company: {max_player_in_company}\nTime on game stage: {time_on_game_stage}\nTime on change stage: {time_on_change_stage}",
+                "to_pages": {
+                    "admin-session-main-page": "↪️ Назад"
+                }
+            },
+            "admin-session-dell-page": {
+                "image": "img/end_game.png",
+                "content": "🗑 *Удаление сессии*\nНажмите кнопку ниже и сессия с данным id удалится, или введите айди вручную",
+                "to_pages": {
+                    "admin-session-main-page": "↪️ Назад"
+                }
+            },
+            "admin-session-info-page": {
+                "image": "img/end_game.png",
+                "content": "ID: {session_id}\nMap pattern: {map_pattern}\nSize map: {size}x{size}\nSteps: {max_steps}\nStage: {stage}\nEvent: {event_type}\nCompanies: {max_companies}\nUsers: {user}\nTime to next stage: {time_to_next_stage}"
+            },
+            "admin-session-change-stage-page": {
+                "image": "img/end_game.png",
+                "content": "⚠️ *Смена этапа сессии*\n\nТекущий этап: {current_stage}\n\nВыберите этап, на который хотите переключить сессию:",
+                "to_pages": {
+                    "admin-session-info-page": "↪️ Назад"
+                }
             }
+        }
+    },
+    "admin-scene-manager": {
+        "settings": {
+            "parse_mode": "Markdown",
+            "delete_after_send": true
+        },
+        "pages": {
+            "admin-main-page": {
+                "image": "img/end_game.png",
+                "content": "Админ панель",
+                "to_pages": {
+                    "admin-session-main-page": "↪️ Сессии",
+                    "admin-company-main-page": "↪️ Компании",
+                    "admin-user-main-page": "↪️ Пользователи"
+                },
+                "row_width": 2
+            },
+            "admin-session-main-page": {
+                "image": "img/end_game.png",
+                "content": "📋 *Сессии:*\n\n{sessions}",
+                "to_pages": {
+                    "admin-session-add-page": "➕ Создать",
+                    "admin-session-dell-page": "➖ Удалить",
+                    "admin-session-info-page": "ℹ️ Инфо",
+                    "admin-main-page": "↪️ Назад"
+                },
+                "row_width": 1
+            },
+            "admin-session-add-page": {
+                "image": "img/end_game.png",
+                "content": "ID: {session_id}\nMap pattern: {map_pattern}\nSize map: {size}\nMax Steps: {max_steps}\nSession group URL: {session_group_url}\n Max Companies: {max_companies}\nMax player in Company: {max_player_in_company}\nTime on game stage: {time_on_game_stage}\nTime on change stage: {time_on_change_stage}",
+                "to_pages": {
+                    "admin-session-main-page": "↪️ Назад"
+                }
+            },
+            "admin-session-dell-page": {
+                "image": "img/end_game.png",
+                "content": "🗑 *Удаление сессии*\nНажмите кнопку ниже и сессия с данным id удалится, или введите айди вручную",
+                "to_pages": {
+                    "admin-session-main-page": "↪️ Назад"
+                }
+            },
+            "admin-session-info-page": {
+                "image": "img/end_game.png",
+                "content": "ID: {session_id}\nMap pattern: {map_pattern}\nSize map: {size}x{size}\nSteps: {max_steps}\nStage: {stage}\nEvent: {event_type}\nCompanies: {max_companies}\nUsers: {user}\nTime to next stage: {time_to_next_stage}"
+            },
+            "admin-session-change-stage-page": {
+                "image": "img/end_game.png",
+                "content": "⚠️ *Смена этапа сессии*\n\nТекущий этап: {current_stage}\n\nВыберите этап, на который хотите переключить сессию:",
+                "to_pages": {
+                    "admin-session-info-page": "↪️ Назад"
+                }
+            }
+
         }
     }
 }

@@ -40,6 +40,12 @@ export class GameState {
       // Item prices data
       itemPrices: {},
 
+      // Price changes history (for Products component)
+      priceChanges: [],
+      
+      // Current prices (for tracking changes)
+      currentPrices: {},
+
       // Recent upgrades/improvements
       recentUpgrades: [],
 
@@ -527,6 +533,18 @@ export class GameState {
   updateItemPrices(prices) {
     this.state.itemPrices = prices;
     console.log('[GameState] Item prices updated:', Object.keys(prices).length);
+  }
+
+  /**
+   * Update price for a single item
+   * @param {string} itemId - Item ID
+   * @param {number} price - New price
+   */
+  updateItemPrice(itemId, price) {
+    if (this.state.itemPrices) {
+      this.state.itemPrices[itemId] = price;
+      console.log(`[GameState] Item price updated: ${itemId} = ${price}`);
+    }
   }
 
   /**

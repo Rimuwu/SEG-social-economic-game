@@ -5,6 +5,7 @@
 import os
 from oms import Scene
 from oms.utils import callback_generator
+from scenes.admin import AdminMainPage
 
 
 # Получаем список ID администраторов из .env
@@ -33,7 +34,7 @@ class AdminScene(Scene):
         is_admin = user_id_str in ADMIN_IDS
         
         # Проверяем, не находимся ли мы уже на странице админ-панели
-        is_admin_page = page.__page_name__ == "admin-panel-page"
+        is_admin_page = page.__page_name__ == "admin-main-page"
         
         if is_admin and not is_admin_page:
             # Сохраняем текущую страницу для возврата
@@ -49,7 +50,7 @@ class AdminScene(Scene):
                 'callback_data': callback_generator(
                     self.__scene_name__, 
                     'to_page', 
-                    'admin-panel-page'
+                    'admin-main-page'
                 ),
                 'next_line': True  # Кнопка будет на новой строке
             })
