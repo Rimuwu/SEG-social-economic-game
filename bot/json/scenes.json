@@ -339,7 +339,7 @@
             },
             "contract-view-my-page": {
                 "image": "img/contracts.png",
-                "content": "🔢 Контракт #{c_id}\n📦 Ресурс: {resource_label)}\n🤝 {role_text}\n🏭 Поставщик: {supplier_company_name}\n🏬 Покупатель: {customer_company_name}\n📈 Количество за ход: {amount_text}\n⏱️ Длительность: {duration_text} ходов\n💰 Цена: {payment_text}\n✅ Принят: {accepted}"
+                "content": "🔢 Контракт #{c_id}\n📦 Ресурс: {resource_label}\n🤝 {role_text}\n🏭 Поставщик: {supplier_company_name}\n🏬 Покупатель: {customer_company_name}\n📈 Количество за ход: {amount_text}\n⏱️ Длительность: {duration_text} ходов\n💰 Цена: {payment_text}\n✅ Принят: {accepted}"
             },
             "factory-change-mode": {
                 "image": "img/main_company.png",

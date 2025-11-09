@@ -1,7 +1,7 @@
 from scenes.utils.oneuser_page import OneUserPage
 from modules.utils import create_buttons
 from aiogram.types import CallbackQuery
-from modules.ws_client import get_company_contracts, get_contract, get_company
+from modules.ws_client import get_company_contracts, get_contract, get_company, get_contracts
 from global_modules.load_config import ALL_CONFIGS, Resources
 from oms.utils import callback_generator
 
@@ -23,8 +23,9 @@ class ContractViewMyPage(OneUserPage):
         view = self.scene.get_key(self.__page_name__, "view")
         if view:
             contract_id = self.scene.get_key(self.__page_name__, "selected_contract_id")
-            contract = await get_contract(contract_id=int(contract_id))
-            who_create_id = contract.get("who_create")
+            contract = await get_contract(id=int(contract_id))
+            print(contract)
+            who_create_id = contract.get("who_creator")
             if contract.get('supplier_company_id') == who_create_id:
                 role_text = "Вы - поставщик"
                 suplier = await get_company(who_create_id)
@@ -43,7 +44,7 @@ class ContractViewMyPage(OneUserPage):
             return self.content.format(
                 c_id=contract.get("id"),
                 resource_label=f"{resource.emoji} {resource.label}",
-                role_textl=role_text,
+                role_text=role_text,
                 supplier_company_name=suplier_name,
                 customer_company_name=customer_name,
                 amount_text=contract.get('amount_per_turn'),
@@ -62,10 +63,12 @@ class ContractViewMyPage(OneUserPage):
             buttons.append(create_buttons(self.scene.__scene_name__, "↪ К выбору", "back_to_s", ignore_row=True))
         else:
             company_id = self.scene.get_key("scene", "company_id")
-            contracts_list = await get_company_contracts(company_id=company_id)
+            session_id = self.scene.get_key("scene", "session")
+            contracts_list = await get_contracts(session_id=session_id)
+            print(contracts_list)
             contracts = []
             for c in contracts_list:
-                if c.get("who_create") == company_id:
+                if c.get("who_creator") == company_id:
                     contracts.append(c)
             items_per_page = 5
             total_pages = max(1, (len(contracts) + items_per_page - 1) // items_per_page)
@@ -88,46 +91,47 @@ class ContractViewMyPage(OneUserPage):
                         "ignore_row": True,
                     }
                 )
-            for contract in page_contracts:
-                text = (
-                    f"• #{contract.get('id')} — {RESOURCES.get_resource(contract.get('resource')).emoji}  {RESOURCES.get_resource(contract.get('resource')).label}"
-                )
-                buttons.append(
-                    {
-                        "text": text,
-                        "callback_data": callback_generator(
-                            self.scene.__scene_name__,
-                            "select_contract",
-                            str(contract.get("id")),
-                        ),
-                        "ignore_row": True,
-                    }
-                )
-            if len(contracts) > items_per_page:
-                buttons.append(
-                    {
-                        "text": "◀️ Назад",
-                        "callback_data": callback_generator(
-                            self.scene.__scene_name__, "contracts_prev_page"
-                        ),
-                    }
-                )
-                buttons.append(
-                    {
-                        "text": f"📄 {page + 1}/{total_pages}",
-                        "callback_data": callback_generator(
-                            self.scene.__scene_name__, "contracts_page_info"
-                        ),
-                    }
-                )
-                buttons.append(
-                    {
-                        "text": "Вперёд ▶️",
-                        "callback_data": callback_generator(
-                            self.scene.__scene_name__, "contracts_next_page"
-                        ),
-                    }
-                )
+            else:
+                for contract in page_contracts:
+                    text = (
+                        f"• #{contract.get('id')} — {RESOURCES.get_resource(contract.get('resource')).emoji}  {RESOURCES.get_resource(contract.get('resource')).label}"
+                    )
+                    buttons.append(
+                        {
+                            "text": text,
+                            "callback_data": callback_generator(
+                                self.scene.__scene_name__,
+                                "select_contract",
+                                str(contract.get("id")),
+                            ),
+                            "ignore_row": True,
+                        }
+                    )
+                if len(contracts) > items_per_page:
+                    buttons.append(
+                        {
+                            "text": "◀️ Назад",
+                            "callback_data": callback_generator(
+                                self.scene.__scene_name__, "contracts_prev_page"
+                            ),
+                        }
+                    )
+                    buttons.append(
+                        {
+                            "text": f"📄 {page + 1}/{total_pages}",
+                            "callback_data": callback_generator(
+                                self.scene.__scene_name__, "contracts_page_info"
+                            ),
+                        }
+                    )
+                    buttons.append(
+                        {
+                            "text": "Вперёд ▶️",
+                            "callback_data": callback_generator(
+                                self.scene.__scene_name__, "contracts_next_page"
+                            ),
+                        }
+                    )
                 buttons.append(
                     {
                         "text": "↪️ В меню",
@@ -143,10 +147,11 @@ class ContractViewMyPage(OneUserPage):
     async def next_page(self, callback: CallbackQuery, args):
         page_index = self.scene.get_key(self.__page_name__, "page") or 0
         company_id = self.scene.get_key("scene", "company_id")
-        contracts_list = await get_company_contracts(company_id=company_id)
+        session_id = self.scene.get_key("scene", "session")
+        contracts_list = await get_contracts(session_id=session_id)
         contracts = []
         for c in contracts_list:
-            if c.get("who_create") == company_id:
+            if c.get("who_creator") == company_id:
                 contracts.append(c)
         items_per_page = 5
         total_pages = max(1, (len(contracts) + items_per_page - 1) // items_per_page)
@@ -159,10 +164,11 @@ class ContractViewMyPage(OneUserPage):
     async def prev_page(self, callback: CallbackQuery, args):
         page_index = self.scene.get_key(self.__page_name__, "page") or 0
         company_id = self.scene.get_key("scene", "company_id")
-        contracts_list = await get_company_contracts(company_id=company_id)
+        session_id = self.scene.get_key("scene", "session")
+        contracts_list = await get_contracts(session_id=session_id)
         contracts = []
         for c in contracts_list:
-            if c.get("who_create") == company_id:
+            if c.get("who_creator") == company_id:
                 contracts.append(c)
         items_per_page = 5
         total_pages = max(1, (len(contracts) + items_per_page - 1) // items_per_page)
@@ -176,4 +182,11 @@ class ContractViewMyPage(OneUserPage):
         contract_id = args[1]
         await self.scene.update_key(self.__page_name__, "view", True)
         await self.scene.update_key(self.__page_name__, "selected_contract_id", contract_id)
+        await self.scene.update_message()
+    
+    
+    @OneUserPage.on_callback("back_to_s")
+    async def back_to_s(self, callback: CallbackQuery, args):
+        await self.scene.update_key(self.__page_name__, "view", False)
+        await self.scene.update_key(self.__page_name__, "selected_contract_id", None)
         await self.scene.update_message()

@@ -9,7 +9,6 @@ class LogisticMain(OneUserPage):
         session_id = self.scene.get_key("scene", "session")
         company_id = self.scene.get_key("scene", "company_id")
         logistic = await get_logistics(session_id=session_id)
-        logistic_company = await get_logistics(session_id=session_id, company_id=company_id)
         count_logistic = len(logistic)
         count_our_logistic = 0
         count_deliver = 0
@@ -29,7 +28,7 @@ class LogisticMain(OneUserPage):
         buttons = []
         session_id = self.scene.get_key("scene", "session")
         company_id = self.scene.get_key("scene", "company_id")
-        logistic_company = await get_logistics(session_id=session_id, company_id=company_id)
+        logistic = await get_logistics(session_id=session_id)
         count_deliver = 0
         for l in logistic:
             if l["to_company_id"] == company_id:
