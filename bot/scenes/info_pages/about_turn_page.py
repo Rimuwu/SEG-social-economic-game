@@ -23,37 +23,21 @@ class AboutTurnPage(Page):
         step = session_data.get("step")
         max_steps = session_data.get("max_steps")
 
-        lines = ["📊 **Текущий ход**"]
-        if step is not None and max_steps is not None:
-            lines.append(f"Ход {step} из {max_steps}")
-        elif step is not None:
-            lines.append(f"Ход {step}")
-
         event_response = await get_session_event(session_id)
         event_payload = {}
-
+        event_text = ""
         if isinstance(event_response, dict):
-            if event_response.get("error"):
-                lines.append("")
-                lines.append(f"❌ {event_response['error']}")
-                return "\n".join(lines)
             event_payload = event_response.get("event") or {}
-        elif isinstance(event_response, str):
-            lines.append("")
-            lines.append(f"❌ {event_response}")
-            return "\n".join(lines)
-
         if not event_payload:
-            lines.append("")
-            lines.append("🔕 Активных событий нет")
-            return "\n".join(lines)
+            event_text = ("🔕 Активных событий нет")
+        else:
+            event_text = self._format_event_info(event_payload, step)
 
-        event_lines = self._format_event_info(event_payload, step)
-        if event_lines:
-            lines.append("")
-            lines.extend(event_lines)
-
-        return "\n".join(lines)
+        return self.content.format(
+            step=step,
+            max_steps=max_steps,
+            event_text="\n".join(event_text) if isinstance(event_text, list) else event_text
+        )
 
     def _format_event_info(self, event_data: dict, current_step: int | None) -> list[str]:
         event_id = event_data.get("id")

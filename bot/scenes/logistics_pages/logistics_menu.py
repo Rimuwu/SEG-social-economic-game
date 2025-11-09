@@ -1,7 +1,7 @@
 from typing import Dict, List, Optional
 from aiogram.types import CallbackQuery, Message  # type: ignore
 from oms.utils import callback_generator
-from modules.ws_client import get_logistics, logistics_pickup
+from modules.ws_client import get_logistics, logistics_pickup, get_company_basic_info, get_city
 from global_modules.load_config import ALL_CONFIGS, Resources
 from modules.utils import xy_into_cell
 from scenes.utils.oneuser_page import OneUserPage
@@ -98,7 +98,7 @@ class LogisticsMenu(Page):
                 await self.scene.update_key("logistics-menu", "logistics_page", current_page)
                 for item in chunks[current_page]:
                     buttons.append({
-                        "text": self._format_list_button(item, company_id),
+                        "text": await self._format_list_button(item, company_id),
                         "callback_data": callback_generator(self.scene.__scene_name__, "logistics_select", item.get("id", 0))
                     })
                 if len(chunks) > 1:
@@ -356,18 +356,21 @@ class LogisticsMenu(Page):
         from_company = logistic.get("from_company_id")
         to_company = logistic.get("to_company_id")
         to_city = logistic.get("to_city_id")
+        company_to = await get_company_basic_info(company_id=to_company)
+        company_from = await get_company_basic_info(company_id=int(from_company))
+        city = await get_city(id=int(to_city))
 
         if from_company:
-            sender = "Вы" if from_company == company_id else f"Компания #{from_company}"
+            sender = "Вы" if from_company == company_id else f"Компания {company_from.get('name')}"
             lines.append(f"Отправитель: {sender}")
 
         if logistic.get("destination_type") == "company":
             if to_company == company_id:
                 lines.append("Получатель: Ваша компания")
             elif to_company:
-                lines.append(f"Получатель: Компания #{to_company}")
+                lines.append(f"Получатель: Компания {company_to.get('name')}")
         elif logistic.get("destination_type") == "city":
-            lines.append(f"Получатель: Город #{to_city}")
+            lines.append(f"Получатель: Город {city.get('name')}")
             if logistic.get("city_price"):
                 lines.append(f"Цена города: {self._format_number(logistic.get('city_price'))} 💰")
 
@@ -425,20 +428,22 @@ class LogisticsMenu(Page):
                 return item
         return None
 
-    def _format_list_button(self, item: dict, company_id: int) -> str:
+    async def _format_list_button(self, item: dict, company_id: int) -> str:
         resource = RESOURCES.get_resource(item.get("resource_type"))
         emoji = resource.emoji if resource else "📦"
         label = resource.label if resource else item.get("resource_type", "Ресурс")
         amount = self._format_number(item.get("amount"))
         status_icon = self._status_icon(item.get("status"))
+        city = await get_city(id=int(item.get("to_city_id")))
+        company = await get_company_basic_info(company_id=int(item.get("to_company_id")))
 
         if item.get("destination_type") == "city":
-            dest = f"→ город #{item.get('to_city_id')}"
+            dest = f"→ город {city.get('name')}"
         else:
             if item.get("to_company_id") == company_id:
                 dest = "→ вам"
             elif item.get("to_company_id"):
-                dest = f"→ компания #{item.get('to_company_id')}"
+                dest = f"→ компания {company.get('name')}"
             else:
                 dest = "→ компания"
 

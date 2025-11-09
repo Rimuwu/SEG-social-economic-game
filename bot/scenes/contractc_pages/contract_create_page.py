@@ -175,7 +175,7 @@ class ContractCreateMain(OneUserPage):
                 ),
             },
             {
-                "text": f"💰 Оплата/ход: {payment_text}",
+                "text": f"💰 Цена: {payment_text}",
                 "callback_data": callback_generator(
                     self.scene.__scene_name__, "set_payment_amount"
                 ),

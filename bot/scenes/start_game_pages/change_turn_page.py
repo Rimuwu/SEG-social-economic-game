@@ -15,32 +15,14 @@ class ChangeTurnPage(Page):
         return bar
     
     async def content_worker(self):
-        try:
-            scene_data = self.scene.get_data('scene')
-            if not scene_data:
-                return "⏳ Загрузка данных..."
-            
-            session_id = scene_data.get('session')
-            if not session_id:
-                return "❌ Ошибка: ID сессии не найден"
-
-            # Получаем информацию о сессии
-            session_response = await get_session(session_id=session_id)
-            if not session_response or "error" in session_response:
-                return "❌ Ошибка загрузки данных сессии"
-
-            current_step = session_response.get('step', 0)
-            max_steps = session_response.get('max_steps', 15)
-
-            # Создаём прогресс-бар
-            progress_bar = self.create_progress_bar(current_step, max_steps, 15)
-
-            content = "🔄 **Смена хода...**\n\n"
-            content += "⏳ Ожидаем следующего этапа...\n\n"
-            content += f"**Этап** {progress_bar} **{current_step}/{max_steps}**"
-
-            return content
-            
-        except Exception as e:
-            bot_logger.error(f"Ошибка в ChangeTurnPage.content_worker: {e}")
-            return f"❌ Ошибка при загрузке данных: {str(e)}"
+        scene_data = self.scene.get_data('scene')          
+        session_id = scene_data.get('session')
+        session_response = await get_session(session_id=session_id)
+        current_step = session_response.get('step', 0)
+        max_steps = session_response.get('max_steps', 15)
+        progress_bar = self.create_progress_bar(current_step, max_steps, 15)
+        return self.content.format(
+            progress_bar=progress_bar,
+            current_step=current_step,
+            max_steps=max_steps
+        )

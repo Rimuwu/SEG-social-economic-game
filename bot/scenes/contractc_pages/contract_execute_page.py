@@ -338,8 +338,6 @@ class ContractExecutePage(OneUserPage):
             if not accepted:
                 continue
 
-            if delivered_this_turn:
-                continue
 
             if supplier_id != company_id:
                 continue
@@ -372,6 +370,7 @@ class ContractExecutePage(OneUserPage):
                     "payment_amount": contract.get("payment_amount"),
                     "creator_id": creator_id,
                     "creator_name": creator_name,
+                    "delivered_this_turn": delivered_this_turn
                 }
             )
 
@@ -434,7 +433,7 @@ class ContractExecutePage(OneUserPage):
             f"🏬 Покупатель: {contract.get('customer_company_name')}",
             f"📈 Количество за ход: {amount_text}",
             f"⏱️ Длительность: {duration_text} ходов",
-            f"💰 Оплата за ход: {payment_text}",
+            f"💰 Цена: {payment_text}",
             f"🛠️ Создатель: {contract.get('creator_name')}",
             "⚠️ Доставка в этот ход ещё не выполнена.",
         ]

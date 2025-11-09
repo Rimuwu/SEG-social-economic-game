@@ -145,8 +145,6 @@ class ContractViewPage(OneUserPage):
                     ),
                 }
             )
-
-        self.row_width = 2
         buttons.append(
             {
                 "text": "🔄 Обновить",
@@ -163,7 +161,7 @@ class ContractViewPage(OneUserPage):
                     "text": "✅ Принять",
                     "callback_data": callback_generator(
                         self.scene.__scene_name__, "accept_contract", str(selected_id)
-                    ),
+                    ), "next_line": True
                 }
             )
             buttons.append(
@@ -429,7 +427,7 @@ class ContractViewPage(OneUserPage):
             f"🏬 Покупатель: {contract.get('customer_company_name')}",
             f"📈 Количество за ход: {amount_text}",
             f"⏱️ Длительность: {duration_text} ходов",
-            f"💰 Оплата за ход: {payment_text}",
+            f"💰 Цена: {payment_text}",
             f"🛠️ Создатель: {contract.get('creator_name')}",
         ]
         return "\n".join(details)

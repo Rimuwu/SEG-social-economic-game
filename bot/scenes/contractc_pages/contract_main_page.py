@@ -10,7 +10,8 @@ class ContractMain(OneUserPage):
         buttons = [
             {"text": "📄 Просмотреть все контракты", "callback_data": callback_generator(self.scene.__scene_name__, "to_page", "contract-view-page"), "ignore_row": True},
             {"text": "✍️ Создать", "callback_data": callback_generator(self.scene.__scene_name__, "to_page", "contract-create-page")},
-            {"text": "� Выполнить контракты", "callback_data": callback_generator(self.scene.__scene_name__, "to_page", "contract-execute-page")},
+            {"text": "📦 Выполнить", "callback_data": callback_generator(self.scene.__scene_name__, "to_page", "contract-execute-page")},
+            {"text": "📄Созданные мной контракты", "callback_data": callback_generator(self.scene.__scene_name__, "to_page", "contract-view-my-page"), "ignore_row": True},
         ]
         return buttons
     

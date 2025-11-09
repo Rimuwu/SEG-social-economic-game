@@ -7,8 +7,8 @@ class AdminMainPage(Page):
     
     
     async def data_preparate(self):
-        if self.scene.get_key(self.__page_name__, "previous_page") is None:
-            await self.scene.update_key(self.__page_name__, "previous_page", self.scene.get_key("scene", "previous_page") if "admin" not in self.scene.get_key("scene", "previous_page") else self.scene.get_key(self.__page_name__, "previous_page"))
+        await self.scene.update_key(self.__page_name__, "previous_page", self.scene.get_key("scene", "previous_page") if "admin" not in self.scene.get_key("scene", "previous_page") else self.scene.get_key(self.__page_name__, "previous_page"))
+            
     
     
     async def buttons_worker(self):
