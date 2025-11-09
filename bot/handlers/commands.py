@@ -119,7 +119,6 @@ async def process_delete_session_id(message: Message, state: FSMContext):
     msg_id = data['msg_id']
     
     users = await get_users(session_id=session_id)
-    print(users)
     response = await delete_session(
         session_id=session_id,
         really=True
@@ -307,7 +306,6 @@ async def on_update_session_stage(message: dict):
     data = message.get('data', {})
     session_id = data.get('session_id')
     new_stage = data.get('new_stage')
-    print("=====================", session_id, new_stage)
     
     if new_stage == "CellSelect":
         # Получаем все компании в сессии
@@ -399,17 +397,12 @@ async def on_company_set_position(message: dict):
     """Обработчик установки позиции компании"""
     data = message.get('data', {})
     company_id = data.get('company_id')
-    new_position = data.get('new_position')
-    
-    print(f"[api-company_set_position] Company {company_id} set position to {new_position}")
     
     if not company_id:
         return
     
     # Переводим всех пользователей компании на страницу ожидания начала игры
     users = await get_users(company_id=company_id)
-    
-    print(f"[api-company_set_position] Found {len(users) if users else 0} users in company {company_id}")
     
     for user in users:
         user_id = user.get('id')
@@ -418,12 +411,8 @@ async def on_company_set_position(message: dict):
             scene = scene_manager.get_scene(user_id)
             if scene:
                 current_page = scene.page
-                
-                print(f"[api-company_set_position] User {user_id} current page: {current_page}")
-                
                 # Переводим только если пользователь был на странице выбора или ожидания
                 if current_page in ["select-cell-page", "wait-select-cell-page"]:
-                    print(f"[api-company_set_position] Moving user {user_id} to wait-game-stage-page")
                     await scene.update_page("wait-game-stage-page")
     
     
@@ -441,33 +430,3 @@ async def docs(message: Message):
     
     result = await get_factories()
     pprint(result)
-
-@ws_client.on_message("api-contract_declined")
-async def on_contract_deleted(message: dict):
-    data = message.get('data', {})
-    print("="*20)
-    print(f"[api-contract_declined] Contract {data}")
-    print("="*20)
-
-
-@ws_client.on_message("api-contract_expired")
-async def on_contract_deleted(message: dict):
-    data = message.get('data', {})
-    print("="*20)
-    print(f"[api-contract_expired] Contract {data}")
-    print("="*20)
-
-
-@ws_client.on_message("api-contract_executed")
-async def on_contract_deleted(message: dict):
-    data = message.get('data', {})
-    print("="*20)
-    print(f"[api-contract_executed] Contract {data}")
-    print("="*20)
-
-@ws_client.on_message("api-contract_deleted")
-async def on_contract_deleted(message: dict):
-    data = message.get('data', {})
-    print("="*20)
-    print(f"[api-contract_deleted] Contract {data}")
-    print("="*20)

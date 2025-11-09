@@ -37,7 +37,6 @@ class ChangeCell(Page):
         total_cols = map_size.get("cols", 7)
 
         free_cells = await get_sessions_free_cells(session_id=session_id)
-        print(free_cells)
         free_coords = set()
         if free_cells and "free_cells" in free_cells:
             for cell in free_cells["free_cells"]:
@@ -168,7 +167,6 @@ class ChangeCell(Page):
             try:
                 company_id = self.scene.get_key('scene', 'company_id')
                 company = await get_company(id=company_id)
-                print(company.get("business_type"))
                 if company.get("balance") < SETTINGS.change_location_price[company.get("business_type")]:
                     self.clear_content()
                     self.content += f"\n\n❌ Недостаточно средств для смены клетки (требуется {SETTINGS.change_location_price[company.get('business_type')]})"
