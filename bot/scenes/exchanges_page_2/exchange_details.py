@@ -11,6 +11,7 @@ class ExchangeDetails(OneUserPage):
     """Страница детального просмотра предложения"""
     
     __page_name__ = "exchange-details-page"
+    __for_blocked_pages__ = ["exchange-main-page"]
     
     async def content_worker(self):
         """Детальная информация о предложении"""

@@ -23,13 +23,9 @@ class CityView(OneUserPage):
         session_id = self.scene.get_key("scene", "session")
         city_data = await get_city(id=int(city_id), session_id=session_id)
 
-        print(city_data)
         name = city_data.get("name")
         branch_id = city_data.get("branch")
         branch_data = RESOURCE.get_resource(branch_id)
-        print("=" * 20)
-        print(branch_id, branch_data)
-        print("=" * 20)
         
         branch = f"{branch_data.emoji} {branch_data.label}"
         demands = city_data.get("demands", {})
@@ -49,9 +45,6 @@ class CityView(OneUserPage):
         demand_keys = list(demands.keys())
         resource_chunks = [demand_keys[i:i + 4] for i in range(0, len(demand_keys), 4)]
         current_page = self.scene.get_key(self.__page_name__, "page")
-        print("=" * 20)
-        print(resource_chunks, demand_keys)
-        print("=" * 20)
         for resource_key in resource_chunks[current_page]:
             resource = RESOURCE.get_resource(resource_key)
             demand = demands.get(resource_key, {})

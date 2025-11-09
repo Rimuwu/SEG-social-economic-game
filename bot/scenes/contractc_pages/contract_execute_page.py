@@ -19,6 +19,7 @@ class ContractExecutePage(OneUserPage):
     """Страница выполнения принятых контрактов."""
 
     __page_name__ = "contract-execute-page"
+    __for_blocked_pages__ = ["contract-main-page"]
 
     async def data_preparate(self):
         if self.scene.get_key(self.__page_name__, "page") is None:

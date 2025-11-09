@@ -11,6 +11,7 @@ class ExchangeCreateMain(OneUserPage):
     """Главная страница создания предложения"""
     
     __page_name__ = "exchange-create-page"
+    __for_blocked_pages__ = ["exchange-main-page"]
     
     async def data_preparate(self):
         """Инициализация данных"""

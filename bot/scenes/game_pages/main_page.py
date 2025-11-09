@@ -1,6 +1,6 @@
 from oms import Page
 from aiogram.types import Message, CallbackQuery
-from modules.ws_client import get_company, get_company_contracts, get_company_warehouse, get_session
+from modules.ws_client import get_company, get_company_contracts, get_company_warehouse, get_session, get_session_event, get_contracts
 from global_modules.load_config import ALL_CONFIGS, Events
 
 
@@ -24,13 +24,13 @@ class MainPage(Page):
         s = await get_session(session_id=session_id)
         company = await get_company(id=company_id)
         warehouses = await get_company_warehouse(company_id=company_id)
-        contracts = await get_company_contracts(company_id=company_id)
+        contracts = await get_contracts(session_id=session_id)
         contract_new = 0
         contract_not_delivered = 0
         for c in contracts:
-            if c.get("who_create") != company_id and c.get("accepted") == False:
+            if c.get("who_creator") != company_id and c.get("accepted") == False:
                 contract_new += 1
-            if c.get("supplier_company_id") == company_id and c.get("accepted") == True and c.get("delivered_this_turn") == False:
+            if c.get("supplier_company_id") == company_id and c.get("accepted") == True and c.get("delivered_this_turn") == False and c.get("created_at_step") != s.get("step"):
                 contract_not_delivered += 1
                 
         balance = company.get("balance")
@@ -43,8 +43,10 @@ class MainPage(Page):
         max_time = self.scene.get_key(self.__page_name__, "max_time")
         field = int(((max_time - time_to_next_stage) / max_time) * 15)
         progress_bar = "█" * field + "░" * (15 - field)
-        event = s.get("event_type")
-        event_text = "Нет" if event is None else EVENT.events[event].name
+        ev = await get_session_event(session_id=session_id)
+        event_text = "Нет"
+        if ev["event"] != {}:
+            event_text = ev["event"]["name"]
         return self.content.format(
             balance=balance,
             reputation=reputation,
