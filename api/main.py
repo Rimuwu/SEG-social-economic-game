@@ -322,7 +322,7 @@ async def test3():
     session = await session_manager.create_session('test3',
                                                    time_on_change_stage=0.2,
                                                    time_on_game_stage=0.2,
-                                                   max_steps=10
+                                                   max_steps=5
                                                    )
 
     await sleep(5)
@@ -342,9 +342,22 @@ async def test3():
         comps.append(comp)
     
     await session.update_stage(SessionStages.CellSelect)
-    for i in range(10):
-        await sleep(1)
+    for i in range(5):
+        await sleep(5)
         await session.update_stage(SessionStages.Game, True)
+        
+        for company in comps:
+            await company.reupdate()
+            coins = random.randint(-company.balance, company.balance * 2)
+            company.balance += coins
+
+            rep = random.randint(-company.reputation, 10)
+            company.reputation += rep
+            
+            company.economic_power = company.balance // 1000 + company.reputation * 10
+
+            await company.save_to_base()
+        
         await session.update_stage(SessionStages.ChangeTurn, True)
         
     # await session.update_stage(SessionStages.Game, True)
