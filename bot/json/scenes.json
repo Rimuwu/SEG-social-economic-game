@@ -109,7 +109,7 @@
             },
             "bank-menu": {
                 "image": "img/bank.png",
-                "content": "🏦 *Банк*\n\n*Баланс компании:* {balance_formatted} 💰\n*Репутация:* {reputation} ⭐\n*Тип бизнеса:* {business_type_text}\n*Сумма налога:* {tax_debt_formatted} 💰\nПроцент налога:* {tax_percent}",
+                "content": "🏦 *Банк*\n\n*Баланс компании:* {balance_formatted} 💰\n*Репутация:* {reputation} ⭐\n*Тип бизнеса:* {business_type_text}\n*Сумма налога:* {tax_debt_formatted} 💰\n*Процент налога:* {tax_percent}",
                 "to_pages": {
                     "main-page": "↪️ Назад"
                 }
