@@ -1107,9 +1107,16 @@ class Company(BaseClass, SessionObject):
         contracts_config = IMPROVEMENTS.contracts.levels[
             contracts_level
         ]
+        
+        session = await self.get_session_or_error()
+        
         try:
             mx_c = contracts_config.max
-            return mx_c
+
+            minus = session.get_event().get(
+                'contracts_limit_decrease', 0)
+
+            return mx_c - minus
         except Exception as e:
             game_logger.error(f"Ошибка при получении максимального количества контрактов для компании {self.name} ({self.id}): {e}")
             return 5
