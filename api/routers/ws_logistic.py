@@ -10,17 +10,26 @@ from typing import cast
     doc="Обработчик получения списка логистик. Отправляет ответ на request_id", 
     datatypes=[
         "session_id: Optional[str]", 
-        "company_id: Optional[int]",
-        "city_id: Optional[int]",
+        "from_company_id: Optional[int]",
+        "to_company_id: Optional[int]",
+        "to_city_id: Optional[int]",
+        "logistics_id: Optional[int]",
+        "destination_type: Literal['company', 'city']",
+        "status: Literal['in_transit', 'waiting_pickup', 'delivered', 'failed']",
+
         "request_id: str"
         ])
 async def handle_get_logistics(client_id: str, message: dict):
     """Обработчик получения списка логистик"""
 
     conditions = {
-        "company_id": message.get("company_id"),
-        "city_id": message.get("city_id"),
-        "session_id": message.get("session_id")
+        "from_company_id": message.get("from_company_id"),
+        "to_company_id": message.get("to_company_id"),
+        "to_city_id": message.get("to_city_id"),
+        "session_id": message.get("session_id"),
+        "id": message.get("logistics_id"),
+        "destination_type": message.get("destination_type"),
+        "status": message.get("status"),
     }
 
 
