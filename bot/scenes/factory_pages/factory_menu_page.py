@@ -15,7 +15,7 @@ class FactoryMenu(Page):
     
     __for_blocked_pages__ = ['factory-start-groups', 'factory-rekit-groups', 'factory-rekit-count', 'factory-rekit-resource', 'factory-rekit-produce', 'factory-select-mode', 'factory-change-mode']
     __page_name__ = "factory-menu"
-    
+    __for_blocked_pages__ = ["factory-menu"]
     def get_resource_name(self, resource_key: str) -> str:
         """Получить русское название ресурса"""
         return get_resource_name(resource_key)

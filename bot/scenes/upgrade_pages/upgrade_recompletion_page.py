@@ -10,6 +10,7 @@ class UpgradeRecompletionPage(OneUserPage):
     
     
     __page_name__ = "upgrade-recompletion-page"
+    __for_blocked_pages__ = ["upgrade-menu"]
     async def content_worker(self):
         cost = SETTINGS.fast_complectation_price
         speed = SETTINGS.fast_complectation
