@@ -6,10 +6,7 @@ from modules.ws_client import (
     get_companies, get_company, notforgame_update_company_name,
     get_users, get_user, update_user, delete_user
 )
-from global_modules.logs import Logger
 import math
-
-bot_logger = Logger.get_logger("bot")
 
 
 class AdminPanelPage(Page):

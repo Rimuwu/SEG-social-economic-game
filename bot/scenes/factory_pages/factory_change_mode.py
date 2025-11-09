@@ -3,9 +3,7 @@ from aiogram.types import CallbackQuery
 from oms.utils import callback_generator
 from modules.ws_client import get_factories, factory_set_produce, factory_set_auto
 from modules.resources import get_resource
-from global_modules.logs import Logger
 
-bot_logger = Logger.get_logger("bot")
 
 Page = OneUserPage
 
@@ -429,10 +427,8 @@ class FactoryChangeMode(Page):
                     success_count += 1
                 else:
                     failed_count += 1
-                    bot_logger.error(f"Failed to change mode for factory {factory_id}: {result}")
             except Exception as e:
                 failed_count += 1
-                bot_logger.error(f"Error changing mode for factory {factory_id}: {e}")
         
         # Формируем сообщение
         if success_count > 0:

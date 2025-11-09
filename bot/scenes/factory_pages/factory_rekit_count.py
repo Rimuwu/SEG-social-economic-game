@@ -1,10 +1,8 @@
 from scenes.utils.oneuser_page import OneUserPage
 from aiogram.types import Message, CallbackQuery
 from oms.utils import callback_generator
-from global_modules.logs import Logger
 from modules.ws_client import get_factories
 from modules.resources import RESOURCES, get_resource_name
-bot_logger = Logger.get_logger("bot")
 
 Page = OneUserPage
 
