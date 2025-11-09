@@ -302,7 +302,6 @@ async def on_connect():
 @ws_client.on_message('api-update_session_stage')
 async def on_update_session_stage(message: dict):
     """Обработчик обновления стадии сессии"""
-    print(message)
     data = message.get('data', {})
     session_id = data.get('session_id')
     new_stage = data.get('new_stage')
@@ -366,6 +365,8 @@ async def on_update_session_stage(message: dict):
     
     elif new_stage == "End":
         await go_to_page(session_id, None, "end-game-page")
+        await asyncio.sleep(5)
+        await go_to_page(session_id, None, "change-turn-page")
 
 
 @ws_client.on_event("disconnect")

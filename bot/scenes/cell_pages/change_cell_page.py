@@ -77,7 +77,7 @@ class ChangeCell(Page):
                             'text': '🏢',
                             'callback_data': 'city'
                         })
-                    else:
+                    elif (real_row, real_col) in free_coords:
                         buttons.append({
                             'text': f"{cell_text}",
                             'callback_data': callback_generator(
@@ -85,6 +85,11 @@ class ChangeCell(Page):
                                 'cell_select',
                                 cell_text
                             )
+                        })
+                    else:
+                        buttons.append({
+                            'text': '❌',
+                            'callback_data': 'occupied'
                         })
 
             can_move_up = camera_y > 0
