@@ -190,19 +190,9 @@ class Session(BaseClass):
             for logistics in logistics_list:
                 await logistics.on_new_turn()
 
-            item_prices = {}
-
             items_prices: list[ItemPrice] = await self.item_prices
             for item_price in items_prices:
-                item_prices[item_price.id] = {
-                    "name": RESOURCES.get_resource(
-                        item_price.id).label,
-                    "last": item_price.price_on_last_step,
-                    "new": 0
-                }
-
                 await item_price.on_new_game_step()
-                item_prices[item_price.id]["new"] = item_price.get_effective_price()
 
             # Генерируем события каждые 5 этапов
             await self.events_generator()
@@ -210,18 +200,9 @@ class Session(BaseClass):
             self.step += 1
             await self.execute_step_schedule(self.step)
 
-            if self.step != 1:
-                await websocket_manager.broadcast({
-                    "type": "api-price_difference",
-                    "data": {
-                        "step": self.step,
-                        "session_id": self.session_id,
-                        "item_prices": item_prices
-                    }
-                })
-
         elif new_stage == SessionStages.ChangeTurn:
             from game.company import Company
+            from game.item_price import ItemPrice
 
             companies = await self.companies
             for company in companies:
@@ -251,6 +232,25 @@ class Session(BaseClass):
                             await company.get_warehouse_free_size()
                     }
                 )
+
+            item_prices = {}
+            items_prices: list[ItemPrice] = await self.item_prices
+            for item_price in items_prices:
+                item_prices[item_price.id] = {
+                    "name": RESOURCES.get_resource(
+                        item_price.id).label,
+                    "last": item_price.price_on_last_step,
+                    "new": item_price.current_price
+                }
+
+            await websocket_manager.broadcast({
+                "type": "api-price_difference",
+                "data": {
+                    "step": self.step,
+                    "session_id": self.session_id,
+                    "item_prices": item_prices
+                }
+            })
 
         if new_stage == SessionStages.End:
             await self.end_game()
