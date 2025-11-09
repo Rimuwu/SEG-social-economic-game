@@ -914,6 +914,12 @@ export class WebSocketManager {
       // Update game state
       this.gameState.updateCompanies(companiesData);
       
+      // Update map to reflect any position changes
+      setTimeout(() => {
+        console.log('[WS] Updating map after companies data received');
+        this.loadMapToDOM();
+      }, 100);
+      
       if (callback) callback({ success: true, data: companiesData });
     } else {
       if (callback) callback({ success: false, error: "No companies data" });
@@ -1333,11 +1339,17 @@ export class WebSocketManager {
       case 'api-company_deleted':
       case 'api-user_added_to_company':
       case 'api-user_left_company':
-      case 'api-company_set_position':
         // Refresh companies
         this.get_companies();
         break;
-      
+
+      case 'api-company_set_position':
+        // Log position change details
+        console.log('[WS] Company position changed:', message.data);
+        // Refresh companies - this will trigger map update in handleCompaniesResponse
+        this.get_companies();
+        break;
+
       case 'api-company_improvement_upgraded':
         // Add upgrade to recent upgrades list
         if (message.data) {
@@ -1542,6 +1554,8 @@ export class WebSocketManager {
         mapElement.style.gridTemplateRows = `repeat(${size.rows}, 1fr)`;
       }
 
+      console.log('[WS] LoadMapToDOM: Redrawing entire map with', cells.length, 'cells');
+
       // First, load the base terrain (don't pass text to keep default labels)
       for (let i = 0; i < cells.length && i < size.rows * size.cols; i++) {
         const row = Math.floor(i / size.cols);
@@ -1555,12 +1569,16 @@ export class WebSocketManager {
       const sessionId = this.gameState.state.session.id;
       if (sessionId) {
         const companies = this.gameState.getCompaniesBySession(sessionId);
+        console.log('[WS] LoadMapToDOM: Placing', companies.length, 'companies on map');
+        
         for (const company of companies) {
           if (company.cell_position) {
             // Parse cell_position format "x.y"
             const [colStr, rowStr] = company.cell_position.split('.');
             const col = parseInt(colStr, 10);
             const row = parseInt(rowStr, 10);
+            
+            console.log('[WS] LoadMapToDOM: Placing company', company.name, 'at position', row, col);
             
             // Set company tile with company name
             if (row >= 0 && row < size.rows && col >= 0 && col < size.cols) {
