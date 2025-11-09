@@ -7,4 +7,12 @@ class EndGamePage(Page):
     
     async def content_worker(self) -> str:
         session_id = self.scene.get_key("scene", "session")
-        return self.content
+        leaders = await get_session_leaders(session_id=session_id)
+        economic_leaders = leaders["economic"]["name"]
+        reputation_leaders = leaders["reputation"]["name"]
+        balance_leaders = leaders["capital"]["name"]
+        return self.content.format(
+            economic_leaders=economic_leaders,
+            reputation_leaders=reputation_leaders,
+            balance_leaders=balance_leaders
+        )
