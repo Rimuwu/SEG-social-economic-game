@@ -1,13 +1,15 @@
-from oms import Page
+from scenes.utils.oneuser_page import OneUserPage
 from aiogram.types import CallbackQuery
 from oms.utils import callback_generator
 from modules.ws_client import get_factories
+
+Page = OneUserPage
 
 class FactorySelectMode(Page):
     """Страница выбора режима заводов для перекомплектации"""
     
     __page_name__ = "factory-select-mode"
-    
+    __for_blocked_pages__ = ["factory-menu"]
     async def content_worker(self):
         """Показать доступные режимы заводов"""
         scene_data = self.scene.get_data('scene')

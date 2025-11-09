@@ -1,4 +1,4 @@
-from oms import Page
+from scenes.utils.oneuser_page import OneUserPage
 from aiogram.types import CallbackQuery
 from oms.utils import callback_generator
 from modules.ws_client import get_factories, factory_set_produce, factory_set_auto
@@ -7,11 +7,13 @@ from global_modules.logs import Logger
 
 bot_logger = Logger.get_logger("bot")
 
+Page = OneUserPage
 
 class FactoryChangeMode(Page):
     """Страница изменения режима производства заводов"""
     
     __page_name__ = "factory-change-mode"
+    __for_blocked_pages__ = ["factory-menu"]
     
     def get_resource_name(self, resource_key):
         """Получить отображаемое имя ресурса"""

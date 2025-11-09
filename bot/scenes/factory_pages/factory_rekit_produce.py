@@ -1,4 +1,4 @@
-from oms import Page
+from scenes.utils.oneuser_page import OneUserPage
 from aiogram.types import CallbackQuery
 from oms.utils import callback_generator
 from global_modules.logs import Logger
@@ -8,10 +8,11 @@ from modules.ws_client import company_complete_free_factories, get_factories, fa
 bot_logger = Logger.get_logger("bot")
 RESOURCES: Resources = ALL_CONFIGS["resources"]
 
+Page = OneUserPage
 
 class FactoryRekitProduce(Page):
     __page_name__ = "factory-rekit-produce"
-    
+    __for_blocked_pages__ = ["factory-menu"]
     async def content_worker(self):
         """Показать выбор типа производства с крафтом"""
         scene_data = self.scene.get_data('scene')

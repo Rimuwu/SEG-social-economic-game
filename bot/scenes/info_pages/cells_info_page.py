@@ -21,7 +21,7 @@ class CellsInfo(Page):
         position_coords = company_data.get('position_coords', [0, 0])
         resource_data = RESOURCES.get_resource(cell_info["resource_id"])
         text_res = f"{resource_data.emoji} {resource_data.label}"
-        cell_position = xy_into_cell(position_coords[1], position_coords[0])
+        cell_position = xy_into_cell(position_coords[0], position_coords[1])
         return self.content.format(
             type_cell=cell_info["label"],
             res=text_res,
