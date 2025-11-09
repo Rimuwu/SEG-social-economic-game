@@ -320,78 +320,33 @@ async def test3():
         if session: await session.delete()
 
     session = await session_manager.create_session('test3',
-                                                   time_on_change_stage=0.5,
-                                                   time_on_game_stage=0.5
+                                                   time_on_change_stage=0.2,
+                                                   time_on_game_stage=0.2,
+                                                   max_steps=10
                                                    )
 
-    await sleep(15)
+    await sleep(5)
 
     print("Session created")
 
-    user1 = await User().create(
-        1,
-        session_id=session.session_id,
-        username="User 1"
-    )
-
-    user2 = await User().create(
-        2,
-        session_id=session.session_id,
-        username="User 2"
-    )
-
-    comp1 = await user1.create_company("12345678901234567890")
-    comp2 = await user2.create_company("Company 2")
-    
-    await comp1.add_resource("wood", 20, True)
-    # await comp2.add_balance(20000)
+    users = []
+    comps = []
+    for i in range(15):
+        user = await User().create(
+            i + 1,
+            session_id=session.session_id,
+            username=f"User {i + 1}"
+        )
+        comp = await user.create_company(f"Company {i + 1}")
+        users.append(user)
+        comps.append(comp)
     
     await session.update_stage(SessionStages.CellSelect)
-    
-    print(f'=== STAGE: {session.stage} === STEP {session.step} ===')
-    
-    await session.update_stage(SessionStages.Game, True)
-    for i in [session, comp1, comp2]:
-        await i.reupdate()
+    for i in range(10):
+        await sleep(1)
+        await session.update_stage(SessionStages.Game, True)
+        await session.update_stage(SessionStages.ChangeTurn, True)
         
-    print(f'=== STAGE: {session.stage} === STEP {session.step} ===')
-
-    wood_price = await ItemPrice().create(
-        session_id=session.session_id,
-        item_id='wood'
-    )
-    await wood_price.add_price(500)
-
-    fabric_price = await ItemPrice().create(
-        session_id=session.session_id,
-        item_id='fabric'
-    )
-    await fabric_price.add_price(1000)
-    await fabric_price.add_price(1000)
-    
-    await session.update_stage(SessionStages.ChangeTurn, True)
-    for i in [session, comp1, comp2, wood_price, fabric_price]:
-        await i.reupdate()
-
-    print(f'=== STAGE: {session.stage} === STEP {session.step} ===')
-    
-    await session.update_stage(SessionStages.Game, True)
-    for i in [session, comp1, comp2, wood_price, fabric_price]:
-        await i.reupdate()
-
-    await wood_price.add_price(500)
-    await fabric_price.add_price(10000)
-    
-    await session.update_stage(SessionStages.ChangeTurn, True)
-    for i in [session, comp1, comp2, wood_price, fabric_price]:
-        await i.reupdate()
-    
-    await comp1.remove_reputation(100)
-
-    for _ in range(20):
-        await stage_game_updater(session.session_id)
-        for i in [session, comp1, comp2]:
-            await i.reupdate()
-
-        print(comp1.prison_end_step)
-        
+    # await session.update_stage(SessionStages.Game, True)
+    # await sleep(1)
+    # await session.update_stage(SessionStages.End, True)
