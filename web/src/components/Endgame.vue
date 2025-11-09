@@ -1,11 +1,17 @@
 <script setup>
 import NavigationButtons from './NavigationButtons.vue'
-import { ref, onMounted, inject, computed } from 'vue'
+import { ref, onMounted, inject, computed, nextTick } from 'vue'
+import { Chart, registerables } from 'chart.js'
+
+// Register Chart.js components
+Chart.register(...registerables)
 
 const emit = defineEmits(['navigateTo'])
 
 const pageRef = ref(null)
 const wsManager = inject('wsManager', null)
+const chartCanvas = ref(null)
+let chartInstance = null
 
 // Handle navigation
 const handleLeave = () => {
@@ -34,20 +40,12 @@ const formatNumber = (num) => {
 }
 
 // Computed properties for statistics
-const statisticsBalance = computed(() => {
-  return wsManager?.gameState?.getStatisticsBalance() || {}
+const allStatistics = computed(() => {
+  return wsManager?.gameState?.getStatistics() || []
 })
 
-const statisticsReputation = computed(() => {
-  return wsManager?.gameState?.getStatisticsReputation() || {}
-})
-
-const statisticsEconomicPower = computed(() => {
-  return wsManager?.gameState?.getStatisticsEconomicPower() || {}
-})
-
-const companyNames = computed(() => {
-  return wsManager?.gameState?.getStatisticsCompanyNames() || []
+const companyIds = computed(() => {
+  return wsManager?.gameState?.getStatisticsCompanyIds() || []
 })
 
 // Get top 3 most sold products (mock data for now - will be populated with real data)
@@ -60,6 +58,158 @@ const topProducts = computed(() => {
   ]
 })
 
+// Chart type state
+const currentChartType = ref('balance')
+
+// Function to switch chart type
+const switchChart = (type) => {
+  currentChartType.value = type
+  createChart()
+}
+
+// Generic function to create chart
+const createChart = () => {
+  if (!chartCanvas.value) return
+
+  // Destroy existing chart if it exists
+  if (chartInstance) {
+    chartInstance.destroy()
+  }
+
+  const ctx = chartCanvas.value.getContext('2d')
+
+  // Get real statistics data
+  const statistics = allStatistics.value
+  console.log('[Endgame] Creating chart with statistics:', statistics)
+
+  // Generate colors for each company
+  const colors = [
+    'rgb(255, 99, 132)',   // Red
+    'rgb(54, 162, 235)',   // Blue
+    'rgb(75, 192, 192)',   // Green
+    'rgb(255, 159, 64)',   // Orange
+    'rgb(153, 102, 255)',  // Purple
+    'rgb(255, 205, 86)',   // Yellow
+  ]
+
+  // Determine which data to use based on chart type
+  let dataKey, chartTitle
+  switch (currentChartType.value) {
+    case 'balance':
+      dataKey = 'balance'
+      chartTitle = 'Прогресс баланса компаний'
+      break
+    case 'reputation':
+      dataKey = 'reputation'
+      chartTitle = 'Прогресс репутации компаний'
+      break
+    case 'economic_power':
+      dataKey = 'economic_power'
+      chartTitle = 'Прогресс экономической мощи компаний'
+      break
+    default:
+      dataKey = 'balance'
+      chartTitle = 'Прогресс баланса компаний'
+  }
+
+  // Create datasets from real data
+  const datasets = statistics.map((companyStat, index) => {
+    // Get company name
+    const company = wsManager?.gameState?.getCompanyById(companyStat.company_id)
+    const companyName = company ? company.name : `Компания ${companyStat.company_id}`
+    
+    return {
+      label: companyName,
+      data: companyStat[dataKey],
+      borderColor: colors[index % colors.length],
+      backgroundColor: colors[index % colors.length].replace('rgb', 'rgba').replace(')', ', 0.1)'),
+      borderWidth: 3,
+      tension: 0.5,
+      pointRadius: 4,
+      pointHoverRadius: 6
+    }
+  })
+
+  // Determine the number of steps from the data
+  const maxSteps = statistics.length > 0 ? statistics[0][dataKey].length : 15
+
+  chartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: Array.from({ length: maxSteps }, (_, i) => `Ход ${i + 1}`),
+      datasets: datasets
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'top',
+          labels: {
+            color: 'white',
+            font: {
+              size: 36
+            },
+            padding: 30
+          }
+        },
+        title: {
+          display: true,
+          text: chartTitle,
+          color: 'white',
+          font: {
+            size: 40,
+            weight: 'bold'
+          },
+          padding: 40
+        },
+        tooltip: {
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          titleFont: {
+            size: 28
+          },
+          bodyFont: {
+            size: 26
+          },
+          padding: 24,
+          callbacks: {
+            label: function(context) {
+              return `${context.dataset.label}: ${context.parsed.y.toLocaleString('ru-RU')}`
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: {
+            color: 'white',
+            font: {
+              size: 32
+            }
+          },
+          grid: {
+            color: 'rgba(255, 255, 255, 0.1)'
+          }
+        },
+        y: {
+          ticks: {
+            color: 'white',
+            font: {
+              size: 32
+            },
+            callback: function(value) {
+              return value.toLocaleString('ru-RU')
+            }
+          },
+          grid: {
+            color: 'rgba(255, 255, 255, 0.2)'
+          }
+        }
+      }
+    }
+  })
+}
+
 onMounted(() => {
   // Fetch statistics for the ended game
   if (wsManager) {
@@ -70,12 +220,24 @@ onMounted(() => {
     wsManager.get_session_statistics((response) => {
       if (response.success) {
         console.log('[Endgame] Statistics fetched successfully')
-        console.log('[Endgame] Balance stats:', wsManager.gameState.getStatisticsBalance())
-        console.log('[Endgame] Reputation stats:', wsManager.gameState.getStatisticsReputation())
-        console.log('[Endgame] Economic Power stats:', wsManager.gameState.getStatisticsEconomicPower())
+        console.log('[Endgame] All stats:', wsManager.gameState.getStatistics())
+        
+        // Create chart with real data
+        nextTick(() => {
+          createChart()
+        })
       } else {
         console.error('[Endgame] Failed to fetch statistics:', response.error)
+        // Create chart anyway
+        nextTick(() => {
+          createChart()
+        })
       }
+    })
+  } else {
+    // No wsManager, create chart
+    nextTick(() => {
+      createChart()
     })
   }
 })
@@ -86,9 +248,34 @@ onMounted(() => {
   <div id="page" ref="pageRef">
     
     <div id="column-left">
-      <!-- Graph placeholder -->
+      <!-- Chart container -->
       <div id="graph-container">
-        <p class="placeholder-text">График будет здесь</p>
+        <canvas ref="chartCanvas"></canvas>
+        
+        <!-- Chart type switcher buttons -->
+        <div class="chart-switcher">
+          <button 
+            @click="switchChart('balance')" 
+            :class="{ active: currentChartType === 'balance' }"
+            class="chart-btn"
+            title="Баланс">
+            Баланс
+          </button>
+          <button 
+            @click="switchChart('reputation')" 
+            :class="{ active: currentChartType === 'reputation' }"
+            class="chart-btn"
+            title="Репутация">
+            Репутация
+          </button>
+          <button 
+            @click="switchChart('economic_power')" 
+            :class="{ active: currentChartType === 'economic_power' }"
+            class="chart-btn"
+            title="Экономическая мощь">
+            Эконом. уровень
+          </button>
+        </div>
       </div>
 
       <!-- Top 3 products row -->
@@ -176,6 +363,38 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 20px 20px 90px 20px;
+  position: relative;
+}
+
+/* Chart switcher buttons */
+.chart-switcher {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  display: flex;
+  gap: 16px;
+  z-index: 10;
+}
+
+.chart-btn {
+  background: rgba(51, 51, 51, 1);
+  border: none;
+  padding: 10px;
+  color: white;
+  font-size: 3rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: "Ubuntu Mono", monospace;
+}
+
+.chart-btn:hover {
+  transform: scale(1.05);
+}
+
+.chart-btn.active {
+  background: rgba(71, 71, 71, 1);
 }
 
 .placeholder-text {
