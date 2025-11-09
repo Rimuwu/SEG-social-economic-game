@@ -50,7 +50,7 @@ class CityMain(OneUserPage):
                 # Остальные клетки - показываем координаты
                 else:
                     buttons.append({
-                        'text': do_cell_emoji(matrix_cells[y][x]),
+                        'text': cell_position,
                         'callback_data': callback_generator(self.scene.__scene_name__, "noop")
                     })
         
