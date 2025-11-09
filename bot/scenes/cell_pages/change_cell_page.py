@@ -79,7 +79,7 @@ class ChangeCell(Page):
                             'text': '🏢',
                             'callback_data': 'city'
                         })
-                    elif (real_row, real_col) in free_coords:
+                    elif (real_col, real_row) in free_coords:
                         buttons.append({
                             'text': f"{cell_text}",
                             'callback_data': callback_generator(
@@ -187,7 +187,7 @@ class ChangeCell(Page):
                         self.content += f"\n\n{response['error']}"
                         await self.scene.update_message()
                         return
-                    await self.scene.update_page("wait-game-stage-page")
+                    await self.scene.update_page("main-page")
             except:
                 self.clear_content()
                 self.content += "\n❌ Некорректный ввод. Введите правильное название клетки (например, A1, B3 и т.д.):"
@@ -204,7 +204,7 @@ class ChangeCell(Page):
             cell_name = args[1] if len(args) > 1 else None
             if cell_name:
                 y, x = cell_into_xy(cell_name)
-                response = await change_position(company_id=company_id, x=y, y=x)
+                response = await change_position(company_id=company_id, x=x, y=y)
 
                 if "error" in response:
                     self.clear_content()

@@ -161,7 +161,7 @@ class SelectCell(Page):
         cell_name = value
         if cell_name:
             try:
-                x, y = cell_into_xy(cell_name)
+                y, x = cell_into_xy(cell_name)
                 data = self.scene.get_data('scene')
                 company_id = data.get('company_id')
                 response = await set_company_position(company_id=company_id, x=x, y=y)
@@ -182,7 +182,7 @@ class SelectCell(Page):
     async def my_callback_handler(self, callback: CallbackQuery, args: list):       
         cell_name = args[1] if len(args) > 1 else None
         if cell_name:
-            x, y = cell_into_xy(cell_name)
+            y, x = cell_into_xy(cell_name)
             data = self.scene.get_data('scene')
             company_id = data.get('company_id')
             response = await set_company_position(company_id=company_id, x=x, y=y)
