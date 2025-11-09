@@ -43,11 +43,10 @@ class MainPage(Page):
         max_time = self.scene.get_key(self.__page_name__, "max_time")
         field = int(((max_time - time_to_next_stage) / max_time) * 15)
         progress_bar = "█" * field + "░" * (15 - field)
-        event = s.get("event_type")
         ev = await get_session_event(session_id=session_id)
-        print("Ивент", ev)
-        print("Контракт", contracts)
-        event_text = "Нет" if event is None else EVENT.events[event].name
+        event_text = "Нет"
+        if ev["event"] != {}:
+            event_text = ev["event"]["name"]
         return self.content.format(
             balance=balance,
             reputation=reputation,

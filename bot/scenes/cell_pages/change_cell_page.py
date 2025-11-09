@@ -1,16 +1,18 @@
-from oms import Page
+from scenes.utils.oneuser_page import OneUserPage
 from aiogram.types import Message, CallbackQuery
 from modules.utils import cell_into_xy, xy_into_cell
 from modules.ws_client import get_sessions_free_cells, change_position, get_session, get_company_balance, get_company
 from oms.utils import callback_generator
 from global_modules.load_config import ALL_CONFIGS, Settings
 
+Page = OneUserPage
 
 SETTINGS: Settings = ALL_CONFIGS["settings"]
 
 class ChangeCell(Page):
     
     __page_name__ = 'change-cell-page'
+    __for_blocked_pages__ = ["upgrade-menu"]
     
     async def data_preparate(self):
         if self.scene.get_key(self.__page_name__, 'camera_x') is None:

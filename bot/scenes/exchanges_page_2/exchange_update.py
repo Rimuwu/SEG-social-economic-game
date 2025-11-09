@@ -11,6 +11,7 @@ class ExchangeUpdate(OneUserPage):
     """Страница изменения предложения на бирже"""
     
     __page_name__ = "exchange-update-page"
+    __for_blocked_pages__ = ["exchange-main-page"]
     
     async def data_preparate(self):
         """Инициализация данных из выбранного предложения"""

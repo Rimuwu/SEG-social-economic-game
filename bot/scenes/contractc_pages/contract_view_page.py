@@ -19,7 +19,7 @@ class ContractViewPage(OneUserPage):
     """Страница просмотра и принятия контрактов."""
 
     __page_name__ = "contract-view-page"
-
+    __for_blocked_pages__ = ["contract-main-page"]
     async def data_preparate(self):
         if self.scene.get_key(self.__page_name__, "page") is None:
             await self.scene.update_key(self.__page_name__, "page", 0)

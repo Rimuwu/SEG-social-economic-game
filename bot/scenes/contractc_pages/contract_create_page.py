@@ -14,6 +14,7 @@ class ContractCreateMain(OneUserPage):
     """Главная страница создания контракта."""
 
     __page_name__ = "contract-create-page"
+    __for_blocked_pages__ = ["contract-main-page"]
 
     async def data_preparate(self):
         scene_data = self.scene.get_data("scene")
@@ -452,6 +453,7 @@ class ContractCreateSelectCompany(OneUserPage):
     """Страница выбора компании."""
 
     __page_name__ = "contract-create-select-company-page"
+    __for_blocked_pages__ = ["contract-main-page"]
 
     async def data_preparate(self):
         if self.scene.get_key(self.__page_name__, "page") is None:
@@ -668,6 +670,7 @@ class ContractCreateSelectResource(OneUserPage):
     """Страница выбора ресурса."""
 
     __page_name__ = "contract-create-select-resource-page"
+    __for_blocked_pages__ = ["contract-main-page"]
 
     async def data_preparate(self):
         if self.scene.get_key(self.__page_name__, "page") is None:

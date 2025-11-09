@@ -1,14 +1,15 @@
-from oms import Page
+from scenes.utils.oneuser_page import OneUserPage
 from aiogram.types import CallbackQuery
 from modules.ws_client import get_company, company_withdraw_deposit, get_session
 from oms.utils import callback_generator
 
+Page = OneUserPage
 
 class BankDepositView(Page):
     """Страница просмотра конкретного вклада"""
     
     __page_name__ = "bank-deposit-view"
-    
+    __for_blocked_pages__ = ["bank-menu"]
     async def content_worker(self):
         scene_data = self.scene.get_data('scene')
         company_id = scene_data.get('company_id')

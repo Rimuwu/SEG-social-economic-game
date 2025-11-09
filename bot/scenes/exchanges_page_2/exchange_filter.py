@@ -12,6 +12,7 @@ class ExchangeFilter(OneUserPage):
     """Страница фильтра по ресурсам"""
     
     __page_name__ = "exchange-filter-page"
+    __for_blocked_pages__ = ["exchange-main-page"]
     
     def __after_init__(self):
         """Инициализация фильтра предметов"""

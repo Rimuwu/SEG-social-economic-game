@@ -11,6 +11,7 @@ RESOURCES: Resources = ALL_CONFIGS["resources"]
 class ContractViewMyPage(OneUserPage):
     
     __page_name__ = "contract-view-my-page"
+    __for_blocked_pages__ = ["contract-main-page"]
     async def data_preparate(self):
         if self.scene.get_key(self.__page_name__, "view") is None:
             await self.scene.update_key(self.__page_name__, "view", False)
