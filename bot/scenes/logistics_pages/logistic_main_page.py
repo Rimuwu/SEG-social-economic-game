@@ -13,8 +13,8 @@ class LogisticMain(OneUserPage):
         count_logistic = len(logistic)
         count_our_logistic = 0
         count_deliver = 0
-        for l in logistic_company:
-            if l["to_company_id"] == company_id:
+        for l in logistic:
+            if int(l["to_company_id"]) == int(company_id):
                 if l["status"] == "in_transit":
                     count_our_logistic += 1
                 elif l["status"] == "waiting_pickup":
@@ -31,7 +31,7 @@ class LogisticMain(OneUserPage):
         company_id = self.scene.get_key("scene", "company_id")
         logistic_company = await get_logistics(session_id=session_id, company_id=company_id)
         count_deliver = 0
-        for l in logistic_company:
+        for l in logistic:
             if l["to_company_id"] == company_id:
                 if l["status"] == "waiting_pickup":
                     count_deliver += 1
