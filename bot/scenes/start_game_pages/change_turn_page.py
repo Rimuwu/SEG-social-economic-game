@@ -1,8 +1,5 @@
 from oms import Page
 from modules.ws_client import get_session
-from global_modules.logs import Logger
-
-bot_logger = Logger.get_logger("bot")
 
 
 class ChangeTurnPage(Page):

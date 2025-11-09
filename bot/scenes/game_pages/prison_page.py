@@ -2,9 +2,7 @@ from oms import Page
 from aiogram.types import CallbackQuery
 from modules.ws_client import get_company, get_session
 from oms.utils import callback_generator
-from global_modules.logs import Logger
 
-bot_logger = Logger.get_logger("bot")
 
 
 class PrisonPage(Page):
