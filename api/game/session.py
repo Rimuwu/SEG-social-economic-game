@@ -222,10 +222,13 @@ class Session(BaseClass):
             for company in companies:
                 if company is None: continue
 
-                await Statistic.update_me(
-                    company_id=company.id,
+                st = await Statistic().create(
                     session_id=self.session_id,
-                    step=self.step,
+                    company_id=company.id,
+                    step=self.step
+                )
+
+                await st.update_me(
                     **{
                         "balance": company.balance,
                         "reputation": company.reputation,
@@ -690,12 +693,13 @@ class Session(BaseClass):
 
                 game_logger.info(f'Компания {company.name} в сессии {self.session_id} завершила игру с балансом {company.balance} и репутацией {company.reputation}. Штрафы: {minus_balance} (баланс), {minus_rep} (репутация) за {company.overdue_steps} просроченных шагов оплаты налогов, {company.tax_debt} (налоги), {len(company.credits)} (количество кредитов)')
 
-                print(company.id, self.step)
-                print('eer')
-                await Statistic.update_me(
-                    company_id=company.id,
+                st = await Statistic().create(
                     session_id=self.session_id,
-                    step=self.step,
+                    company_id=company.id,
+                    step=self.step
+                )
+
+                await st.update_me(
                     **{
                         "balance": company.balance,
                         "reputation": company.reputation,
