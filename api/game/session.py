@@ -293,7 +293,7 @@ class Session(BaseClass):
         schedules: list[StepSchedule] = await just_db.find(
             "step_schedule", session_id=self.session_id, in_step=step,
             to_class=StepSchedule
-        ) # type: ignore
+        )
 
         for schedule in schedules:
             asyncio.create_task(schedule.execute())
@@ -510,13 +510,18 @@ class Session(BaseClass):
 
                     game_logger.info(f"В сессии {self.session_id} создан город в позиции {x}.{y} с отраслью {city.branch}.")
 
-    async def can_select_cell(self, x: int, y: int, ignore_stage: bool = False) -> bool:
+    async def can_select_cell(self, 
+            x: int, y: int, 
+            ignore_stage: bool = False) -> bool:
         """ Проверяет, можно ли выбрать клетку с координатами (x, y) для компании.
         """
         if not ignore_stage and not self.can_select_cells():
             raise ValueError("Текущая стадия сессии не позволяет выбирать клетки.")
 
         index = y * self.map_size["cols"] + x
+        if index < 0 or index >= len(self.cells):
+            raise ValueError("Координаты клетки выходят за пределы карты.")
+
         cell_type_key = self.cells[index]
         cell_type = cells.types.get(cell_type_key)
 
