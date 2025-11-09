@@ -179,7 +179,7 @@ class Company(BaseClass, SessionObject):
             if col_complect > 0:
                 res = SETTINGS.start_complectation.get(cell_type, None)
 
-            await Factory().create(self.id, res)
+            await Factory().create(self.id, res, True)
             col_complect -= 1
 
         await websocket_manager.broadcast({

@@ -35,12 +35,13 @@ class Factory(BaseClass, SessionObject):
         self.complectation_stages = 0  # Сколько ходов осталось до завершения комплектации
 
         self.produced: int = 0  # Сколько всего произведено продукции
-        
+
         self.event_stack: list[dict] = []  # Стэк событий фабрики за этап
 
     async def create(self, 
                      company_id: int, 
-                     complectation: Optional[str] = None
+                     complectation: Optional[str] = None,
+                     is_auto: bool = False
                      ):
         """ Создание новой фабрики
         """
@@ -55,6 +56,10 @@ class Factory(BaseClass, SessionObject):
 
             turns = production.turns if production else 0
             self.progress = [0, turns]
+
+        if is_auto and complectation is not None:
+            self.is_auto = True
+            self.produce = True
 
         await self.insert()
         await websocket_manager.broadcast({
@@ -232,15 +237,13 @@ class Factory(BaseClass, SessionObject):
                         }
                     })
 
-                    st = await Statistic.get_latest_by_company(
+                    st = await Statistic().create(
                         session_id=company.session_id,
-                        company_id=company.id
+                        company_id=company.id,
+                        step=session.step,
                     )
                     if st:
-                        await Statistic.update_me(
-                            company_id=company.id,
-                            session_id=company.session_id,
-                            step=session.step,
+                        await st.update_me(
                             total_products_produced=add_min
                         )
 
