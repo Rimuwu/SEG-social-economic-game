@@ -29,7 +29,7 @@
     "fast_complectation": 2.0, // Множитель улучшения
 
     "change_location_price": { // Цена смены клетки
-        "small": 100000,
-        "big": 250000
+        "small": 50000,
+        "big": 150000
     }
 }
