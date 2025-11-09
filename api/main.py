@@ -348,25 +348,7 @@ async def test3():
     
     await session.update_stage(SessionStages.CellSelect)
     
+    
     await session.update_stage(SessionStages.Game)
     for i in [session, comp1, comp2]:
         await i.reupdate()
-
-    await session.update_stage(SessionStages.ChangeTurn)
-
-    # await session.update_stage(SessionStages.Game)
-    # for i in [session, comp1, comp2]:
-    #     await i.reupdate()
-
-    # await sleep(5)
-    
-    # for i in range(10):
-        
-    #     await session.update_stage(SessionStages.ChangeTurn)
-
-    #     print(session.public_event_data())
-        
-    #     await sleep(10)
-    #     await session.update_stage(SessionStages.Game)
-    #     for i in [session, comp1, comp2]:
-    #         await i.reupdate()
