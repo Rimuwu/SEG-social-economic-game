@@ -58,6 +58,7 @@ services:
       - UPDATE_PASSWORD=${UPDATE_PASSWORD}
       - ADMIN_IDS=${ADMIN_IDS}
       - MONGODB_URL=mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@mongodb:27017
+      - GROUP_ID=${GROUP_ID}
     restart: unless-stopped
     volumes:
       - ./logs:/logs:rw

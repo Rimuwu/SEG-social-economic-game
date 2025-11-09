@@ -10,10 +10,7 @@ bot_logger = Logger.get_logger("bot")
 # Список ID администраторов
 UPDATE_PASSWORD = os.getenv("UPDATE_PASSWORD", "default_password")
 
-ADMIN_IDS = [admin_id.strip(
-    ) for admin_id in os.getenv("ADMIN_IDS", 
-                                "").strip().split(",") if admin_id.strip()]
-
+GROUP_ID = os.getenv("GROUP_ID", None)
 
 async def _get_user_mention(user: dict) -> str:
     """Получить @упоминание пользователя или ссылку на него"""
@@ -45,9 +42,9 @@ async def _get_user_mention(user: dict) -> str:
         return f"[{user_id}](tg://user?id={user_id})"
 
 
-async def _format_winners_message(winners: dict) -> str:
+async def _format_winners_message(winners: dict, session_id: str) -> str:
     """Форматировать сообщение о победителях"""
-    message = "🏆 *Результаты игры:*\n\n"
+    message = f"🏆 *Результаты игры {session_id}:*\n\n"
 
     for category, company_data in winners.items():
         if not company_data:
@@ -88,25 +85,25 @@ async def on_company_to_prison(message: dict):
     winners = data['winners']
 
     # Форматируем сообщение о победителях
-    winners_message = await _format_winners_message(winners)
+    winners_message = await _format_winners_message(winners, session_id)
 
     # Отправляем сообщение каждому админу
-    for admin_id in ADMIN_IDS:
+    if GROUP_ID:
         try:
             await bot.send_message(
-                int(admin_id),
+                GROUP_ID,
                 winners_message,
                 parse_mode="Markdown"
             )
         except Exception as e:
-            bot_logger.error(f"Ошибка при отправке сообщения админу {admin_id}: {e}")
+            bot_logger.error(f"Ошибка при отправке сообщения админу {GROUP_ID}: {e}")
 
-    bot_logger.info(f"Сообщение о конце игры {session_id} отправлено {len(ADMIN_IDS)} администраторам")
+        bot_logger.info(f"Сообщение о конце игры {session_id} отправлено")
 
 
 async def _format_price_difference_message(session_id: str, item_prices: dict, step: int) -> str:
     """Форматировать сообщение о разнице в ценах"""
-    message = f"📊 *Изменения цен в сессии {session_id}, шаг {step}:*\n\n"
+    message = f"📊 *Изменения цен в сессии {session_id}, за шаг {step}:*\n\n"
 
     # Считаем изменения
     changes = []
@@ -155,7 +152,7 @@ async def _format_price_difference_message(session_id: str, item_prices: dict, s
 @ws_client.on_message("api-price_difference")
 async def on_price_difference(message: dict):
     data = message.get('data', {})
-    
+
     session_id = data.get('session_id', 'Неизвестная сессия')
     item_prices = data.get('item_prices', {})
     step = data.get('step', 0)
@@ -164,16 +161,14 @@ async def on_price_difference(message: dict):
     price_message = await _format_price_difference_message(session_id, item_prices, step)
     
     # Отправляем сообщение каждому админу
-    for admin_id in ADMIN_IDS:
+    if GROUP_ID:
         try:
             await bot.send_message(
-                int(admin_id),
+                GROUP_ID,
                 price_message,
                 parse_mode="Markdown"
             )
         except Exception as e:
-            bot_logger.error(f"Ошибка при отправке сообщения о ценах админу {admin_id}: {e}")
+            bot_logger.error(f"Ошибка при отправке сообщения о ценах админу {GROUP_ID}: {e}")
     
-    bot_logger.info(f"Сообщение об изменении цен в сессии {session_id} отправлено {len(ADMIN_IDS)} администраторам")
-
-
+        bot_logger.info(f"Сообщение об изменении цен в сессии {session_id} отправлено")
