@@ -334,9 +334,9 @@ async def handle_get_session_leaders(client_id: str, message: dict):
 
         leaders = await session.leaders()
         return {
-            "capital": leaders["capital"].to_dict() if leaders["capital"] else None,
-            "reputation": leaders["reputation"].to_dict() if leaders["reputation"] else None,
-            "economic": leaders["economic"].to_dict() if leaders["economic"] else None
+            "capital": await leaders["capital"].to_dict() if leaders["capital"] else None,
+            "reputation": await leaders["reputation"].to_dict() if leaders["reputation"] else None,
+            "economic": await leaders["economic"].to_dict() if leaders["economic"] else None
         }
 
     except ValueError as e:
