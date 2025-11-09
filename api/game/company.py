@@ -1101,17 +1101,18 @@ class Company(BaseClass, SessionObject):
 
     async def get_max_contracts(self) -> int:
         """ Получает максимальное количество активных контрактов """
-        imps = await self.get_improvements()
-
-        contracts_level = imps.get('contracts', 1)
-        contracts_config = IMPROVEMENTS.contracts.levels.get(
-            str(contracts_level)
-            )
-
-        if not contracts_config or contracts_config.max is None:
-            return 5  # По умолчанию 5 контрактов (уровень 1)
-
-        return contracts_config.max
+        contracts_level = str(
+            self.improvements.get('contracts', 1)
+        )
+        contracts_config = IMPROVEMENTS.contracts.levels[
+            contracts_level
+        ]
+        try:
+            mx_c = contracts_config.max
+            return mx_c
+        except Exception as e:
+            game_logger.error(f"Ошибка при получении максимального количества контрактов для компании {self.name} ({self.id}): {e}")
+            return 5
 
     async def can_create_contract(self) -> bool:
         """ Проверяет, может ли компания создать новый контракт """
