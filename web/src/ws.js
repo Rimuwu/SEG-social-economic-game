@@ -590,6 +590,62 @@ export class WebSocketManager {
     return request_id;
   }
 
+  get_session_statistics(callback = null) {
+    if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+      const error = "WebSocket is not connected";
+      this.gameState.setError(error);
+      if (callback) callback({ success: false, error });
+      return null;
+    }
+    
+    const request_id = `get_statistics_${Date.now()}_${Math.random()
+      .toString(36)
+      .substr(2, 9)}`;
+    
+    if (callback && typeof callback === "function") {
+      this.pendingCallbacks.set(request_id, callback);
+    }
+    
+    console.log('[WS] Sending get-all-session-statistics request');
+    
+    this.socket.send(
+      JSON.stringify({
+        type: "get-all-session-statistics",
+        session_id: this.gameState.state.session.id,
+        request_id: request_id,
+      })
+    );
+    return request_id;
+  }
+
+  get_session_leaders(callback = null) {
+    if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+      const error = "WebSocket is not connected";
+      this.gameState.setError(error);
+      if (callback) callback({ success: false, error });
+      return null;
+    }
+    
+    const request_id = `get_leaders_${Date.now()}_${Math.random()
+      .toString(36)
+      .substr(2, 9)}`;
+    
+    if (callback && typeof callback === "function") {
+      this.pendingCallbacks.set(request_id, callback);
+    }
+    
+    console.log('[WS] Sending get-session-leaders request');
+    
+    this.socket.send(
+      JSON.stringify({
+        type: "get-session-leaders",
+        session_id: this.gameState.state.session.id,
+        request_id: request_id,
+      })
+    );
+    return request_id;
+  }
+
   startPolling(intervalMs = 5000) {
     this.stopPolling();
     
@@ -715,6 +771,10 @@ export class WebSocketManager {
         this.handleContractResponse(message);
       } else if (message.request_id.startsWith("get_time_")) {
         this.handleTimeResponse(message);
+      } else if (message.request_id.startsWith("get_statistics_")) {
+        this.handleStatisticsResponse(message);
+      } else if (message.request_id.startsWith("get_leaders_")) {
+        this.handleLeadersResponse(message);
       } else if (message.request_id.startsWith("get_sessions_")) {
         this.handleSessionsListResponse(message);
       } else if (message.request_id.startsWith("get_improvement_info_")) {
@@ -1149,6 +1209,68 @@ export class WebSocketManager {
     if (callback) this.pendingCallbacks.delete(requestId);
   }
 
+  handleStatisticsResponse(message) {
+    const requestId = message.request_id;
+    const callback = this.pendingCallbacks.get(requestId);
+    
+    console.log('[WS] Statistics response received:', message);
+    
+    if (message.data && Array.isArray(message.data)) {
+      this.gameState.updateStatistics(message.data);
+      
+      if (callback) {
+        callback({ success: true, data: message.data });
+      }
+    } else {
+      console.warn('[WS] Invalid statistics data in response');
+      
+      if (callback) {
+        callback({ success: false, error: "Invalid statistics data" });
+      }
+    }
+    
+    if (callback) {
+      this.pendingCallbacks.delete(requestId);
+    }
+  }
+
+  handleLeadersResponse(message) {
+    const requestId = message.request_id;
+    const callback = this.pendingCallbacks.get(requestId);
+    
+    console.log('[WS] Leaders response received:', message);
+    console.log('[WS] Leaders data structure:', {
+      capital: message.data?.capital,
+      reputation: message.data?.reputation,
+      economic: message.data?.economic
+    });
+    
+    if (message.data) {
+      // Update winners in game state
+      this.gameState.updateWinners({
+        capital: message.data.capital,
+        reputation: message.data.reputation,
+        economic: message.data.economic
+      });
+      
+      console.log('[WS] Winners updated, current state:', this.gameState.getWinners());
+      
+      if (callback) {
+        callback({ success: true, data: message.data });
+      }
+    } else {
+      console.warn('[WS] Invalid leaders data in response');
+      
+      if (callback) {
+        callback({ success: false, error: "Invalid leaders data" });
+      }
+    }
+    
+    if (callback) {
+      this.pendingCallbacks.delete(requestId);
+    }
+  }
+
   handleImprovementInfoResponse(message) {
     const requestId = message.request_id;
     const callback = this.pendingCallbacks.get(requestId);
@@ -1257,12 +1379,15 @@ export class WebSocketManager {
         break;
         
       case 'api-game_ended':
+        console.log('[WS] Game ended broadcast received');
         // Handle game end with winners
         if (message.data && message.data.winners) {
           this.gameState.updateWinners(message.data.winners);
         }
         // Refresh session to get End stage
         this.get_session();
+        // Fetch statistics for the ended game
+        this.get_session_statistics();
         break;
         
       case 'api-factory-start-complectation':
