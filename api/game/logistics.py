@@ -148,6 +148,10 @@ class Logistics(BaseClass, SessionObject):
             self.target_position = target_city.cell_position
             self.city_price = target_city.demands[resource_type]['price']
 
+            # Обновляем цену ресурса в сессии
+            await session.update_item_price(
+                self.resource_type, self.city_price)
+
         # Рассчитываем начальное расстояние до цели
         self.distance_left = self._calculate_distance()
 
@@ -336,11 +340,6 @@ class Logistics(BaseClass, SessionObject):
         # Помечаем логистику как доставленную
         self.status = "delivered"
         await self.save_to_base()
-
-        # Обновляем цену ресурса в сессии
-        session = await self.get_session_or_error()
-        if session:
-            await session.update_item_price(self.resource_type, self.city_price)
 
         await websocket_manager.broadcast({
             "type": "api-logistics_delivered_to_city",
