@@ -1,11 +1,9 @@
 from scenes.utils.oneuser_page import OneUserPage
 from aiogram.types import CallbackQuery
 from oms.utils import callback_generator
-from global_modules.logs import Logger
 from global_modules.load_config import ALL_CONFIGS, Resources
 from modules.ws_client import company_complete_free_factories, get_factories, factory_set_auto, factory_recomplectation
 
-bot_logger = Logger.get_logger("bot")
 RESOURCES: Resources = ALL_CONFIGS["resources"]
 
 Page = OneUserPage
@@ -116,7 +114,6 @@ class FactoryRekitProduce(Page):
             return
         
         # Сначала получаем список заводов для перекомплектации
-        bot_logger.info(f"Fetching factories for recomplectation: company_id={company_id}, group_type={group_type}")
         all_factories = await get_factories(company_id=company_id)
         
         if not all_factories or not isinstance(all_factories, list):
@@ -128,8 +125,6 @@ class FactoryRekitProduce(Page):
             target_factories = [f for f in all_factories if f.get('complectation') is None]
         else:
             target_factories = [f for f in all_factories if f.get('complectation') == group_type]
-        
-        bot_logger.info(f"Found {len(target_factories)} factories to recomplete")
         
         if not target_factories:
             await callback.answer("❌ Нет заводов для перекомплектации", show_alert=True)
@@ -152,11 +147,6 @@ class FactoryRekitProduce(Page):
                 auto_result = await factory_set_auto(factory_id, is_auto)
                 if auto_result:
                     success_count += 1
-                    bot_logger.info(f"Successfully recompleted and set is_auto={is_auto} for factory {factory_id}")
-                else:
-                    bot_logger.error(f"Failed to set is_auto for factory {factory_id}")
-            else:
-                bot_logger.error(f"Failed to recomplete factory {factory_id}: {rekit_result}")
         
         if success_count > 0:
             resource = RESOURCES.get_resource(resource_key)

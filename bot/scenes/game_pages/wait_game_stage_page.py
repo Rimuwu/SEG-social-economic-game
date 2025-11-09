@@ -1,6 +1,5 @@
 from oms import Page
 from modules.ws_client import get_company, get_company_cell_info
-from global_modules.logs import Logger
 from global_modules.load_config import ALL_CONFIGS, Cells, Resources
 from modules.utils import xy_into_cell
 
