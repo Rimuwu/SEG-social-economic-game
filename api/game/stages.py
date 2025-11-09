@@ -2,6 +2,7 @@ from modules.sheduler import scheduler
 from datetime import datetime, timedelta
 from global_modules.load_config import ALL_CONFIGS, Settings
 from modules.logs import game_logger
+from modules.db import just_db
 
 settings: Settings = ALL_CONFIGS['settings']
 
@@ -15,32 +16,36 @@ async def stage_game_updater(session_id: str):
     if not session: return 0
 
     if session.stage != SessionStages.Game.value:
-        await session.update_stage(SessionStages.Game)
-        sh_id = await scheduler.schedule_task(
-            stage_game_updater, 
-            datetime.now() + timedelta(seconds=session.time_on_game_stage * 60),
-            kwargs={"session_id": session_id}
-        )
+        try:
+            await session.update_stage(SessionStages.Game)
+        except Exception as e:
+            game_logger.error(f"Ошибка при обновлении стадии сессии {session_id}: {e}")
 
-        await session.reupdate()
-        session.change_turn_schedule_id = sh_id
-        await session.save_to_base()
+        await just_db.update(
+            "time_schedule",
+            conditions={"id": session.change_turn_schedule_id},
+            updates={
+                "execute_at": datetime.now() + timedelta(seconds=session.time_on_game_stage * 60)
+            }
+        )
 
     elif session.stage == SessionStages.Game.value:
         if session.step >= session.max_steps:
             await session.update_stage(SessionStages.End)
             return 0
 
-        await session.update_stage(SessionStages.ChangeTurn)
-        sh_id = await scheduler.schedule_task(
-            stage_game_updater, 
-            datetime.now() + timedelta(seconds=session.time_on_change_stage * 60),
-            kwargs={"session_id": session_id}
-        )
+        try:
+            await session.update_stage(SessionStages.ChangeTurn)
+        except Exception as e:
+            game_logger.error(f"Ошибка при смене хода в сессии {session_id}: {e}")
 
-        await session.reupdate()
-        session.change_turn_schedule_id = sh_id
-        await session.save_to_base()
+        await just_db.update(
+            "time_schedule",
+            conditions={"id": session.change_turn_schedule_id},
+            updates={
+                "execute_at": datetime.now() + timedelta(seconds=session.time_on_game_stage * 60)
+            }
+        )
 
 async def leave_from_prison(session_id: str, company_id: int):
     """ Фнукция для выхода из тюрьмы по времени

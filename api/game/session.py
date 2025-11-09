@@ -170,7 +170,8 @@ class Session(BaseClass):
                     sh_id = await scheduler.schedule_task(
                         stage_game_updater, 
                         datetime.now() + timedelta(seconds=self.time_on_game_stage * 60),
-                        kwargs={"session_id": self.session_id}
+                        kwargs={"session_id": self.session_id},
+                        repeat=True
                     )
                     self.change_turn_schedule_id = sh_id
                     await self.save_to_base()
@@ -190,38 +191,32 @@ class Session(BaseClass):
             for logistics in logistics_list:
                 await logistics.on_new_turn()
 
-            item_prices = {}
-
             items_prices: list[ItemPrice] = await self.item_prices
             for item_price in items_prices:
-                item_prices[item_price.id] = {
-                    "name": RESOURCES.get_resource(
-                        item_price.id).label,
-                    "last": item_price.price_on_last_step,
-                    "new": 0
-                }
-
                 await item_price.on_new_game_step()
-                item_prices[item_price.id]["new"] = item_price.get_effective_price()
-
-            # Генерируем события каждые 5 этапов
-            await self.events_generator()
 
             self.step += 1
             await self.execute_step_schedule(self.step)
 
-            if self.step != 1:
-                await websocket_manager.broadcast({
-                    "type": "api-price_difference",
-                    "data": {
-                        "step": self.step,
-                        "session_id": self.session_id,
-                        "item_prices": item_prices
-                    }
-                })
+            # Доп проверка на тюрьму4
+            for company in await self.companies:
+                if company is None: continue
+                if not company.in_prison: continue
+
+                if company.prison_end_step is None:
+                    if company.in_prison:
+                        await company.leave_prison()
+
+                else:
+                    if company.prison_end_step <= self.step:
+                        await company.leave_prison()
 
         elif new_stage == SessionStages.ChangeTurn:
             from game.company import Company
+            from game.item_price import ItemPrice
+
+            # Генерируем события каждые 5 этапов
+            await self.events_generator()
 
             companies = await self.companies
             for company in companies:
@@ -252,6 +247,25 @@ class Session(BaseClass):
                     }
                 )
 
+            item_prices = {}
+            items_prices: list[ItemPrice] = await self.item_prices
+            for item_price in items_prices:
+                item_prices[item_price.id] = {
+                    "name": RESOURCES.get_resource(
+                        item_price.id).label,
+                    "last": item_price.price_on_last_step,
+                    "new": item_price.current_price
+                }
+
+            await websocket_manager.broadcast({
+                "type": "api-price_difference",
+                "data": {
+                    "step": self.step,
+                    "session_id": self.session_id,
+                    "item_prices": item_prices
+                }
+            })
+
         if new_stage == SessionStages.End:
             await self.end_game()
 
@@ -280,7 +294,7 @@ class Session(BaseClass):
         schedules: list[StepSchedule] = await just_db.find(
             "step_schedule", session_id=self.session_id, in_step=step,
             to_class=StepSchedule
-        ) # type: ignore
+        )
 
         for schedule in schedules:
             asyncio.create_task(schedule.execute())
@@ -497,13 +511,18 @@ class Session(BaseClass):
 
                     game_logger.info(f"В сессии {self.session_id} создан город в позиции {x}.{y} с отраслью {city.branch}.")
 
-    async def can_select_cell(self, x: int, y: int, ignore_stage: bool = False) -> bool:
+    async def can_select_cell(self, 
+            x: int, y: int, 
+            ignore_stage: bool = False) -> bool:
         """ Проверяет, можно ли выбрать клетку с координатами (x, y) для компании.
         """
         if not ignore_stage and not self.can_select_cells():
             raise ValueError("Текущая стадия сессии не позволяет выбирать клетки.")
 
         index = y * self.map_size["cols"] + x
+        if index < 0 or index >= len(self.cells):
+            raise ValueError("Координаты клетки выходят за пределы карты.")
+
         cell_type_key = self.cells[index]
         cell_type = cells.types.get(cell_type_key)
 
@@ -588,7 +607,8 @@ class Session(BaseClass):
         return prices_dict
 
     async def delete(self):
-        for company in await self.companies: await company.delete()
+        for company in await self.companies: 
+            await company.delete()
         for user in await self.users: await user.delete()
         for city in await self.cities: await city.delete()
         for item_price in await self.item_prices: await item_price.delete()
@@ -604,7 +624,9 @@ class Session(BaseClass):
 
         if self.change_turn_schedule_id:
             await just_db.delete("time_schedule", 
-                        id=self.change_turn_schedule_id)
+                                 **{
+                        "kwargs.session_id": self.session_id
+                                  })
 
         await just_db.delete(self.__tablename__, session_id=self.session_id)
         await session_manager.remove_session(self.session_id)

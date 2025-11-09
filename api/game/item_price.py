@@ -15,7 +15,7 @@ CAPITAL: Capital = ALL_CONFIGS['capital']
 REPUTATION: Reputation = ALL_CONFIGS['reputation']
 
 RESET = 100
-ON_EVERY = 2
+ON_EVERY = 8
 
 class ItemPrice(BaseClass, SessionObject):
 
@@ -56,6 +56,7 @@ class ItemPrice(BaseClass, SessionObject):
         self.current_price = RESOURCES.resources[item_id].basePrice
         self.prices = [self.current_price]
         self.material_based_price = await self.calculate_material_price()
+        self.price_on_last_step = self.current_price
 
         await self.insert()
         return self

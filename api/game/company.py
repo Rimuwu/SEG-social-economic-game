@@ -979,7 +979,7 @@ class Company(BaseClass, SessionObject):
 
         # Проверяем, можно ли забрать деньги (прошло минимум 3 хода)
         if session.step < deposit["can_withdraw_from"]:
-            raise ValueError(f"Нельзя забрать депозит пока. Доступно с шага {deposit['can_withdraw_from']}.")
+            raise ValueError(f"Нельзя забрать депозит. Доступно с шага {deposit['can_withdraw_from']}.")
 
         # Возвращаем весь баланс вклада на счёт компании
         amount_to_return = deposit["current_balance"]
@@ -1140,13 +1140,22 @@ class Company(BaseClass, SessionObject):
                 await self.save_to_base()
 
         # Начисляем проценты по вкладам
-        await self.deposit_income_step()
+        try:
+            await self.deposit_income_step()
+        except Exception as e:
+            game_logger.error(f"Ошибка при начислении процентов по вкладам для компании {self.name} ({self.id}): {e}")
 
         # Начисляем плату по кредитам
-        await self.credit_paid_step()
+        try:
+            await self.credit_paid_step()
+        except Exception as e:
+            game_logger.error(f"Ошибка при начислении платы по кредитам для компании {self.name} ({self.id}): {e}")
 
         # Начисляем налоги
-        await self.taxate()
+        try:
+            await self.taxate()
+        except Exception as e:
+            game_logger.error(f"Ошибка при начислении налогов для компании {self.name} ({self.id}): {e}")
 
         cell_info = await self.get_my_cell_info()
         if cell_info:
