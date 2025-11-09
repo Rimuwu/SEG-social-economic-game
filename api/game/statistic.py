@@ -1,4 +1,5 @@
 from typing import Optional
+from bson import ObjectId
 from game.session import SessionObject
 from global_modules.db.baseclass import BaseClass
 from modules.db import just_db
@@ -6,11 +7,11 @@ from modules.db import just_db
 class Statistic(BaseClass, SessionObject):
 
     __tablename__ = "statistics"
-    __unique_id__ = "id"
+    __unique_id__ = "_id"
     __db_object__ = just_db
 
     def __init__(self):
-        self.id = 0
+        self._id: ObjectId = ObjectId()
         self.session_id: str = ""
         self.company_id: int = 0
         self.step: int = 0
@@ -62,7 +63,6 @@ class Statistic(BaseClass, SessionObject):
 
     def to_dict(self) -> dict:
         return {
-            "id": self.id,
             "session_id": self.session_id,
             "company_id": self.company_id,
             "step": self.step,
@@ -86,7 +86,9 @@ class Statistic(BaseClass, SessionObject):
         return True
 
     @classmethod
-    async def get_all_by_company(cls, session_id: str, company_id: int) -> list['Statistic']:
+    async def get_all_by_company(cls, session_id: str, 
+                                 company_id: int
+                                 ) -> list['Statistic']:
         rows: list[Statistic] = await just_db.find(cls.__tablename__, 
                                   session_id=session_id, company_id=company_id,
                                   to_class=Statistic
@@ -108,7 +110,10 @@ class Statistic(BaseClass, SessionObject):
         return statistics
 
     @classmethod
-    async def get_latest_by_company(cls, session_id: str, company_id: int) -> 'Statistic | None':
+    async def get_latest_by_company(cls, 
+                                    session_id: str, 
+                                    company_id: int
+                                    ) -> 'Statistic | None':
 
         session: Optional[dict] = await just_db.find_one(
             "sessions", id=session_id)
@@ -150,10 +155,7 @@ class Statistic(BaseClass, SessionObject):
             )
 
         for key, value in kwargs.items():
-
-            if not hasattr(stat, key):
-                setattr(stat, key, value)
-            else:
+            if hasattr(stat, key):
                 if isinstance(stat.__dict__[key], dict) and isinstance(value, dict):
                     stat.__dict__[key].update(value)
 
@@ -164,8 +166,9 @@ class Statistic(BaseClass, SessionObject):
                     stat.__dict__[key] += value
 
                 else:
-                    if hasattr(stat, key):
-                        stat.__dict__[key] = value
+                    stat.__dict__[key] = value
+            else:
+                setattr(stat, key, value)
 
         await stat.save_to_base()
         return stat

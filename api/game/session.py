@@ -5,6 +5,8 @@ from enum import Enum
 import random
 from typing import Optional, TYPE_CHECKING
 import uuid
+
+from bson import ObjectId
 from global_modules.models.resources import Resources
 from modules.websocket_manager import websocket_manager
 
@@ -156,12 +158,12 @@ class Session(BaseClass):
                         await company.reupdate()
                         game_logger.info(f"Компании {company.name} в сессии {self.session_id} назначена клетка {company.cell_position}.")
 
-                    # for step_n in range(self.max_steps):
-                    #     await Statistic().create(
-                    #         company_id=company.id,
-                    #         session_id=self.session_id,
-                    #         step=step_n + 1
-                    #     )
+                    for step_n in range(self.max_steps):
+                        await Statistic().create(
+                            company_id=company.id,
+                            session_id=self.session_id,
+                            step=step_n + 1
+                        )
 
                 if not whitout_shedule:
 
@@ -220,9 +222,7 @@ class Session(BaseClass):
             for company in companies:
                 if company is None: continue
 
-                print(company.id, self.step)
-                print('eee', company.balance, company.reputation)
-                await Statistic().update_me(
+                await Statistic.update_me(
                     company_id=company.id,
                     session_id=self.session_id,
                     step=self.step,
@@ -692,7 +692,7 @@ class Session(BaseClass):
 
                 print(company.id, self.step)
                 print('eer')
-                await Statistic().update_me(
+                await Statistic.update_me(
                     company_id=company.id,
                     session_id=self.session_id,
                     step=self.step,
@@ -996,7 +996,7 @@ class Session(BaseClass):
 
 class SessionObject:
     session_id: str
-    _id: uuid.UUID
+    _id: ObjectId
 
     async def get_session(self) -> Optional[Session]:
         return await session_manager.get_session(self.session_id)
