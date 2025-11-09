@@ -14,6 +14,7 @@ class BaseClass:
         """
         if data is None: return False
         for key, value in data.items(): setattr(self, key, value)
+
         return True
 
     async def save_to_base(self):
@@ -59,7 +60,7 @@ class BaseClass:
         res = self.load_from_base(
             await self.__db_object__.find_one(self.__tablename__, 
                 **{self.__unique_id__: self.__dict__[self.__unique_id__]}
-                ) # type: ignore
+                )
         )
         if res: return self
         return None
