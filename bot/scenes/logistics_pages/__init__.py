@@ -1,5 +1,5 @@
-from .logistics_menu import LogisticsMenu
+from .logistic_main_page import LogisticMain
 
 __logistics__ = [
-    LogisticsMenu
+    LogisticMain
 ]

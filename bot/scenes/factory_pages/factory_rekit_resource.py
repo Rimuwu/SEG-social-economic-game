@@ -1,16 +1,15 @@
-from oms import Page
+from scenes.utils.oneuser_page import OneUserPage
 from aiogram.types import Message, CallbackQuery
 from oms.utils import callback_generator
-from global_modules.logs import Logger
 from global_modules.load_config import ALL_CONFIGS, Resources
 
-bot_logger = Logger.get_logger("bot")
 RESOURCES: Resources = ALL_CONFIGS["resources"]
 
+Page = OneUserPage
 
 class FactoryRekitResource(Page):
     __page_name__ = "factory-rekit-resource"
-    
+    __for_blocked_pages__ = ["factory-menu"]
     async def data_preparate(self):
         """Инициализация данных пагинации"""
         scene_data = self.scene.get_data('scene')

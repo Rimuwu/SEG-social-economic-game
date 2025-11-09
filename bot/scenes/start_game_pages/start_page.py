@@ -14,12 +14,12 @@ class Start(Page):
         response = await get_session(value)
 
         if not response:
-            self.content = self.content.replace("Введиие код для подключения к игровой сессии: ", 
+            self.content += self.content.replace(self.content, 
                                                 "Неверный код, введите код заново: ")
             await self.scene.update_page(self.__page_name__)
 
         elif response.get("stage") != "FreeUserConnect":
-            self.content = self.content.replace("Введиие код для подключения к игровой сессии: ", 
+            self.content = self.content.replace(self.content, 
                                                 "Сессия в процессе игры, введите другой код: ")
             await self.scene.update_page(self.__page_name__)
         else:

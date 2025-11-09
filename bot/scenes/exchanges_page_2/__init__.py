@@ -10,6 +10,7 @@ from .exchange_create import (
     ExchangeCreateSetSell,
     ExchangeCreateSetBarter
 )
+from .exchange_update import ExchangeUpdate
 
 # Список всех страниц для экспорта
 __exchange__ = [
@@ -22,6 +23,9 @@ __exchange__ = [
     ExchangeCreateMain,
     ExchangeCreateSetSell,
     ExchangeCreateSetBarter,
+    
+    # Страница обновления предложения
+    ExchangeUpdate,
 ]
 
 __all__ = [
@@ -31,5 +35,6 @@ __all__ = [
     'ExchangeCreateMain',
     'ExchangeCreateSetSell',
     'ExchangeCreateSetBarter',
+    'ExchangeUpdate',
     '__exchange__',
 ]

@@ -98,7 +98,7 @@ class Exchange(BaseClass, SessionObject):
             average_price = item_price.get_effective_price()
 
             if abs((price // sell_amount_per_trade) - average_price) / average_price > 0.5:
-                raise ValueError(f"Цена отличается от средней более чем на 50%. Средняя цена: {average_price}, выставленная цена (за 1): {price // sell_amount_per_trade}")
+                raise ValueError(f"Цена отличается от средней более чем на 50%. Средняя цена: {average_price}, выставленная цена (за 1): {price // sell_amount_per_trade}. Выставите цену в диапазоне от {int(average_price * 0.5) * sell_amount_per_trade} до {int(average_price * 1.5) * sell_amount_per_trade}.")
 
         elif offer_type == 'barter':
             if not barter_resource or barter_amount <= 0:

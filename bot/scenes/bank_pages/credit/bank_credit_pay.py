@@ -1,13 +1,15 @@
-from oms import Page
+from scenes.utils.oneuser_page import OneUserPage
 from aiogram.types import CallbackQuery, Message
 from modules.ws_client import get_company, company_pay_credit
 from oms.utils import callback_generator
 
+Page = OneUserPage
 
 class BankCreditPay(Page):
     """Страница оплаты кредита"""
     
     __page_name__ = "bank-credit-pay"
+    __for_blocked_pages__ = ["bank-menu"]
     
     async def content_worker(self):
         scene_data = self.scene.get_data('scene')

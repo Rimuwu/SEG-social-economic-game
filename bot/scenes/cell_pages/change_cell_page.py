@@ -1,13 +1,18 @@
-from oms import Page
+from scenes.utils.oneuser_page import OneUserPage
 from aiogram.types import Message, CallbackQuery
-from modules.utils import update_page, cell_into_xy, xy_into_cell, do_matrix, do_cell_emoji
-from modules.ws_client import get_sessions_free_cells, set_company_position, get_session
+from modules.utils import cell_into_xy, xy_into_cell
+from modules.ws_client import get_sessions_free_cells, change_position, get_session, get_company_balance, get_company
 from oms.utils import callback_generator
+from global_modules.load_config import ALL_CONFIGS, Settings
 
+Page = OneUserPage
 
-class SelectCell(Page):
+SETTINGS: Settings = ALL_CONFIGS["settings"]
+
+class ChangeCell(Page):
     
-    __page_name__ = 'select-cell-page'
+    __page_name__ = 'change-cell-page'
+    __for_blocked_pages__ = ["upgrade-menu"]
     
     async def data_preparate(self):
         if self.scene.get_key(self.__page_name__, 'camera_x') is None:
@@ -16,6 +21,12 @@ class SelectCell(Page):
             await self.scene.update_key(self.__page_name__, 'camera_y', 0)
         if self.scene.get_key(self.__page_name__, 'map_open') is None:
             await self.scene.update_key(self.__page_name__, 'map_open', False)
+   
+    async def content_worker(self):
+        company_id = self.scene.get_key('scene', 'company_id')
+        company = await get_company(id=company_id)
+        cost = SETTINGS.change_location_price[company.get("business_type")]
+        return self.content.format(cost=cost)
    
     async def buttons_worker(self):
         scene_data = self.scene.get_data('scene')
@@ -68,7 +79,7 @@ class SelectCell(Page):
                             'text': '🏢',
                             'callback_data': 'city'
                         })
-                    elif (real_row, real_col) in free_coords:
+                    elif (real_col, real_row) in free_coords:
                         buttons.append({
                             'text': f"{cell_text}",
                             'callback_data': callback_generator(
@@ -114,7 +125,7 @@ class SelectCell(Page):
                     'callback_data': callback_generator(self.scene.__scene_name__, 'move', 'down') if can_move_down else 'no_move'
                 })
                 buttons.append({'text': ' ', 'callback_data': 'empty'})
-            buttons.append({'text': '🗺️ Закрыть карту', 'callback_data': callback_generator(self.scene.__scene_name__, "map_switch"), "ignore_row": True})
+                buttons.append({'text': '🗺️ Закрыть карту', 'callback_data': callback_generator(self.scene.__scene_name__, "map_switch"), "ignore_row": True})
         else:
             buttons.append({
                 'text': '🗺️ Открыть карту',
@@ -161,34 +172,44 @@ class SelectCell(Page):
         cell_name = value
         if cell_name:
             try:
-                y, x = cell_into_xy(cell_name)
-                data = self.scene.get_data('scene')
-                company_id = data.get('company_id')
-                response = await set_company_position(company_id=company_id, x=x, y=y)
-            
-                if "error" in response:
-                    self.content = "Данная клетка уже занята, выберите другую:"
+                company_id = self.scene.get_key('scene', 'company_id')
+                company = await get_company(id=company_id)
+                if company.get("balance") < SETTINGS.change_location_price[company.get("business_type")]:
+                    self.clear_content()
+                    self.content += f"\n\n❌ Недостаточно средств для смены клетки (требуется {SETTINGS.change_location_price[company.get('business_type')]})"
                     await self.scene.update_message()
-                    return
-                await self.scene.update_page("wait-game-stage-page")
+                else:
+                    x, y = cell_into_xy(cell_name)
+                    response = await change_position(company_id=company_id, x=y, y=x)
+
+                    if "error" in response:
+                        self.clear_content()
+                        self.content += f"\n\n{response['error']}"
+                        await self.scene.update_message()
+                        return
+                    await self.scene.update_page("main-page")
             except:
                 self.clear_content()
                 self.content += "\n❌ Некорректный ввод. Введите правильное название клетки (например, A1, B3 и т.д.):"
                 await self.scene.update_message()
                 return
     
-    
     @Page.on_callback('cell_select')
-    async def my_callback_handler(self, callback: CallbackQuery, args: list):       
-        cell_name = args[1] if len(args) > 1 else None
-        if cell_name:
-            y, x = cell_into_xy(cell_name)
-            data = self.scene.get_data('scene')
-            company_id = data.get('company_id')
-            response = await set_company_position(company_id=company_id, x=x, y=y)
-            
-            if "error" in response:
-                self.content = "Данная клетка уже занята, выберите другую:"
-                await self.scene.update_message()
-                return
-            await self.scene.update_page("wait-game-stage-page")
+    async def my_callback_handler(self, callback: CallbackQuery, args: list):
+        company_id = self.scene.get_key('scene', 'company_id')
+        company = await get_company(id=company_id)
+        if company.get("balance") < SETTINGS.change_location_price[company.get("business_type")]:
+            await callback.answer(f"❌ Недостаточно средств для смены клетки (требуется {SETTINGS.change_location_price[company.get('business_type')]})", show_alert=True)
+        else:
+            cell_name = args[1] if len(args) > 1 else None
+            if cell_name:
+                y, x = cell_into_xy(cell_name)
+                response = await change_position(company_id=company_id, x=x, y=y)
+
+                if "error" in response:
+                    self.clear_content()
+                    self.content += f'\n\n{response["error"]}'
+                    await self.scene.update_message()
+                    return
+                await callback.answer("Поздравляем! Клетка успешно изменена, средства списаны с вашего счёта", show_alert=True)
+                await self.scene.update_page("main-page")

@@ -1,15 +1,16 @@
-from oms import Page
+from scenes.utils.oneuser_page import OneUserPage
 from aiogram.types import CallbackQuery
 from oms.utils import callback_generator
 from modules.ws_client import factory_set_produce, get_factories
 from modules.resources import get_resource
 
+Page = OneUserPage
 
 class FactoryStartGroups(Page):
     """Страница запуска заводов по группам ресурсов"""
     
     __page_name__ = "factory-start-groups"
-    
+    __for_blocked_pages__ = ["factory-menu"]
     def get_resource_name(self, resource_key):
         """Получить отображаемое имя ресурса"""
         if resource_key is None:
@@ -168,17 +169,6 @@ class FactoryStartGroups(Page):
         if not factories:
             await callback.answer("❌ Ошибка загрузки заводов", show_alert=True)
             return
-        
-        # Логируем для отладки
-        print(f"=== START GROUP DEBUG for resource: {resource_key} ===")
-        for f in factories:
-            if f.get('complectation') == resource_key:
-                print(f"Factory {f.get('id')}: complectation={f.get('complectation')}, "
-                      f"stages={f.get('complectation_stages', 0)}, "
-                      f"is_auto={f.get('is_auto', False)}, "
-                      f"produce={f.get('produce', False)}, "
-                      f"is_working={f.get('is_working', False)}")
-        
         # Фильтруем заводы этой группы, готовые к запуску
         target_factories = [
             f['id'] for f in factories 
@@ -187,8 +177,6 @@ class FactoryStartGroups(Page):
             and not f.get('is_auto', False)
             and not f.get('produce', False)
         ]
-        
-        print(f"Target factories to start: {target_factories}")
         
         if not target_factories:
             await callback.answer("❌ Нет заводов для запуска в этой группе", show_alert=True)

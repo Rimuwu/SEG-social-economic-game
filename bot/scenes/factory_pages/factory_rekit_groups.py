@@ -1,16 +1,14 @@
-from oms import Page
+from scenes.utils.oneuser_page import OneUserPage
 from aiogram.types import Message, CallbackQuery
 from modules.ws_client import get_factories
 from oms.utils import callback_generator
-from global_modules.logs import Logger
 from modules.resources import get_resource, get_resource_name, get_resource_emoji
 
-bot_logger = Logger.get_logger("bot")
-
+Page = OneUserPage
 
 class FactoryRekitGroups(Page):
     __page_name__ = "factory-rekit-groups"
-    
+    __for_blocked_pages__ = ["factory-menu"]
     def get_resource_name(self, resource_key: str) -> str:
         """Получить русское название ресурса"""
         return get_resource_name(resource_key)
@@ -26,7 +24,6 @@ class FactoryRekitGroups(Page):
         try:
             # Получаем все заводы
             factories = await get_factories(company_id=company_id)
-            bot_logger.info(f"get_factories response: {factories}")
             
             # get_factories возвращает список напрямую
             if not factories or not isinstance(factories, list):
@@ -65,7 +62,6 @@ class FactoryRekitGroups(Page):
             return self.content.format(groups_text=groups_text)
             
         except Exception as e:
-            bot_logger.error(f"Ошибка при получении заводов: {e}")
             return f"❌ Ошибка при загрузке данных: {str(e)}"
     
     async def buttons_worker(self):

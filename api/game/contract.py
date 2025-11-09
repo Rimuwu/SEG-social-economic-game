@@ -73,9 +73,16 @@ class Contract(BaseClass, SessionObject):
         """
         from game.company import Company
         
+        self.session_id = session_id
+        session = await self.get_session_or_error()
+
         # Валидация
         if amount_per_turn <= 0 or duration_turns <= 0:
             raise ValueError("Количество и длительность должны быть положительными")
+
+        max_steps = session.max_steps - session.step
+        if duration_turns + 1 > max_steps:
+            raise ValueError("Длительность контракта превышает оставшееся количество ходов в сессии")
 
         if payment_amount <= 0:
             raise ValueError("Сумма оплаты должна быть положительной")
@@ -99,9 +106,6 @@ class Contract(BaseClass, SessionObject):
             ]):
             raise ValueError("У вас максимальное количество контрактов.")
 
-        self.session_id = session_id
-        session = await self.get_session_or_error()
-
         self.supplier_company_id = supplier_company_id
         self.customer_company_id = customer_company_id
 
@@ -111,7 +115,7 @@ class Contract(BaseClass, SessionObject):
 
         self.duration_turns = duration_turns
         self.created_at_step = session.step
-    
+
         self.accepted = False  # По умолчанию контракт не принят
         self.delivered_this_turn = False  # Продукт не отправлен в текущем ходу
 

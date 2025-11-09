@@ -3,6 +3,7 @@ from aiogram.utils.keyboard import ReplyKeyboardBuilder
 from modules.ws_client import get_users, get_company, get_companies
 from oms import scene_manager
 from oms.utils import callback_generator
+import asyncio
 
 def list_to_inline(buttons, row_width=3):
     """ Преобразует список кнопок в inline-клавиатуру 
@@ -58,20 +59,65 @@ async def go_to_page(session_id, old_page_name, new_page_name):
                 if scene and scene.page:
                     current_page_name = scene.page
                     if old_page_name is not None and current_page_name == old_page_name:
+                        await asyncio.sleep(0.2)
                         await scene.update_page(new_page_name)
                     else:
+                        await asyncio.sleep(0.2)
                         await scene.update_page(new_page_name)
 
 
 def xy_into_cell(x, y):
-    alphabet = 'ABCDEFGH'
-    return f"{alphabet[x]}{y+1}"
+    alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    return f"{alphabet[int(y)]}{int(x)+1}"
 
 def cell_into_xy(cell):
-    alphabet = 'ABCDEFGH'
+    alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
     x = alphabet.index(cell[0].upper())
     y = int(cell[1:]) - 1
     return x, y
+
+
+def do_matrix(list_matrix: list):
+    len_one_line = int(len(list_matrix) ** 0.5)
+    new_matrix = []
+    line = []
+    c = 0
+    for i in list_matrix:
+        line.append(i)
+        c += 1
+        if c == len_one_line:
+            new_matrix.append(line)
+            line = []
+            c = 0
+    return new_matrix
+
+
+def do_cell_emoji(cell: str):
+    cell_emoji = {
+        "mountain": "⛰️",
+        "water": "🌊",
+        "forest": "🌲",
+        "field": "🌾"
+    }
+    return cell_emoji[cell]
+
+
+def do_matrix_7x7_with_large(matrix: list):
+    n, m = len(matrix), len(matrix[0])
+    center_i, center_j = n // 2, m // 2
+    
+    row_start = center_i - 3
+    row_end = center_i + 4
+    col_start = center_j - 3
+    col_end = center_j + 4
+    new_matrix = []
+    for i in range(row_start, row_end):
+        row = []
+        for j in range(col_start, col_end):
+            if 0 <= i < n and 0 <= j < m:
+                row.append(matrix[i][j])
+        new_matrix.append(row)
+    return new_matrix
 
 
 def create_buttons(scene_name, text: str, callback_data: str, *args, ignore_row=False, next_line=False):
@@ -81,3 +127,5 @@ def create_buttons(scene_name, text: str, callback_data: str, *args, ignore_row=
         "ignore_row": ignore_row,
         "next_line": next_line
     }
+
+

@@ -45,6 +45,7 @@ class UpgradeMenu(Page):
         scene_data = self.scene.get_data("scene")
         page_data = self.scene.get_data(self.__page_name__)
         company_id = scene_data.get("company_id")
+        comp_data = await get_company(id=company_id)
         stage = page_data.get("stage", "choose_type")
 
         if not company_id:
@@ -65,6 +66,8 @@ class UpgradeMenu(Page):
             for key, meta in IMPROVEMENT_OPTIONS.items():
                 level = self._as_int(improvements.get(key, 1), 1)
                 lines.append(f"{meta['emoji']} {meta['label']}: уровень {level}")
+            lines.append(f"Улучшение логистики: {'Да' if comp_data.get('fast_logistic') else 'Нет'}")
+            lines.append(f"Улучшение перекомплектации: {'Да' if comp_data.get('fast_complectation') else 'Нет'}")
         elif stage == "details":
             selected_type = page_data.get("selected_type")
             if not selected_type:
@@ -100,6 +103,13 @@ class UpgradeMenu(Page):
                     "text": f"{meta['emoji']} {meta['label']}",
                     "callback_data": callback_generator(self.scene.__scene_name__, "upgrade_select", key)
                 })
+            comp_data = await get_company(id=company_id)
+            if not comp_data.get("fast_logistic"):
+                buttons.append({"text": "🚚 Логистика", "callback_data": callback_generator(self.scene.__scene_name__, "to_page", "upgrade-logistic-page")})
+            if not comp_data.get("fast_complectation"):
+                buttons.append({"text": "📦 Перекомплектовка", "callback_data": callback_generator(self.scene.__scene_name__, "to_page", "upgrade-recompletion-page")})
+            buttons.append({"text": "🔑 Смена клетки", "callback_data": callback_generator(self.scene.__scene_name__, "to_page", "change-cell-page")})
+            buttons.append({"text": "↪ Назад", "callback_data": callback_generator(self.scene.__scene_name__, "to_page", "main-page"), "ignore_row": True})
         elif stage == "details":
             self.row_width = 1
             selected_type = page_data.get("selected_type")
