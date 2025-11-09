@@ -170,7 +170,8 @@ class Session(BaseClass):
                     sh_id = await scheduler.schedule_task(
                         stage_game_updater, 
                         datetime.now() + timedelta(seconds=self.time_on_game_stage * 60),
-                        kwargs={"session_id": self.session_id}
+                        kwargs={"session_id": self.session_id},
+                        repeat=True
                     )
                     self.change_turn_schedule_id = sh_id
                     await self.save_to_base()
@@ -606,7 +607,8 @@ class Session(BaseClass):
         return prices_dict
 
     async def delete(self):
-        for company in await self.companies: await company.delete()
+        for company in await self.companies: 
+            await company.delete()
         for user in await self.users: await user.delete()
         for city in await self.cities: await city.delete()
         for item_price in await self.item_prices: await item_price.delete()
@@ -622,7 +624,9 @@ class Session(BaseClass):
 
         if self.change_turn_schedule_id:
             await just_db.delete("time_schedule", 
-                        id=self.change_turn_schedule_id)
+                                 **{
+                        "kwargs.session_id": self.session_id
+                                  })
 
         await just_db.delete(self.__tablename__, session_id=self.session_id)
         await session_manager.remove_session(self.session_id)
