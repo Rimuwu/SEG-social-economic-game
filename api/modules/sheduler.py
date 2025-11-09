@@ -49,9 +49,10 @@ class TaskScheduler:
 
     async def _execute_task(self, task):
         func = str_to_func(task['function_path'])
-        args = json.loads(task.get('args', '[]'))
-        kwargs = task.get('kwargs', '{}')
+        args = task.get('args', [])
+        kwargs = task.get('kwargs', {})
         repeat = task.get('repeat', False)
+        dont_delete = task.get('dont_delete', False)
         add_at = datetime.fromisoformat(task['add_at'])
         execute_at = datetime.fromisoformat(task['execute_at'])
 
@@ -72,13 +73,15 @@ class TaskScheduler:
                            )
 
         else:
-            await self.db.delete(self.__table_name__, id=task['id'])
+            if not dont_delete:
+                await self.db.delete(self.__table_name__, id=task['id'])
 
     async def schedule_task(self, function: Callable, 
                       execute_at: datetime, 
                       args: Optional[list] = None, 
                       kwargs: Optional[dict] = None,
                       repeat: bool = False,
+                      dont_delete: bool = False,
                       delete_on_shutdown: bool = False) -> int:
         if args is None: args = []
         if kwargs is None: kwargs = {}
@@ -87,9 +90,10 @@ class TaskScheduler:
             'function_path': func_to_str(function),
             'execute_at': execute_at.isoformat(),
             'add_at': datetime.now().isoformat(),
-            'args': json.dumps(args),
+            'args': args,
             'kwargs': kwargs,
             'repeat': repeat,
+            'dont_delete': dont_delete,
             'delete_on_shutdown': delete_on_shutdown
         }
 

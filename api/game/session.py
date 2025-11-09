@@ -127,14 +127,12 @@ class Session(BaseClass):
             await self.generate_cells()
 
         elif new_stage == SessionStages.Game:
-            from game.company import Company
             from game.logistics import Logistics
             from game.item_price import ItemPrice
 
             if self.step == 0:
                 companies = await self.companies
                 for company in companies:
-                    company: Company
 
                     if len(await company.users) == 0:
                         await company.delete()
@@ -158,12 +156,12 @@ class Session(BaseClass):
                         await company.reupdate()
                         game_logger.info(f"Компании {company.name} в сессии {self.session_id} назначена клетка {company.cell_position}.")
 
-                    for step_n in range(self.max_steps):
-                        await Statistic().create(
-                            company_id=company.id,
-                            session_id=self.session_id,
-                            step=step_n + 1
-                        )
+                    # for step_n in range(self.max_steps):
+                    #     await Statistic().create(
+                    #         company_id=company.id,
+                    #         session_id=self.session_id,
+                    #         step=step_n + 1
+                    #     )
 
                 if not whitout_shedule:
 
@@ -171,7 +169,7 @@ class Session(BaseClass):
                         stage_game_updater, 
                         datetime.now() + timedelta(seconds=self.time_on_game_stage * 60),
                         kwargs={"session_id": self.session_id},
-                        repeat=True
+                        dont_delete=True
                     )
                     self.change_turn_schedule_id = sh_id
                     await self.save_to_base()
@@ -221,8 +219,9 @@ class Session(BaseClass):
             companies = await self.companies
             for company in companies:
                 if company is None: continue
-                company: Company
 
+                print(company.id, self.step)
+                print('eee', company.balance, company.reputation)
                 await Statistic().update_me(
                     company_id=company.id,
                     session_id=self.session_id,
@@ -650,18 +649,15 @@ class Session(BaseClass):
 
         companies = await self.companies
         for company in companies:
-            company: Company
             if company.balance >= (capital_winner.balance if capital_winner else 0):
                 capital_winner = company
                 capital_winner = company
 
         for company in companies:
-            company: Company
             if company.reputation >= (reputation_winner.reputation if reputation_winner else 0):
                 reputation_winner = company
 
         for company in companies:
-            company: Company
             if company.economic_power >= (economic_winner.economic_power if economic_winner else 0):
                 economic_winner = company
 
@@ -677,7 +673,6 @@ class Session(BaseClass):
 
         try:
             for company in await self.companies:
-                company: Company
 
                 minus_balance = 0
                 minus_rep = 0
@@ -695,6 +690,8 @@ class Session(BaseClass):
 
                 game_logger.info(f'Компания {company.name} в сессии {self.session_id} завершила игру с балансом {company.balance} и репутацией {company.reputation}. Штрафы: {minus_balance} (баланс), {minus_rep} (репутация) за {company.overdue_steps} просроченных шагов оплаты налогов, {company.tax_debt} (налоги), {len(company.credits)} (количество кредитов)')
 
+                print(company.id, self.step)
+                print('eer')
                 await Statistic().update_me(
                     company_id=company.id,
                     session_id=self.session_id,
