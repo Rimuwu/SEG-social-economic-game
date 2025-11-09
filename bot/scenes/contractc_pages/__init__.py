@@ -6,6 +6,7 @@ from .contract_create_page import (
 from .contract_main_page import ContractMain
 from .contract_view_page import ContractViewPage
 from .contract_execute_page import ContractExecutePage
+from .contract_view_my_page import ContractViewMyPage
 
 
 __contract__ = [
@@ -15,4 +16,5 @@ __contract__ = [
 	ContractViewPage,
 	ContractExecutePage,
 	ContractMain,
+	ContractViewMyPage
 ]

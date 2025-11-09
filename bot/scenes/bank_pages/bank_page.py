@@ -44,13 +44,13 @@ class BankPage(Page):
         tax_percent = f"{tax_rate * 100:.1f}%"
         
         # Формируем текст
-        text = f"""🏦 *Банк*
-
-*Баланс компании:* {balance_formatted} 💰
-*Репутация:* {reputation} ⭐
-*Тип бизнеса:* {business_type_text}
-*Сумма налога:* {tax_debt_formatted} 💰
-*Процент налога:* {tax_percent}"""
+        text = self.content.format(
+            balance_formatted=balance_formatted,
+            reputation=reputation,
+            business_type_text=business_type_text,
+            tax_debt_formatted=tax_debt_formatted,
+            tax_percent=tax_percent
+        )
         
         # Добавляем информацию о кредитах
         

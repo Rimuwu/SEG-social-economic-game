@@ -6,6 +6,8 @@ from scenes.bank_pages import __bank__
 from scenes.cell_pages import __cell__
 from scenes.company_pages import __company__
 from scenes.contractc_pages import __contract__
+from scenes.city_pages import __city_pages__
+from scenes.upgrade_pages import __upgrade__
 # from scenes.exchange_pages import __exchange__
 from scenes.exchanges_page_2 import __exchange__
 from scenes.factory_pages import __factory__
@@ -35,6 +37,8 @@ class GameManager(AdminScene):
     __pages__.extend(__info__)
     __pages__.extend(__logistics__)
     __pages__.extend(__startgame__)
+    __pages__.extend(__city_pages__)
+    __pages__.extend(__upgrade__)
     @staticmethod
     async def insert_to_db(user_id: int, data: dict):
         await db.insert('scenes', data)

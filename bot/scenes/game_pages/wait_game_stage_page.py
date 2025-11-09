@@ -16,6 +16,7 @@ class WaitGameStagePage(Page):
         if "error" in company:
             return company["error"]
         company_name = company.get("name")
+        print(company.get("cell_position").split("."))
         cell_coord = xy_into_cell(*company.get("cell_position").split("."))
         cell_info = await get_company_cell_info(company_id=company_id)
         cell_type = cell_info["data"]["label"]

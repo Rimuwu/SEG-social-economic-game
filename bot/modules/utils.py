@@ -65,7 +65,7 @@ async def go_to_page(session_id, old_page_name, new_page_name):
 
 def xy_into_cell(x, y):
     alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-    return f"{alphabet[y]}{x+1}"
+    return f"{alphabet[int(y)]}{int(x)+1}"
 
 def cell_into_xy(cell):
     alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'

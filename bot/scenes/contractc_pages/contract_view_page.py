@@ -145,8 +145,6 @@ class ContractViewPage(OneUserPage):
                     ),
                 }
             )
-
-        self.row_width = 2
         buttons.append(
             {
                 "text": "🔄 Обновить",
@@ -163,7 +161,7 @@ class ContractViewPage(OneUserPage):
                     "text": "✅ Принять",
                     "callback_data": callback_generator(
                         self.scene.__scene_name__, "accept_contract", str(selected_id)
-                    ),
+                    ), "next_line": True
                 }
             )
             buttons.append(
