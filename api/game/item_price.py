@@ -15,7 +15,7 @@ CAPITAL: Capital = ALL_CONFIGS['capital']
 REPUTATION: Reputation = ALL_CONFIGS['reputation']
 
 RESET = 100
-ON_EVERY = 2
+ON_EVERY = 8
 
 class ItemPrice(BaseClass, SessionObject):
 
