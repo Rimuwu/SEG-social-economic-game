@@ -267,6 +267,13 @@ export class WebSocketManager {
       return null;
     }
 
+    // Check if we have a session ID
+    if (!this.gameState.state.session.id) {
+      console.warn('[WS] No session ID available, skipping session fetch');
+      if (callback) callback({ success: false, error: "No session ID" });
+      return null;
+    }
+
     const request_id = `get_session_${Date.now()}_${Math.random()
       .toString(36)
       .substr(2, 9)}`;
@@ -288,6 +295,13 @@ export class WebSocketManager {
       const error = "WebSocket is not connected";
       this.gameState.setError(error);
       if (callback) callback({ success: false, error });
+      return null;
+    }
+
+    // Check if we have a session ID
+    if (!this.gameState.state.session.id) {
+      console.warn('[WS] No session ID available, skipping event fetch');
+      if (callback) callback({ success: false, error: "No session ID" });
       return null;
     }
 
@@ -571,6 +585,14 @@ export class WebSocketManager {
       if (callback) callback({ success: false, error });
       return null;
     }
+    
+    // Check if we have a session ID before trying to fetch time
+    if (!this.gameState.state.session.id) {
+      console.warn('[WS] No session ID available, skipping time fetch');
+      if (callback) callback({ success: false, error: "No session ID" });
+      return null;
+    }
+    
     const request_id = `get_time_${Date.now()}_${Math.random()
       .toString(36)
       .substr(2, 9)}`;
@@ -663,6 +685,12 @@ export class WebSocketManager {
    * Fetch all necessary game data in the correct order
    */
   fetchAllGameData() {
+    // Don't fetch data if game has ended
+    if (this.gameState.state.session.stage === 'End') {
+      console.log('[WS] Game has ended, skipping data fetch');
+      return;
+    }
+    
     // 1. Session state and map (includes time_to_next_stage)
     this.get_session();
     
@@ -696,6 +724,12 @@ export class WebSocketManager {
    * Fetch frequently updated data (without cities)
    */
   fetchFrequentData() {
+    // Don't fetch data if game has ended
+    if (this.gameState.state.session.stage === 'End') {
+      console.log('[WS] Game has ended, skipping frequent data fetch');
+      return;
+    }
+    
     // 1. Session state and time
     this.get_session();
     this.get_time_to_next_stage();
@@ -1368,6 +1402,14 @@ export class WebSocketManager {
         
       case 'api-update_session_stage':
         console.log('[WS] Stage update broadcast received');
+        
+        // Check if game has ended - no need to fetch data anymore
+        if (message.data && message.data.new_stage === 'End') {
+          console.log('[WS] Game ended, stopping data fetching');
+          this.stopPolling();
+          break;
+        }
+        
         // Refresh session (includes time_to_next_stage)
         this.get_session();
         

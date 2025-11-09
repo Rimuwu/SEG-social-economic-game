@@ -223,6 +223,12 @@ const createChart = () => {
 }
 
 onMounted(async () => {
+  // Stop polling when on Endgame page (game has ended, no need to fetch updates)
+  if (wsManager) {
+    console.log('[Endgame] Stopping polling - game has ended')
+    wsManager.stopPolling()
+  }
+  
   // Fetch statistics and leaders for the ended game
   if (wsManager) {
     console.log('[Endgame] Mounted, current winners:', winners.value)
