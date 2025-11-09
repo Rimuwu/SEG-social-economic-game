@@ -3,6 +3,7 @@ from aiogram.utils.keyboard import ReplyKeyboardBuilder
 from modules.ws_client import get_users, get_company, get_companies
 from oms import scene_manager
 from oms.utils import callback_generator
+import asyncio
 
 def list_to_inline(buttons, row_width=3):
     """ Преобразует список кнопок в inline-клавиатуру 
@@ -58,8 +59,10 @@ async def go_to_page(session_id, old_page_name, new_page_name):
                 if scene and scene.page:
                     current_page_name = scene.page
                     if old_page_name is not None and current_page_name == old_page_name:
+                        await asyncio.sleep(0.2)
                         await scene.update_page(new_page_name)
                     else:
+                        await asyncio.sleep(0.2)
                         await scene.update_page(new_page_name)
 
 
