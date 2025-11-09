@@ -194,9 +194,6 @@ class Session(BaseClass):
             for item_price in items_prices:
                 await item_price.on_new_game_step()
 
-            # Генерируем события каждые 5 этапов
-            await self.events_generator()
-
             self.step += 1
             await self.execute_step_schedule(self.step)
 
@@ -216,6 +213,9 @@ class Session(BaseClass):
         elif new_stage == SessionStages.ChangeTurn:
             from game.company import Company
             from game.item_price import ItemPrice
+
+            # Генерируем события каждые 5 этапов
+            await self.events_generator()
 
             companies = await self.companies
             for company in companies:
