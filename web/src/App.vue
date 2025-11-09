@@ -19,6 +19,7 @@ import Preparation from './components/Preparation.vue'
 import Game from './components/Game.vue'
 import Between from './components/Between.vue'
 import Endgame from './components/Endgame.vue'
+import About from './components/About.vue'
 import AdminPanel from './components/AdminPanel.vue'
 
 import { WebSocketManager } from './ws'
@@ -122,11 +123,14 @@ globalThis.wsManager = wsManager
 
 /**
  * Watch for session stage changes and automatically navigate to appropriate view
+ * Only triggers if user is actually in a session (session.id exists)
  */
 watch(
   () => wsManager.gameState?.state?.session?.stage,
   (newStage, oldStage) => {
-    if (newStage && newStage !== oldStage) {
+    // Only auto-navigate if we have a valid session ID
+    const sessionId = wsManager.gameState?.state?.session?.id
+    if (newStage && newStage !== oldStage && sessionId) {
       const targetView = stageToView(newStage)
       if (targetView !== currentView.value && targetView !== 'Introduction') {
         console.log(`🎮 Stage changed: ${oldStage} → ${newStage}, navigating to ${targetView}`)
@@ -317,6 +321,55 @@ globalThis.refreshGameData = () => {
 }
 
 /**
+ * Get stored session ID
+ * Usage: getStoredSession()
+ */
+globalThis.getStoredSession = () => {
+  if (!wsManager) return null
+  const storedId = wsManager.getStoredSessionId()
+  console.log('💾 Stored session ID:', storedId)
+  return storedId
+}
+
+/**
+ * Clear stored session
+ * Usage: clearStoredSession()
+ */
+globalThis.clearStoredSession = () => {
+  if (!wsManager) return
+  wsManager.clearStoredSession()
+  console.log('🗑️ Stored session cleared')
+}
+
+/**
+ * Manually trigger reconnection
+ * Usage: reconnect()
+ */
+globalThis.reconnect = () => {
+  if (!wsManager) return
+  console.log('🔄 Manually triggering reconnection...')
+  wsManager.connect()
+}
+
+/**
+ * Get current view name
+ * Usage: getCurrentView()
+ */
+globalThis.getCurrentView = () => {
+  console.log('👁️ Current view:', currentView.value)
+  return currentView.value
+}
+
+/**
+ * Switch to a specific view
+ * Usage: showView('About')
+ */
+globalThis.showView = (viewName) => {
+  console.log(`🎬 Switching to view: ${viewName}`)
+  handleShow(viewName)
+}
+
+/**
  * Show available debug commands
  * Usage: debugHelp()
  */
@@ -343,6 +396,13 @@ globalThis.debugHelp = () => {
 🔧 Actions:
   refreshGameData()   - Refresh all game data from server
   refreshMap()        - Refresh map display
+  getStoredSession()  - Get stored session ID from localStorage
+  clearStoredSession()- Clear stored session ID
+  reconnect()         - Manually trigger WebSocket reconnection
+
+🎬 View Control:
+  getCurrentView()    - Get current view name
+  showView(name)      - Switch to a specific view (Introduction, Preparation, Game, Between, Endgame)
 
 💡 Direct Access:
   wsManager           - WebSocketManager instance
@@ -374,6 +434,7 @@ provide('wsManager', wsManager)
           currentView === 'Preparation' ? Preparation :
             currentView === 'Between' ? Between :
               currentView === 'Endgame' ? Endgame :
+                currentView === 'About' ? About :
                 Game
         " :key="currentView" @navigateTo="handleShow" />
 

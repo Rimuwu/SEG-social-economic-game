@@ -458,9 +458,14 @@ class Session(BaseClass):
 
         await self.save_to_base()
         
+        if self.cell_counts.get('city', 0) == 0:
+            self.cells = []
+            await self.generate_cells()
+            return
+
         # Создаём города на клетках с типом 'city'
         await self._create_cities()
-        
+
         return self.cells
 
     async def _create_cities(self):
@@ -778,8 +783,8 @@ class Session(BaseClass):
             raise ValueError(f"Событие '{event_id}' не найдено в конфигурации")
 
         self.event_type = event_id
-        self.event_start = start_step
-        self.event_end = end_step
+        self.event_start = start_step + 1
+        self.event_end = end_step + 1
 
         await self.save_to_base()
 
@@ -891,7 +896,7 @@ class Session(BaseClass):
         if self.step < 2:  # Начинаем со второго этапа
             return False
 
-        if (self.step - 2) % 5 != 0:  # Каждые 5 этапов
+        if (self.step - 2) % 4 != 0:  # Каждые 5 этапов
             return False
 
         if self.event_type:  # Уже есть активное событие

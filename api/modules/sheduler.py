@@ -50,7 +50,7 @@ class TaskScheduler:
     async def _execute_task(self, task):
         func = str_to_func(task['function_path'])
         args = json.loads(task.get('args', '[]'))
-        kwargs = json.loads(task.get('kwargs', '{}'))
+        kwargs = task.get('kwargs', '{}')
         repeat = task.get('repeat', False)
         add_at = datetime.fromisoformat(task['add_at'])
         execute_at = datetime.fromisoformat(task['execute_at'])
@@ -88,7 +88,7 @@ class TaskScheduler:
             'execute_at': execute_at.isoformat(),
             'add_at': datetime.now().isoformat(),
             'args': json.dumps(args),
-            'kwargs': json.dumps(kwargs),
+            'kwargs': kwargs,
             'repeat': repeat,
             'delete_on_shutdown': delete_on_shutdown
         }

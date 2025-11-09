@@ -40,8 +40,17 @@ export class GameState {
       // Item prices data
       itemPrices: {},
 
+      // Price changes history (for Products component)
+      priceChanges: [],
+      
+      // Current prices (for tracking changes)
+      currentPrices: {},
+
       // Recent upgrades/improvements
       recentUpgrades: [],
+
+      // Recent exchange activity (offers created and trades completed)
+      recentExchangeActivity: [],
 
       // Event data
       event: {
@@ -524,6 +533,18 @@ export class GameState {
   }
 
   /**
+   * Update price for a single item
+   * @param {string} itemId - Item ID
+   * @param {number} price - New price
+   */
+  updateItemPrice(itemId, price) {
+    if (this.state.itemPrices) {
+      this.state.itemPrices[itemId] = price;
+      console.log(`[GameState] Item price updated: ${itemId} = ${price}`);
+    }
+  }
+
+  /**
    * Get all item prices
    * @returns {Object}
    */
@@ -716,7 +737,7 @@ export class GameState {
       companyId: upgradeData.company_id,
       companyName: upgradeData.company_name,
       improvementType: upgradeData.improvement_type,
-      level: upgradeData.new_1level,
+      level: upgradeData.new_level,
       timestamp: Date.now()
     };
     
@@ -745,6 +766,58 @@ export class GameState {
    */
   clearUpgrades() {
     this.state.recentUpgrades = [];
+  }
+
+  // ==================== EXCHANGE ACTIVITY METHODS ====================
+
+  /**
+   * Add exchange activity (offer created or trade completed)
+   * @param {Object} activityData - Activity information
+   */
+  addExchangeActivity(activityData) {
+    if (!activityData) return;
+    
+    const activity = {
+      id: `exchange_${Date.now()}_${Math.random()}`,
+      type: activityData.type, // 'offer_created' or 'trade_completed'
+      companyId: activityData.company_id || activityData.seller_id,
+      companyName: activityData.company_name,
+      buyerId: activityData.buyer_id,
+      buyerName: activityData.buyer_name,
+      resource: activityData.sell_resource,
+      amount: activityData.sell_amount || activityData.sell_amount_per_trade,
+      offerType: activityData.offer_type,
+      price: activityData.price,
+      barterResource: activityData.barter_resource,
+      barterAmount: activityData.barter_amount,
+      timestamp: Date.now()
+    };
+    
+    // Add to beginning of array
+    this.state.recentExchangeActivity.unshift(activity);
+    
+    // Keep only last 10 activities
+    if (this.state.recentExchangeActivity.length > 10) {
+      this.state.recentExchangeActivity = this.state.recentExchangeActivity.slice(0, 10);
+    }
+    
+    console.log('[GameState] Exchange activity added:', activity);
+  }
+
+  /**
+   * Get recent exchange activities (limited to specified count)
+   * @param {number} limit - Maximum number of activities to return
+   * @returns {Array}
+   */
+  getRecentExchangeActivity(limit = 3) {
+    return this.state.recentExchangeActivity.slice(0, limit);
+  }
+
+  /**
+   * Clear all exchange activities
+   */
+  clearExchangeActivity() {
+    this.state.recentExchangeActivity = [];
   }
 
   // ==================== WINNER METHODS ====================
@@ -930,6 +1003,7 @@ export class GameState {
     this.state.contracts = [];
     this.state.itemPrices = {};
     this.state.recentUpgrades = [];
+    this.state.recentExchangeActivity = [];
     this.clearEvent();
     this.state.map = {
       cells: [],

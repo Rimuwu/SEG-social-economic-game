@@ -126,13 +126,14 @@ class Contract(BaseClass, SessionObject):
             }
         })
 
+        game_logger.info(f"Создан контракт {self.id} между компаниями {self.supplier_company_id} и {self.customer_company_id}. Условия: {self.amount_per_turn} {self.resource} за {self.payment_amount} монет на {self.duration_turns} ходов.")
         return self
 
     async def execute_turn(self):
         """ Выполнение поставки за текущий ход """
         from game.company import Company
         from game.logistics import Logistics
-        
+
         session = await self.get_session_or_error()
 
         if not self.accepted:
@@ -141,6 +142,9 @@ class Contract(BaseClass, SessionObject):
         if self.delivered_this_turn:
             raise ValueError("Продукт уже отправлен в этом ходе")
 
+        if await self.is_first_step:
+            raise ValueError("Нельзя выполнять контракт в ход его создания")
+
         supplier = await Company(id=self.supplier_company_id
                            ).reupdate()
         customer = await Company(id=self.customer_company_id
@@ -148,6 +152,8 @@ class Contract(BaseClass, SessionObject):
 
         if not supplier or not customer:
             # Отменяем контракт с возвратом
+            
+            game_logger.error(f"Ошибка при выполнении контракта: {self.id}: Одна из компаний не найдена")
             await self.delete()
             return False
 
@@ -187,6 +193,7 @@ class Contract(BaseClass, SessionObject):
                         self.amount_per_turn, self.resource, 'contract'
                     )
 
+                game_logger.info(f"Контракт {self.id} успешно выполнен.")
                 await self.delete()
                 return True
 
@@ -269,6 +276,7 @@ class Contract(BaseClass, SessionObject):
             }
         })
 
+        game_logger.info(f"Контракт {self.id} отклонен.")
         await self.delete()
         return self
 
@@ -317,8 +325,16 @@ class Contract(BaseClass, SessionObject):
             }
         })
 
+        game_logger.info(f"Контракт {self.id} отменен с возвратом {refund_amount} монет.")
         await self.delete()
         return self
+
+    @property
+    async def is_first_step(self) -> bool:
+        """ Проверяет, является ли текущий ход ходом создания контракта """
+        step_now = (await self.get_session_or_error()).step
+        print(step_now, self.created_at_step)
+        return (self.created_at_step == step_now)
 
     async def on_new_game_step(self):
         """ Проверка контракта при новом ходе
@@ -337,11 +353,13 @@ class Contract(BaseClass, SessionObject):
                 }
             })
 
+            game_logger.info(f"Контракт {self.id} не принят и удален.")
             await self.delete()
             return True  # Контракт удален
 
         else:
-            if not self.delivered_this_turn:
+
+            if not self.delivered_this_turn and not await self.is_first_step:
                 # Отменяем контракт с возвратом части денег и штрафом репутации
                 await self.cancel_with_refund(self.who_creator)
                 return True

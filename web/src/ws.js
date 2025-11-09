@@ -1,5 +1,13 @@
 import { GameState } from './GameState.js';
 
+/**
+ * WebSocketManager - Manages WebSocket connections and game state
+ * 
+ * Features:
+ * - Automatic reconnection on connection loss (every 5 seconds)
+ * - Session persistence with localStorage (auto-rejoin on page refresh)
+ * - Session rejoin happens AFTER WebSocket connection is established
+ */
 export class WebSocketManager {
   constructor(url, consoleObj) {
     this.url = url;
@@ -11,6 +19,14 @@ export class WebSocketManager {
     
     this.pendingCallbacks = new Map();
     this._pollInterval = null;
+    
+    // Auto-reconnection settings
+    this.reconnectInterval = null;
+    this.reconnectDelay = 5000; // 5 seconds
+    this.isManualDisconnect = false;
+    
+    // Session persistence key
+    this.SESSION_STORAGE_KEY = 'seg_session_id';
   }
 
   // Expose game state for Vue components
@@ -34,6 +50,19 @@ export class WebSocketManager {
   get users() {
     return this.gameState.state.users;
   }
+  
+  /**
+   * Get stored session ID from localStorage
+   * @returns {string|null}
+   */
+  getStoredSessionId() {
+    try {
+      return localStorage.getItem(this.SESSION_STORAGE_KEY);
+    } catch (error) {
+      console.error('[WS] Error getting stored session ID:', error);
+      return null;
+    }
+  }
 
   get_id() {
     return `web_${Date.now()}`;
@@ -44,12 +73,23 @@ export class WebSocketManager {
     const wsUrl = `${this.url}?client_id=${client_id}`;
     
     this.gameState.setConnecting(true);
+    this.isManualDisconnect = false;
+    
+    // Clear any existing reconnect interval
+    if (this.reconnectInterval) {
+      clearInterval(this.reconnectInterval);
+      this.reconnectInterval = null;
+    }
+    
     this.socket = new WebSocket(wsUrl);
     
     this.socket.onopen = () => {
       console.log('[WS] Connected to server');
       this.gameState.setConnected(true);
       this.gameState.setError(null);
+      
+      // Try to rejoin stored session after connection is established
+      this.attemptSessionRejoin();
     };
     
     this.socket.onmessage = (event) => this.onmessage(event);
@@ -58,6 +98,11 @@ export class WebSocketManager {
       console.log('[WS] Disconnected from server');
       this.gameState.setConnected(false);
       this.gameState.setConnecting(false);
+      
+      // Attempt to reconnect if not manually disconnected
+      if (!this.isManualDisconnect) {
+        this.scheduleReconnect();
+      }
     };
     
     this.socket.onerror = (error) => {
@@ -66,6 +111,83 @@ export class WebSocketManager {
       this.gameState.setConnected(false);
       this.gameState.setConnecting(false);
     };
+  }
+  
+  /**
+   * Schedule automatic reconnection attempt
+   */
+  scheduleReconnect() {
+    if (this.reconnectInterval) {
+      return; // Already scheduled
+    }
+    
+    console.log(`[WS] Will attempt to reconnect in ${this.reconnectDelay / 1000} seconds...`);
+    
+    this.reconnectInterval = setInterval(() => {
+      if (!this.gameState.state.connected && !this.isManualDisconnect) {
+        console.log('[WS] Attempting to reconnect...');
+        this.connect();
+      } else {
+        // Stop trying if connected
+        clearInterval(this.reconnectInterval);
+        this.reconnectInterval = null;
+      }
+    }, this.reconnectDelay);
+  }
+  
+  /**
+   * Attempt to rejoin a previously stored session
+   */
+  attemptSessionRejoin() {
+    try {
+      const storedSessionId = localStorage.getItem(this.SESSION_STORAGE_KEY);
+      
+      if (storedSessionId) {
+        console.log(`[WS] Found stored session: ${storedSessionId}, attempting to rejoin...`);
+        
+        // Join the stored session
+        this.join_session(storedSessionId, (response) => {
+          if (response.success) {
+            console.log('[WS] Successfully rejoined stored session');
+            // Initialize all game data after successful reconnection
+            this.initializeSession();
+          } else {
+            console.log('[WS] Failed to rejoin stored session, clearing it');
+            localStorage.removeItem(this.SESSION_STORAGE_KEY);
+          }
+        });
+      } else {
+        console.log('[WS] No stored session found');
+      }
+    } catch (error) {
+      console.error('[WS] Error attempting session rejoin:', error);
+    }
+  }
+  
+  /**
+   * Store session ID in localStorage
+   */
+  storeSessionId(sessionId) {
+    try {
+      if (sessionId) {
+        localStorage.setItem(this.SESSION_STORAGE_KEY, sessionId);
+        console.log(`[WS] Session ${sessionId} stored for auto-rejoin`);
+      }
+    } catch (error) {
+      console.error('[WS] Error storing session ID:', error);
+    }
+  }
+  
+  /**
+   * Clear stored session ID
+   */
+  clearStoredSession() {
+    try {
+      localStorage.removeItem(this.SESSION_STORAGE_KEY);
+      console.log('[WS] Stored session cleared');
+    } catch (error) {
+      console.error('[WS] Error clearing stored session:', error);
+    }
   }
 
   join_session(session_id, callback = null) {
@@ -87,6 +209,9 @@ export class WebSocketManager {
 
     this.state.session.id = session_id;
     console.log(`[WS] Joining session ${session_id}`);
+    
+    // Store session ID for auto-rejoin
+    this.storeSessionId(session_id);
 
     this.socket.send(
       JSON.stringify({
@@ -511,6 +636,31 @@ export class WebSocketManager {
     // Events, contracts, winners are handled via broadcasts
   }
 
+  /**
+   * Fetch frequently updated data (without cities)
+   */
+  fetchFrequentData() {
+    // 1. Session state and time
+    this.get_session();
+    this.get_time_to_next_stage();
+    
+    // 2. Event data
+    this.get_session_event();
+    
+    // 3. Companies and users (can change frequently)
+    this.get_companies();
+    this.get_users();
+    
+    // 4. Contracts and exchanges (active data)
+    this.get_contracts();
+    this.get_exchanges();
+    
+    // 5. Item prices
+    this.get_all_item_prices();
+    
+    // Cities are fetched separately less frequently
+  }
+
   stopPolling() {
     if (this._pollInterval) {
       clearInterval(this._pollInterval);
@@ -592,17 +742,28 @@ export class WebSocketManager {
     const callback = this.pendingCallbacks.get(requestId);
     
     if (message.data) {
+      console.log('[WS] Session response received. time_to_next_stage:', message.data.time_to_next_stage);
+      
       // Update game state with session data
       this.gameState.updateSession(message.data);
       
       // Update time to next stage if provided in session data
       if (message.data.time_to_next_stage !== undefined) {
+        console.log('[WS] Updating time from session response:', message.data.time_to_next_stage);
         this.gameState.updateTimeToNextStage(message.data.time_to_next_stage);
+      } else {
+        console.warn('[WS] Session response missing time_to_next_stage field');
       }
       
       // Load map if available
       if (message.data.cells && message.data.map_size) {
         this.loadMapToDOM();
+      }
+
+      // Initialize session data after joining/connecting
+      if (requestId.startsWith('join_session_')) {
+        console.log('[WS] Session joined successfully, initializing game data...');
+        this.initializeSession();
       }
 
       if (callback) {
@@ -637,14 +798,17 @@ export class WebSocketManager {
     const callback = this.pendingCallbacks.get(requestId);
     
     console.log('[WS] Event response received:', message);
+    console.log('[WS] Event response - data exists:', !!message.data);
+    console.log('[WS] Event response - event property exists:', message.data && 'event' in message.data);
+    console.log('[WS] Event response - event value:', message.data?.event);
     
     if (message.data && message.data.event !== undefined) {
       // Check if event has data
       const eventData = message.data.event;
       
-      if (eventData && Object.keys(eventData).length > 0) {
+      if (eventData && eventData.id && Object.keys(eventData).length > 0) {
         // Update event in game state
-        console.log('[WS] Updating event:', eventData);
+        console.log('[WS] Updating event with ID:', eventData.id, eventData);
         this.gameState.updateEvent(eventData);
         
         if (callback) {
@@ -1036,6 +1200,11 @@ export class WebSocketManager {
   handleBroadcast(message) {
     console.log('[WS] Broadcast received:', message.type, message.data);
     
+    // DEBUGGING: Log all event-related broadcasts
+    if (message.type.includes('event') || (message.data && message.data.event !== undefined)) {
+      console.log('[WS] EVENT BROADCAST DETECTED:', message.type, message.data);
+    }
+    
     // Handle different broadcast types
     switch (message.type) {
       case 'api-create_company':
@@ -1064,8 +1233,12 @@ export class WebSocketManager {
         break;
         
       case 'api-update_session_stage':
+        console.log('[WS] Stage update broadcast received');
         // Refresh session (includes time_to_next_stage)
         this.get_session();
+        
+        // Explicitly refresh time to ensure we get the new timer value
+        this.get_time_to_next_stage();
         
         // Refresh event data (might have changed)
         this.get_session_event();
@@ -1100,12 +1273,46 @@ export class WebSocketManager {
         break;
         
       case 'api-exchange_offer_created':
-      case 'api-exchange_offer_updated':
-      case 'api-exchange_offer_cancelled':
-      case 'api-exchange_trade_completed':
+        // Add to recent activity
+        if (message.data && message.data.offer) {
+          this.gameState.addExchangeActivity({
+            type: 'offer_created',
+            company_id: message.data.offer.company_id,
+            sell_resource: message.data.offer.sell_resource,
+            sell_amount_per_trade: message.data.offer.sell_amount_per_trade,
+            offer_type: message.data.offer.offer_type,
+            price: message.data.offer.price,
+            barter_resource: message.data.offer.barter_resource,
+            barter_amount: message.data.offer.barter_amount
+          });
+        }
         // Refresh exchanges
         this.get_exchanges();
-        // Also refresh companies to update balances
+        break;
+        
+      case 'api-exchange_offer_updated':
+      case 'api-exchange_offer_cancelled':
+        // Refresh exchanges
+        this.get_exchanges();
+        break;
+        
+      case 'api-exchange_trade_completed':
+        // Add to recent activity
+        if (message.data) {
+          this.gameState.addExchangeActivity({
+            type: 'trade_completed',
+            seller_id: message.data.seller_id,
+            buyer_id: message.data.buyer_id,
+            sell_resource: message.data.sell_resource,
+            sell_amount: message.data.sell_amount,
+            offer_type: message.data.offer_type,
+            price: message.data.price,
+            barter_resource: message.data.barter_resource,
+            barter_amount: message.data.barter_amount
+          });
+        }
+        // Refresh exchanges and companies
+        this.get_exchanges();
         this.get_companies();
         break;
         
@@ -1139,11 +1346,48 @@ export class WebSocketManager {
         this.get_contracts();
         this.get_companies();
         break;
+        
+      case 'api-item_price_updated':
+        console.log('[WS] Item price updated broadcast received:', message.data);
+        // Update item prices in game state if needed
+        if (message.data && message.data.item_id && message.data.price !== undefined) {
+          this.gameState.updateItemPrice(message.data.item_id, message.data.price);
+        }
+        // Refresh all item prices to stay in sync
+        this.get_all_item_prices();
+        break;
       
       case 'api-event_generated':
-        // Refresh event data when a new event is generated
-        this.get_session_event();
+      case 'api-event_started':
+      case 'api-event_ended':
+      case 'api-event_updated':
+      case 'event_update':
+        console.log('[WS] EVENT BROADCAST: Refreshing event data for type:', message.type);
+        
+        // If broadcast contains event data directly, use it
+        if (message.data && message.data.event !== undefined) {
+          console.log('[WS] Event data found in broadcast:', message.data.event);
+          if (message.data.event && Object.keys(message.data.event).length > 0) {
+            this.gameState.updateEvent(message.data.event);
+          } else {
+            this.gameState.clearEvent();
+          }
+        } else {
+          // Otherwise refresh event data from server
+          this.get_session_event();
+        }
         break;
+    }
+    
+    // Check if any broadcast message contains event data
+    if (message.data && message.data.event !== undefined && 
+        !['api-event_generated', 'api-event_started', 'api-event_ended', 'api-event_updated', 'event_update'].includes(message.type)) {
+      console.log('[WS] UNEXPECTED EVENT DATA in broadcast type:', message.type, message.data.event);
+      if (message.data.event && Object.keys(message.data.event).length > 0) {
+        this.gameState.updateEvent(message.data.event);
+      } else {
+        this.gameState.clearEvent();
+      }
     }
     
     // Dispatch custom event for components that need raw broadcast data
@@ -1353,7 +1597,15 @@ export class WebSocketManager {
 
   // Clean disconnect
   disconnect() {
+    this.isManualDisconnect = true;
     this.stopPolling();
+    
+    // Clear reconnection interval
+    if (this.reconnectInterval) {
+      clearInterval(this.reconnectInterval);
+      this.reconnectInterval = null;
+    }
+    
     if (this.socket) {
       this.socket.close();
       this.socket = null;
@@ -1366,6 +1618,10 @@ export class WebSocketManager {
   leaveSession() {
     this.stopPolling();
     this.gameState.clearSession();
+    
+    // Clear stored session when explicitly leaving
+    this.clearStoredSession();
+    
     console.log('[WS] Left session');
   }
 }

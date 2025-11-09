@@ -51,11 +51,16 @@ async def websocket_endpoint(
 
             except Exception as e:
                 websocket_logger.error(f"Ошибка при обработке сообщения от {client_id}: {e}")
-                error_message = {
-                    "type": "error",
-                    "message": f"Ошибка обработки сообщения: {str(e)}"
-                }
-                await websocket_manager.send_message(client_id, error_message)
+                # Проверяем, что клиент все еще подключен перед отправкой ошибки
+                if websocket_manager.is_connected(client_id):
+                    error_message = {
+                        "type": "error",
+                        "message": f"Ошибка обработки сообщения: {str(e)}"
+                    }
+                    await websocket_manager.send_message(client_id, error_message)
+                else:
+                    # Клиент уже отключен, прерываем цикл
+                    break
 
     finally:
         # Отключаем клиента

@@ -6,6 +6,7 @@ import random
 from fastapi import FastAPI, Request
 from contextlib import asynccontextmanager
 
+from game.item_price import ItemPrice
 from game.statistic import Statistic
 from game.logistics import Logistics
 from game.stages import stage_game_updater
@@ -58,7 +59,7 @@ async def lifespan(app: FastAPI):
 
     asyncio.create_task(scheduler.start())
     if debug:
-        asyncio.create_task(test2())
+        asyncio.create_task(test3())
 
     yield
 
@@ -230,7 +231,98 @@ async def test2():
         session = await session_manager.get_session('test')
         if session: await session.delete()
 
-    session = await session_manager.create_session('test')
+    session = await session_manager.create_session('test',
+                                                   time_on_change_stage=0.5,
+                                                   time_on_game_stage=0.5
+                                                   )
+
+    await sleep(2)
+
+    print("Session created")
+
+    # user1 = await User().create(
+    #     1,
+    #     session_id=session.session_id,
+    #     username="User 1"
+    # )
+
+    # user2 = await User().create(
+    #     2,
+    #     session_id=session.session_id,
+    #     username="User 2"
+    # )
+    
+    comps = []
+
+    for i in range(43):
+        # await asyncio.sleep(0.5)
+        user1 = await User().create(
+            i,
+            session_id=session.session_id,
+            username=f"User {i}"
+        )
+        comp = await user1.create_company(f"Company {i}")
+        comps.append(comp)
+        for j in range(4):
+            user = await User().create(
+                i*100 + j + 1,
+                session_id=session.session_id,
+                username=f"User {i*10 + j + 1}n"
+            )
+            await user.add_to_company(comp.secret_code)
+
+    # await sleep(10)
+    await session.update_stage(SessionStages.CellSelect)
+    # for i in [session, comp1, comp2]:
+    #     await i.reupdate()
+    
+    await sleep(5)
+    await session.update_stage(SessionStages.Game)
+    
+    # await sleep(5)
+    
+    
+    
+    
+    # await comp1.set_position(0, 0)
+    # await comp2.set_position(0, 1)
+
+    # await session.update_stage(SessionStages.Game)
+    # for i in [session, comp1, comp2]:
+    #     await i.reupdate()
+
+    # await comp1.take_credit(1000, 3)
+    # print('Taking credit...')
+    # res = await handle_company_take_credit(
+    #     'test',
+    #     {
+    #         "company_id": str(comp1.id),
+    #         "amount": 1000,
+    #         "period": 3,
+    #         "password": getenv('UPDATE_PASSWORD')
+    #     }
+    # )
+    
+    # print("Credit taken:", res)
+    # # 666 коммит моооооой by AS1
+    
+
+async def test3():
+    
+    from game.user import User
+    from game.session import Session, session_manager, SessionStages
+    from game.company import Company
+    from game.contract import Contract
+
+    # Очистка и создание сессии
+    if await session_manager.get_session('test3'):
+        session = await session_manager.get_session('test3')
+        if session: await session.delete()
+
+    session = await session_manager.create_session('test3',
+                                                   time_on_change_stage=0.5,
+                                                   time_on_game_stage=0.5
+                                                   )
 
     await sleep(2)
 
@@ -247,33 +339,34 @@ async def test2():
         session_id=session.session_id,
         username="User 2"
     )
-    
-    comp1 = await user1.create_company("Company 1")
+
+    comp1 = await user1.create_company("12345678901234567890")
     comp2 = await user2.create_company("Company 2")
-
-
-    await session.update_stage(SessionStages.CellSelect)
-    for i in [session, comp1, comp2]:
-        await i.reupdate()
     
-    await comp1.set_position(0, 0)
-    await comp2.set_position(0, 1)
-
+    await comp1.add_resource("wood", 20, True)
+    # await comp2.add_balance(20000)
+    
+    await session.update_stage(SessionStages.CellSelect)
+    
     await session.update_stage(SessionStages.Game)
     for i in [session, comp1, comp2]:
         await i.reupdate()
 
-    # await comp1.take_credit(1000, 3)
-    print('Taking credit...')
-    res = await handle_company_take_credit(
-        'test',
-        {
-            "company_id": str(comp1.id),
-            "amount": 1000,
-            "period": 3,
-            "password": getenv('UPDATE_PASSWORD')
-        }
-    )
+    await session.update_stage(SessionStages.ChangeTurn)
+
+    # await session.update_stage(SessionStages.Game)
+    # for i in [session, comp1, comp2]:
+    #     await i.reupdate()
+
+    # await sleep(5)
     
-    print("Credit taken:", res)
-    # 666 коммит моооооой by AS1
+    # for i in range(10):
+        
+    #     await session.update_stage(SessionStages.ChangeTurn)
+
+    #     print(session.public_event_data())
+        
+    #     await sleep(10)
+    #     await session.update_stage(SessionStages.Game)
+    #     for i in [session, comp1, comp2]:
+    #         await i.reupdate()

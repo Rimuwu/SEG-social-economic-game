@@ -1,13 +1,31 @@
 <script setup>
 import Map from './Map.vue'
+import NavigationButtons from './NavigationButtons.vue'
+import Products from './Products.vue'
 import { onMounted, ref, inject, computed } from 'vue'
+
+const emit = defineEmits(['navigateTo'])
 
 const pageRef = ref(null)
 const wsManager = inject('wsManager', null)
 
+// Handle navigation
+const handleLeave = () => {
+  emit('navigateTo', 'Introduction')
+}
+
+const handleAbout = () => {
+  emit('navigateTo', 'About')
+}
+
 // Computed properties for time and turn display
 const timeToNextStage = computed(() => {
-  return wsManager?.gameState?.getFormattedTimeToNextStage() || '--:--'
+  // Access the reactive state directly for proper reactivity
+  const time = wsManager?.gameState?.state?.timeToNextStage
+  if (time === null || time === undefined) return '--:--'
+  const minutes = Math.floor(time / 60)
+  const seconds = time % 60
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
 })
 
 const turnInfo = computed(() => {
@@ -16,21 +34,39 @@ const turnInfo = computed(() => {
   return `${step}/${maxSteps}`
 })
 
-// Computed properties for cities
+// Computed properties for cities - get first 4 cities from the array
+const allCities = computed(() => {
+  const cities = wsManager?.gameState?.state?.cities || []
+  console.log('[Game.vue] All cities:', cities)
+  return cities
+})
+
 const city1 = computed(() => {
-  return wsManager?.gameState?.getCityById(1) || null
+  const cities = allCities.value
+  const city = cities.length > 0 ? cities[0] : null
+  console.log('[Game.vue] City 1 (first city):', city)
+  return city
 })
 
 const city2 = computed(() => {
-  return wsManager?.gameState?.getCityById(2) || null
+  const cities = allCities.value
+  const city = cities.length > 1 ? cities[1] : null
+  console.log('[Game.vue] City 2 (second city):', city)
+  return city
 })
 
 const city3 = computed(() => {
-  return wsManager?.gameState?.getCityById(3) || null
+  const cities = allCities.value
+  const city = cities.length > 2 ? cities[2] : null
+  console.log('[Game.vue] City 3 (third city):', city)
+  return city
 })
 
 const city4 = computed(() => {
-  return wsManager?.gameState?.getCityById(4) || null
+  const cities = allCities.value
+  const city = cities.length > 3 ? cities[3] : null
+  console.log('[Game.vue] City 4 (fourth city):', city)
+  return city
 })
 
 // Helper function to format city demands
@@ -44,28 +80,29 @@ const formatCityDemands = (city) => {
   
   console.log('[Game.vue] City demands object:', city.demands);
   
-  // Filter demands with amount > 0 and get only 2
-  const formatted = Object.entries(city.demands)
-    .filter(([_, demand]) => demand.amount > 0)
-    .slice(0, 2)
+  // Show all demands for debugging (remove amount > 0 filter temporarily)
+  const allDemands = Object.entries(city.demands)
     .map(([resourceId, demand]) => ({
       resourceId,
-      amount: demand.amount,
-      price: demand.price
+      amount: demand.amount || 0,
+      price: demand.price || 0
     }));
   
-  console.log('[Game.vue] Formatted demands:', formatted);
+  console.log('[Game.vue] All demands:', allDemands);
+  
+  // Filter demands with amount > 0 and get only 2
+  const formatted = allDemands
+    .filter(demand => demand.amount > 0)
+    .slice(0, 2);
+  
+  console.log('[Game.vue] Filtered demands (amount > 0):', formatted);
   return formatted;
 }
 
-// Computed property for exchanges (latest 4, newest first)
+// Computed property for exchanges (latest 3 activities, newest first)
 const latestExchanges = computed(() => {
-  const exchanges = wsManager?.gameState?.state?.exchanges || []
-  const sessionExchanges = exchanges.filter(e => 
-    e.session_id === wsManager?.gameState?.state?.session?.id
-  )
-  // Get the last 4 exchanges (most recent) and reverse to show newest first
-  return sessionExchanges.slice(-4).reverse()
+  // Use the recent activity list instead of the offers list
+  return wsManager?.gameState?.getRecentExchangeActivity(3) || []
 })
 
 // Helper function to get company name by ID
@@ -74,18 +111,33 @@ const getCompanyName = (companyId) => {
   return company?.name || `Компания ${companyId}`
 }
 
-// Helper function to format exchange text (matching the existing format)
-const formatExchangeText = (exchange) => {
-  const companyName = getCompanyName(exchange.company_id)
-  const resourceName = wsManager?.gameState?.getResourceName(exchange.sell_resource)
-  
-  if (exchange.offer_type === 'money') {
-    return `${companyName} выставила на продажу ${resourceName}`
-  } else if (exchange.offer_type === 'barter') {
-    const barterResourceName = wsManager?.gameState?.getResourceName(exchange.barter_resource)
-    return `${companyName} меняет ${resourceName} на ${barterResourceName}`
+// Helper function to format exchange text based on activity type
+const formatExchangeText = (activity) => {
+  if (activity.type === 'offer_created') {
+    const companyName = activity.companyName || getCompanyName(activity.companyId)
+    const resourceName = wsManager?.gameState?.getResourceName(activity.resource)
+    
+    if (activity.offerType === 'money') {
+      return `Компания ${companyName} выставила на продажу продукт ${resourceName}`
+    } else if (activity.offerType === 'barter') {
+      const barterResourceName = wsManager?.gameState?.getResourceName(activity.barterResource)
+      return `Компания ${companyName} предлагает бартер товара ${resourceName} на ${barterResourceName}`
+    }
+    return `Компания ${companyName} выставила на продажу продукт ${resourceName}`
+  } else if (activity.type === 'trade_completed') {
+    const sellerName = activity.companyName || getCompanyName(activity.companyId)
+    const buyerName = activity.buyerName || getCompanyName(activity.buyerId)
+    const resourceName = wsManager?.gameState?.getResourceName(activity.resource)
+    
+    if (activity.offerType === 'money') {
+      return `Компания ${buyerName} выкупила продукт ${resourceName} у компании ${sellerName}`
+    } else if (activity.offerType === 'barter') {
+      const barterResourceName = wsManager?.gameState?.getResourceName(activity.barterResource)
+      return `Компания ${buyerName} обменяла ${barterResourceName} на ${resourceName} с компанией ${sellerName}`
+    }
+    return `Компания ${buyerName} купила продукт ${resourceName} у компании ${sellerName}`
   }
-  return `${companyName} выставила на продажу ${resourceName}`
+  return ''
 }
 
 // Computed property for contracts (latest 2, newest first)
@@ -129,9 +181,11 @@ const formatUpgradeText = (upgrade) => {
 
 // Event computed property
 const currentEvent = computed(() => {
-  const event = wsManager?.gameState?.getEvent() || null
+  // Access the reactive state directly for proper reactivity
+  const event = wsManager?.gameState?.state?.event
   console.log('[Game.vue] Current event:', event)
-  return event
+  // Return event only if it has an ID (meaning it exists)
+  return event && event.id ? event : null
 })
 
 // Helper to get event status text
@@ -151,7 +205,18 @@ const eventStatusText = computed(() => {
 })
 
 onMounted(() => {
-  // Component mounted
+  console.log('[Game.vue] Component mounted')
+  console.log('[Game.vue] wsManager:', !!wsManager)
+  console.log('[Game.vue] gameState:', !!wsManager?.gameState)
+  console.log('[Game.vue] cities array:', wsManager?.gameState?.state?.cities)
+  
+  // Watch for cities changes
+  if (wsManager?.gameState) {
+    console.log('[Game.vue] Setting up cities watcher')
+    const stopWatcher = wsManager.gameState.state.cities && typeof wsManager.gameState.state.cities === 'object' 
+      ? () => {} // Already reactive
+      : () => {}
+  }
 })
 </script>
 
@@ -164,65 +229,57 @@ onMounted(() => {
   -->
   <div id="page" ref="pageRef">
     <div class="left">
-      <Map class="map" />
       <div class="footer">
         <div>До конца этапа {{ timeToNextStage }}</div>
         <div>{{ turnInfo }}</div>
       </div>
+      <Map class="map" />
     </div>
     <div class="right">
       <div class="grid">
         
         <div class="cities grid-item">
-          <p class="title">ГОРОДА</p>
+          <p class="title">ГОРОДА ({{ allCities.length }})</p>
           <div class="content">
             <span>
               <!-- City 1 -->
               <template v-if="city1">
-                {{ city1.name }}<br/>
+                {{ city1.name }} (↖)<br/>
                 <template v-for="demand in formatCityDemands(city1)" :key="demand.resourceId">
                   &nbsp;&nbsp;• {{ wsManager.gameState.getResourceName(demand.resourceId) }}<br/>
+                  &nbsp;&nbsp;&nbsp;&nbsp;[{{ demand.amount }} шт.]<br/>
                 </template>
+                <br/>
               </template>
-              <template v-else>
-                Город 1<br/>
-              </template>
-              <br/>
               
               <!-- City 2 -->
               <template v-if="city2">
-                {{ city2.name }}<br/>
+                {{ city2.name }} (↙)<br/>
                 <template v-for="demand in formatCityDemands(city2)" :key="demand.resourceId">
                   &nbsp;&nbsp;• {{ wsManager.gameState.getResourceName(demand.resourceId) }}<br/>
+                  &nbsp;&nbsp;&nbsp;&nbsp;[{{ demand.amount }} шт.]<br/>
                 </template>
-              </template>
-              <template v-else>
-                Город 2<br/>
               </template>
             </span>
 
             <span>
               <!-- City 3 -->
               <template v-if="city3">
-                {{ city3.name }}<br/>
+                {{ city3.name }} (↗)<br/>
                 <template v-for="demand in formatCityDemands(city3)" :key="demand.resourceId">
                   &nbsp;&nbsp;• {{ wsManager.gameState.getResourceName(demand.resourceId) }}<br/>
+                  &nbsp;&nbsp;&nbsp;&nbsp;[{{ demand.amount }} шт.]<br/>
                 </template>
+                <br/>
               </template>
-              <template v-else>
-                Город 3<br/>
-              </template>
-              <br/>
               
               <!-- City 4 -->
               <template v-if="city4">
-                {{ city4.name }}<br/>
+                {{ city4.name }} (↘)<br/>
                 <template v-for="demand in formatCityDemands(city4)" :key="demand.resourceId">
                   &nbsp;&nbsp;• {{ wsManager.gameState.getResourceName(demand.resourceId) }}<br/>
+                  &nbsp;&nbsp;&nbsp;&nbsp;[{{ demand.amount }} шт.]<br/>
                 </template>
-              </template>
-              <template v-else>
-                Город 4<br/>
               </template>
             </span>
           </div>
@@ -254,22 +311,15 @@ onMounted(() => {
             </template>
           </div>
         </div>
-        <div class="contracts grid-item">
-          <p class="title">КОНТРАКТЫ</p>
-          <div class="content">
-            <template v-if="latestContracts.length > 0">
-              <span v-for="contract in latestContracts" :key="contract.id">
-                {{ formatContractText(contract) }}
-              </span>
-            </template>
-            <template v-else>
-              <span>На данный момент контракты отсутсвуют</span>
-            </template>
-          </div>
+        <div class="products grid-item">
+          <Products title="ПРОДУКТЫ" />
         </div>
 
       </div>
     </div>
+    
+    <!-- Navigation Buttons -->
+    <NavigationButtons @leave="handleLeave" @showAbout="handleAbout" />
   </div>
 </template>
 
@@ -352,17 +402,23 @@ onMounted(() => {
   justify-content: space-between;
   text-align: left;
   line-height: 1.5;
-  background: #3D8C00;
+  background: #3D8C00 ;
 }
 
-.stock .content, .upgrades .content, .contracts .content {
+.stock .content, .upgrades .content {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
-.stock span, .upgrades span, .contracts span {
-  background: #3D8C00;
+.stock span, .upgrades span {
+  background: #3D8C00 ;
   padding: 5px 10px;
+}
+
+.products {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .events {
@@ -375,7 +431,7 @@ onMounted(() => {
   padding: 40px 0;
   margin-top: 40px;
 
-  background-color: #3D8C00;
+  background-color: #3D8C00 ;
 
   color: white;
   font-family: "Ubuntu Mono", monospace;
@@ -407,22 +463,21 @@ onMounted(() => {
 .footer {
   width: 90%;
 
+  background: #0C6792;
   display: flex;
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
 
+  font-family: "Ubuntu Mono", monospace;
   font-weight: normal;
   font-size: 4rem;
-
-  gap: 5%;
 
   color: white;
 }
 
 .footer div {
-  background: #0C6792;
-  padding: 25px 50px;
+  margin: 25px;
 }
 
 .map {
