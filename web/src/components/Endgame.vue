@@ -1,6 +1,6 @@
 <script setup>
 import NavigationButtons from './NavigationButtons.vue'
-import { ref, onMounted, inject, computed, nextTick } from 'vue'
+import { ref, onMounted, inject, computed, nextTick, watch } from 'vue'
 import { Chart, registerables } from 'chart.js'
 
 // Register Chart.js components
@@ -33,6 +33,11 @@ const winners = computed(() => {
     economic: null
   }
 })
+
+// Watch winners for changes
+watch(winners, (newWinners, oldWinners) => {
+  console.log('[Endgame] Winners changed!', { old: oldWinners, new: newWinners })
+}, { deep: true })
 
 // Helper to format numbers with thousand separators
 const formatNumber = (num) => {
@@ -211,10 +216,19 @@ const createChart = () => {
 }
 
 onMounted(() => {
-  // Fetch statistics for the ended game
+  // Fetch statistics and leaders for the ended game
   if (wsManager) {
     console.log('[Endgame] Mounted, current winners:', winners.value)
-    console.log('[Endgame] Fetching statistics for session:', wsManager.gameState.state.session.id)
+    console.log('[Endgame] Fetching data for session:', wsManager.gameState.state.session.id)
+    
+    // Fetch leaders/winners
+    wsManager.get_session_leaders((response) => {
+      if (response.success) {
+        console.log('[Endgame] Leaders fetched successfully:', response.data)
+      } else {
+        console.error('[Endgame] Failed to fetch leaders:', response.error)
+      }
+    })
     
     // Fetch all statistics for this session
     wsManager.get_session_statistics((response) => {
