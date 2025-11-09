@@ -531,8 +531,21 @@ export class GameState {
    * @param {Object} prices - Object with item_id: price pairs
    */
   updateItemPrices(prices) {
-    this.state.itemPrices = prices;
-    console.log('[GameState] Item prices updated:', Object.keys(prices).length);
+    // Handle both array format (full objects) and object format (simple prices)
+    if (Array.isArray(prices)) {
+      // New format: array of full item price objects
+      // Convert to object keyed by id for easy access
+      const pricesObj = {};
+      prices.forEach(item => {
+        pricesObj[item.id] = item;
+      });
+      this.state.itemPrices = pricesObj;
+      console.log('[GameState] Item prices updated (array format):', prices.length, 'items');
+    } else {
+      // Old format: simple object { item_id: price }
+      this.state.itemPrices = prices;
+      console.log('[GameState] Item prices updated (object format):', Object.keys(prices).length);
+    }
   }
 
   /**
@@ -542,13 +555,18 @@ export class GameState {
    */
   updateItemPrice(itemId, price) {
     if (this.state.itemPrices) {
-      this.state.itemPrices[itemId] = price;
+      // Check if we're using full object format or simple format
+      if (typeof this.state.itemPrices[itemId] === 'object') {
+        this.state.itemPrices[itemId].current_price = price;
+      } else {
+        this.state.itemPrices[itemId] = price;
+      }
       console.log(`[GameState] Item price updated: ${itemId} = ${price}`);
     }
   }
 
   /**
-   * Get all item prices
+   * Get all item prices (returns full objects if available)
    * @returns {Object}
    */
   getItemPrices() {
@@ -561,7 +579,43 @@ export class GameState {
    * @returns {number|null}
    */
   getItemPrice(itemId) {
-    return this.state.itemPrices[itemId] || null;
+    const item = this.state.itemPrices[itemId];
+    if (!item) return null;
+    
+    // Handle both formats
+    if (typeof item === 'object') {
+      return item.current_price;
+    }
+    return item;
+  }
+
+  /**
+   * Get full item price object (with popularity data)
+   * @param {string} itemId
+   * @returns {Object|null}
+   */
+  getItemPriceObject(itemId) {
+    const item = this.state.itemPrices[itemId];
+    if (typeof item === 'object') {
+      return item;
+    }
+    return null;
+  }
+
+  /**
+   * Get all items sorted by popularity (most sold products)
+   * @returns {Array} - Array of item price objects sorted by popularity
+   */
+  getMostSoldProducts() {
+    const items = Object.values(this.state.itemPrices);
+    
+    // Filter only objects (not simple numbers) that have popularity
+    const itemsWithPopularity = items.filter(item => 
+      typeof item === 'object' && typeof item.popularity === 'number'
+    );
+    
+    // Sort by popularity (descending)
+    return itemsWithPopularity.sort((a, b) => b.popularity - a.popularity);
   }
 
   /**

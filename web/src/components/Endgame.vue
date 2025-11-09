@@ -53,14 +53,21 @@ const companyIds = computed(() => {
   return wsManager?.gameState?.getStatisticsCompanyIds() || []
 })
 
-// Get top 3 most sold products (mock data for now - will be populated with real data)
+// Get top 3 most sold products
 const topProducts = computed(() => {
-  // TODO: Get real data from API/GameState
-  return [
-    { name: 'Товар 1', amount: 1500 },
-    { name: 'Товар 2', amount: 1200 },
-    { name: 'Товар 3', amount: 980 }
-  ]
+  if (!wsManager) return []
+  
+  const mostSold = wsManager.gameState.getMostSoldProducts()
+  
+  // Get top 3 and format with localized resource names
+  return mostSold.slice(0, 3).map(item => {
+    const localizedName = wsManager.gameState.getResourceName(item.id)
+    
+    return {
+      name: localizedName,
+      amount: item.popularity
+    }
+  })
 })
 
 // Chart type state
@@ -215,10 +222,31 @@ const createChart = () => {
   })
 }
 
-onMounted(() => {
+onMounted(async () => {
   // Fetch statistics and leaders for the ended game
   if (wsManager) {
     console.log('[Endgame] Mounted, current winners:', winners.value)
+    console.log('[Endgame] WebSocket connected:', wsManager.gameState.state.connected)
+    
+    // Wait for WebSocket connection if not connected yet
+    if (!wsManager.gameState.state.connected) {
+      console.log('[Endgame] Waiting for WebSocket connection...')
+      const connected = await wsManager.waitForConnection(10000)
+      
+      if (!connected) {
+        console.error('[Endgame] Failed to establish WebSocket connection')
+        return
+      }
+      
+      console.log('[Endgame] WebSocket connection established')
+    }
+    
+    // Check if we have a session ID
+    if (!wsManager.gameState.state.session.id) {
+      console.error('[Endgame] No session ID available')
+      return
+    }
+    
     console.log('[Endgame] Fetching data for session:', wsManager.gameState.state.session.id)
     
     // Fetch leaders/winners
@@ -227,6 +255,16 @@ onMounted(() => {
         console.log('[Endgame] Leaders fetched successfully:', response.data)
       } else {
         console.error('[Endgame] Failed to fetch leaders:', response.error)
+      }
+    })
+    
+    // Fetch item prices (for most sold products)
+    wsManager.get_all_item_prices((response) => {
+      if (response.success) {
+        console.log('[Endgame] Item prices fetched successfully')
+        console.log('[Endgame] Most sold products:', wsManager.gameState.getMostSoldProducts())
+      } else {
+        console.error('[Endgame] Failed to fetch item prices:', response.error)
       }
     })
     
