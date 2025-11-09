@@ -1031,34 +1031,6 @@ async def handle_get_company_exchanges(client_id: str, message: dict):
         "exchanges": [exchange.to_dict() for exchange in await company.exchanges]
     }
 
-
-@message_handler(
-    "get-company-contracts", 
-    doc="Обработчик получения контрактов компании. Отправляет ответ на request_id", 
-    datatypes=[
-        "company_id: int", 
-        "request_id: str"
-        ])
-async def handle_get_company_contracts(client_id: str, message: dict):
-    """Обработчик получения контрактов компании"""
-
-    company_id = message.get("company_id")
-
-    if company_id is None: 
-        return {"error": "Missing required fields."}
-
-    company = await Company(id=company_id).reupdate()
-    if not company: 
-        return {"error": "Company not found."}
-
-    contracts = await company.get_contracts()
-    return {
-        "contracts": [contract.to_dict() for contract in contracts],
-        "max_contracts": await company.get_max_contracts(),
-        "can_create_contract": await company.can_create_contract()
-    }
-
-
 @message_handler(
     "get-company-production", 
     doc="Обработчик получения производственной информации компании. Отправляет ответ на request_id", 

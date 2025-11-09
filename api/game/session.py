@@ -525,7 +525,7 @@ class Session(BaseClass):
         free_cells = []
         for x in range(self.map_size["rows"]):
             for y in range(self.map_size["cols"]):
-                if await self.can_select_cell(x, y):
+                if await self.can_select_cell(x, y, True):
                     free_cells.append((x, y))
         return free_cells
 
