@@ -284,6 +284,9 @@ onUnmounted(() => {
       <div v-if="currentEvent" class="event-block">
         <div class="event-header">СОБЫТИЕ</div>
         <div class="event-title">{{ currentEvent.name }}</div>
+        <div v-if="currentEvent.start_step && currentEvent.end_step" class="event-steps">
+          Шаг: с {{ currentEvent.start_step }} до {{ currentEvent.end_step }}
+        </div>
         <div class="event-description">{{ currentEvent.description }}</div>
       </div>
       
@@ -434,6 +437,15 @@ onUnmounted(() => {
   font-weight: bold;
   text-transform: uppercase;
   text-align: center;
+  margin: 0;
+}
+
+.event-steps {
+  padding: 0 25px 10px 25px;
+  font-size: 1.6rem;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: normal;
   margin: 0;
 }
 
