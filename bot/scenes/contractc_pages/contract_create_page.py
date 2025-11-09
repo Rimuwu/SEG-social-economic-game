@@ -643,12 +643,21 @@ class ContractCreateSelectCompany(OneUserPage):
         companies_response = await get_companies(session_id=session_id)
         companies = companies_response if isinstance(companies_response, list) else []
 
+        def is_in_prison(company: dict) -> bool:
+            value = company.get("in_prison")
+            if isinstance(value, bool):
+                return value
+            if isinstance(value, str):
+                return value.strip().lower() in {"true", "1", "yes"}
+            return bool(value)
+
         available = [
             company
             for company in companies
             if isinstance(company, dict)
             and company.get("id") is not None
             and int(company["id"]) not in exclude_ids
+            and not is_in_prison(company)
         ]
 
         available.sort(key=lambda item: item.get("name", ""))
