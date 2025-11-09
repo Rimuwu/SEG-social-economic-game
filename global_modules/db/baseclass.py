@@ -21,7 +21,7 @@ class BaseClass:
         """
 
         # Фильтруем данные, исключая атрибуты, начинающиеся с _
-        data_to_save = {key: value for key, value in self.__dict__.items() if not key.startswith('_')}
+        data_to_save = {key: value for key, value in self.__dict__.items() if not (key.startswith('_') and key != self.__unique_id__)}
 
         await self.__db_object__.update(self.__tablename__, 
                 {self.__unique_id__: self.__dict__[self.__unique_id__]},
