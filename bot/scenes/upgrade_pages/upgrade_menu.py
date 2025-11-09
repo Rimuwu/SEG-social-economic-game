@@ -105,11 +105,11 @@ class UpgradeMenu(Page):
                 })
             comp_data = await get_company(id=company_id)
             if not comp_data.get("fast_logistic"):
-                buttons.append({"text": "Логистика", "callback_data": callback_generator(self.scene.__scene_name__, "to_page", "upgrade-logistic-page")})
+                buttons.append({"text": "🚚 Логистика", "callback_data": callback_generator(self.scene.__scene_name__, "to_page", "upgrade-logistic-page")})
             if not comp_data.get("fast_complectation"):
-                buttons.append({"text": "Перекомплектовка", "callback_data": callback_generator(self.scene.__scene_name__, "to_page", "upgrade-recompletion-page")})
-            buttons.append({"text": "Смена клетки", "callback_data": callback_generator(self.scene.__scene_name__, "to_page", "change-cell-page")})
-            buttons.append({"text": "Назад", "callback_data": callback_generator(self.scene.__scene_name__, "to_page", "main-page"), "ignore_row": True})
+                buttons.append({"text": "📦 Перекомплектовка", "callback_data": callback_generator(self.scene.__scene_name__, "to_page", "upgrade-recompletion-page")})
+            buttons.append({"text": "🔑 Смена клетки", "callback_data": callback_generator(self.scene.__scene_name__, "to_page", "change-cell-page")})
+            buttons.append({"text": "↪ Назад", "callback_data": callback_generator(self.scene.__scene_name__, "to_page", "main-page"), "ignore_row": True})
         elif stage == "details":
             self.row_width = 1
             selected_type = page_data.get("selected_type")
