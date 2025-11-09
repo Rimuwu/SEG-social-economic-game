@@ -979,7 +979,7 @@ class Company(BaseClass, SessionObject):
 
         # Проверяем, можно ли забрать деньги (прошло минимум 3 хода)
         if session.step < deposit["can_withdraw_from"]:
-            raise ValueError(f"Нельзя забрать депозит пока. Доступно с шага {deposit['can_withdraw_from']}.")
+            raise ValueError(f"Нельзя забрать депозит. Доступно с шага {deposit['can_withdraw_from']}.")
 
         # Возвращаем весь баланс вклада на счёт компании
         amount_to_return = deposit["current_balance"]
