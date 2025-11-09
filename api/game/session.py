@@ -200,6 +200,19 @@ class Session(BaseClass):
             self.step += 1
             await self.execute_step_schedule(self.step)
 
+            # Доп проверка на тюрьму4
+            for company in await self.companies:
+                if company is None: continue
+                if not company.in_prison: continue
+
+                if company.prison_end_step is None:
+                    if company.in_prison:
+                        await company.leave_prison()
+
+                else:
+                    if company.prison_end_step <= self.step:
+                        await company.leave_prison()
+
         elif new_stage == SessionStages.ChangeTurn:
             from game.company import Company
             from game.item_price import ItemPrice
