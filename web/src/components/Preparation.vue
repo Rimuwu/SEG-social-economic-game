@@ -148,7 +148,7 @@ const currentPageCompanies = computed(() => {
     const globalIndex = startIndex + i;
     if (globalIndex < totalCompanies.value) {
       const companyName = wsManager?.gameState?.getCompanyNameByIndex(globalIndex) || '';
-      const usernames = wsManager?.gameState?.stringUsernamesByCompanyIndex(globalIndex, sep=", ") || '';
+      const usernames = wsManager?.gameState?.stringUsernamesByCompanyIndex(globalIndex) || '';
       companies.push({
         index: globalIndex,
         name: companyName,
