@@ -20,8 +20,8 @@ def calc_credit(S: int,
     if extra == 0:
         total = S
     else:
-        total = S + S * r_percent * extra
-    pay_per_turn = total / T
+        total = S + S * (r_percent / 4) * extra #Как квартальный, а не годовой
+    pay_per_turn = (total / T) // 3
     return int(total), int(pay_per_turn), extra
 
 def get_credit_conditions(reputation: int):
