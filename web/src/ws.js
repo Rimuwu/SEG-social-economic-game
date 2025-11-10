@@ -280,6 +280,7 @@ export class WebSocketManager {
     if (callback && typeof callback === "function") {
       this.pendingCallbacks.set(request_id, callback);
     }
+
     this.socket.send(
       JSON.stringify({
         type: "get-session",
@@ -426,9 +427,12 @@ export class WebSocketManager {
     if (callback && typeof callback === "function") {
       this.pendingCallbacks.set(request_id, callback);
     }
+    
+    console.log('[WS] Fetching item prices with popularity data');
+    
     this.socket.send(
       JSON.stringify({
-        type: "get-all-item-prices",
+        type: "get-items-price",
         session_id: this.gameState.state.session.id || undefined,
         request_id: request_id,
       })
@@ -1045,12 +1049,26 @@ export class WebSocketManager {
     const requestId = message.request_id;
     const callback = this.pendingCallbacks.get(requestId);
     
-    if (message.data && message.data.prices) {
-      // Update game state with prices object
-      this.gameState.updateItemPrices(message.data.prices);
+    // Handle both formats: array directly or wrapped in prices object
+    let pricesData = null;
+    
+    if (Array.isArray(message.data)) {
+      // New format: array of full item price objects with popularity
+      pricesData = message.data;
+      console.log('[WS] Received item prices array:', pricesData.length, 'items');
+    } else if (message.data && message.data.prices) {
+      // Old format: prices object
+      pricesData = message.data.prices;
+      console.log('[WS] Received item prices object');
+    }
+    
+    if (pricesData) {
+      // Update game state with prices
+      this.gameState.updateItemPrices(pricesData);
       
-      if (callback) callback({ success: true, data: message.data.prices });
+      if (callback) callback({ success: true, data: pricesData });
     } else {
+      console.warn('[WS] No item prices data in response');
       if (callback) callback({ success: false, error: "No item prices data" });
     }
     

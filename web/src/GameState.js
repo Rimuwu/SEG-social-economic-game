@@ -608,14 +608,27 @@ export class GameState {
    */
   getMostSoldProducts() {
     const items = Object.values(this.state.itemPrices);
+    console.log('[GameState] getMostSoldProducts - Total items:', items.length);
+    console.log('[GameState] First 3 items sample:', items.slice(0, 3));
     
     // Filter only objects (not simple numbers) that have popularity
     const itemsWithPopularity = items.filter(item => 
       typeof item === 'object' && typeof item.popularity === 'number'
     );
+    console.log('[GameState] Items with popularity field:', itemsWithPopularity.length);
+    
+    if (itemsWithPopularity.length > 0) {
+      console.log('[GameState] Sample item with popularity:', itemsWithPopularity[0]);
+    }
     
     // Sort by popularity (descending)
-    return itemsWithPopularity.sort((a, b) => b.popularity - a.popularity);
+    const sorted = itemsWithPopularity.sort((a, b) => b.popularity - a.popularity);
+    console.log('[GameState] Top 5 most sold:', sorted.slice(0, 5).map(item => ({
+      id: item.id,
+      popularity: item.popularity
+    })));
+    
+    return sorted;
   }
 
   /**
@@ -924,9 +937,9 @@ export class GameState {
       if (!companiesStats[companyId]) {
         companiesStats[companyId] = {
           company_id: companyId,
-          balance: Array(15).fill(0),
-          reputation: Array(15).fill(0),
-          economic_power: Array(15).fill(0)
+          balance: Array(this.state.session.max_steps).fill(0),
+          reputation: Array(this.state.session.max_steps).fill(0),
+          economic_power: Array(this.state.session.max_steps).fill(0)
         };
       }
       
