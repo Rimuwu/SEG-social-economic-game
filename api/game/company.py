@@ -759,7 +759,7 @@ class Company(BaseClass, SessionObject):
                 "end_step": end_step
             }
         })
-        game_logger.info(f"Компания {self.name} ({self.id}) отправлена в тюрьму до шага {end_step} в сессии {self.session_id}")
+        game_logger.info(f"Компания {self.name} ({self.id}) отправлена в тюрьму до шага {end_step} в сессии {self.session_id} по причине: {reason}")
 
     async def leave_prison(self):
         """ Выход из тюрьмы по времени
