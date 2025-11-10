@@ -182,7 +182,7 @@
         },
         "benefits_for_young_families": {
             "name": "Льготы молодым семьям",
-            "description": "Государство запустило программу поддержки молодых семей. Спрос на мебель значительно вырос, но доступно на 5 меньше контрактов",
+            "description": "Государство запустило программу поддержки молодых семей. Спрос на мебель значительно вырос, но контрактов можно заключать на 3 меньше обычного",
             "type": "global_event",
             "category": "positive",
             "predictability": true,
@@ -193,7 +193,7 @@
                 "increase_price": {
                     "furniture": 1.2
                 },
-                "contracts_limit_decrease": 5
+                "contracts_limit_decrease": 3
             },
             "duration": {
                 "min": 1,

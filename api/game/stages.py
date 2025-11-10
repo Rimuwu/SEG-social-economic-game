@@ -1,3 +1,4 @@
+import traceback
 from modules.sheduler import scheduler
 from datetime import datetime, timedelta
 from global_modules.load_config import ALL_CONFIGS, Settings
@@ -25,7 +26,7 @@ async def stage_game_updater(session_id: str):
             "time_schedule",
             conditions={"id": session.change_turn_schedule_id},
             updates={
-                "execute_at": datetime.now() + timedelta(seconds=session.time_on_game_stage * 60)
+                "execute_at": (datetime.now() + timedelta(seconds=session.time_on_game_stage * 60)).isoformat()
             }
         )
 
@@ -37,13 +38,13 @@ async def stage_game_updater(session_id: str):
         try:
             await session.update_stage(SessionStages.ChangeTurn)
         except Exception as e:
-            game_logger.error(f"Ошибка при смене хода в сессии {session_id}: {e}")
+            game_logger.error(f"Ошибка при смене хода в сессии {session_id}: {traceback.format_exc()}")
 
         await just_db.update(
             "time_schedule",
             conditions={"id": session.change_turn_schedule_id},
             updates={
-                "execute_at": datetime.now() + timedelta(seconds=session.time_on_game_stage * 60)
+                "execute_at": (datetime.now() + timedelta(seconds=session.time_on_game_stage * 60)).isoformat()
             }
         )
 

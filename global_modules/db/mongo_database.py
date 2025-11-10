@@ -178,12 +178,7 @@ class MongoDatabase:
         collection = self._get_collection(table_name)
         document = await collection.find_one(conditions)
 
-        if not document:
-            return None
-
-        # # Убираем _id из документа
-        # if '_id' in document:
-        #     del document['_id']
+        if not document: return None
 
         if to_class:
             instance = to_class()
