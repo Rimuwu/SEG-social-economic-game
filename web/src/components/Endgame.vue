@@ -55,19 +55,32 @@ const companyIds = computed(() => {
 
 // Get top 3 most sold products
 const topProducts = computed(() => {
-  if (!wsManager) return []
+  if (!wsManager) {
+    console.warn('[Endgame topProducts] No wsManager')
+    return []
+  }
   
   const mostSold = wsManager.gameState.getMostSoldProducts()
+  console.log('[Endgame topProducts] Most sold products:', mostSold.length)
+  
+  if (mostSold.length === 0) {
+    console.warn('[Endgame topProducts] No products with popularity data')
+    return []
+  }
   
   // Get top 3 and format with localized resource names
-  return mostSold.slice(0, 3).map(item => {
+  const top3 = mostSold.slice(0, 3).map(item => {
     const localizedName = wsManager.gameState.getResourceName(item.id)
+    console.log(`[Endgame topProducts] ${item.id} -> ${localizedName}, popularity: ${item.popularity}`)
     
     return {
       name: localizedName,
       amount: item.popularity
     }
   })
+  
+  console.log('[Endgame topProducts] Final top 3:', top3)
+  return top3
 })
 
 // Chart type state
@@ -223,6 +236,12 @@ const createChart = () => {
 }
 
 onMounted(async () => {
+  // Stop polling when on Endgame page (game has ended, no need to fetch updates)
+  if (wsManager) {
+    console.log('[Endgame] Stopping polling - game has ended')
+    wsManager.stopPolling()
+  }
+  
   // Fetch statistics and leaders for the ended game
   if (wsManager) {
     console.log('[Endgame] Mounted, current winners:', winners.value)
