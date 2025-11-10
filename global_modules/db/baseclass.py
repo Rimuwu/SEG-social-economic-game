@@ -14,6 +14,7 @@ class BaseClass:
         """
         if data is None: return False
         for key, value in data.items(): setattr(self, key, value)
+
         return True
 
     async def save_to_base(self):
@@ -21,7 +22,7 @@ class BaseClass:
         """
 
         # Фильтруем данные, исключая атрибуты, начинающиеся с _
-        data_to_save = {key: value for key, value in self.__dict__.items() if not key.startswith('_')}
+        data_to_save = {key: value for key, value in self.__dict__.items() if not (key.startswith('_') and key != self.__unique_id__)}
 
         await self.__db_object__.update(self.__tablename__, 
                 {self.__unique_id__: self.__dict__[self.__unique_id__]},
@@ -59,7 +60,7 @@ class BaseClass:
         res = self.load_from_base(
             await self.__db_object__.find_one(self.__tablename__, 
                 **{self.__unique_id__: self.__dict__[self.__unique_id__]}
-                ) # type: ignore
+                )
         )
         if res: return self
         return None

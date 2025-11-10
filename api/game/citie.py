@@ -260,16 +260,14 @@ class Citie(BaseClass, SessionObject):
         except Exception as e:
             game_logger.error(f"Ошибка при увеличении популярности товара {resource_id}: {e}")
 
-        st = await Statistic.get_latest_by_company(
+        session = await self.get_session_or_error()
+        st = await Statistic().create(
             session_id=self.session_id,
-            company_id=company_id
+            company_id=company_id,
+            step=session.step
         )
         if st:
-            session = await self.get_session_or_error()
-            await Statistic.update_me(
-                company_id=company_id,
-                session_id=self.session_id,
-                step=session.step,
+            await st.update_me(
                 total_products_produced=amount
             )
 

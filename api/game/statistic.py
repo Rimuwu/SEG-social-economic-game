@@ -1,4 +1,5 @@
 from typing import Optional
+from bson import ObjectId
 from game.session import SessionObject
 from global_modules.db.baseclass import BaseClass
 from modules.db import just_db
@@ -6,11 +7,11 @@ from modules.db import just_db
 class Statistic(BaseClass, SessionObject):
 
     __tablename__ = "statistics"
-    __unique_id__ = "id"
+    __unique_id__ = "_id"
     __db_object__ = just_db
 
     def __init__(self):
-        self.id = 0
+        self._id: ObjectId = ObjectId()
         self.session_id: str = ""
         self.company_id: int = 0
         self.step: int = 0
@@ -62,7 +63,6 @@ class Statistic(BaseClass, SessionObject):
 
     def to_dict(self) -> dict:
         return {
-            "id": self.id,
             "session_id": self.session_id,
             "company_id": self.company_id,
             "step": self.step,
@@ -85,8 +85,30 @@ class Statistic(BaseClass, SessionObject):
                              _id=self._id, session_id=self.session_id)
         return True
 
+    async def update_me(self, **kwargs):
+        for key, value in kwargs.items():
+            if hasattr(self, key):
+                if isinstance(self.__dict__[key], dict) and isinstance(value, dict):
+                    self.__dict__[key].update(value)
+
+                elif isinstance(self.__dict__[key], list) and isinstance(value, list):
+                    self.__dict__[key].extend(value)
+
+                elif isinstance(self.__dict__[key], (int, float)) and isinstance(value, (int, float)):
+                    self.__dict__[key] += value
+
+                else:
+                    self.__dict__[key] = value
+            else:
+                setattr(self, key, value)
+
+        await self.save_to_base()
+        return self
+
     @classmethod
-    async def get_all_by_company(cls, session_id: str, company_id: int) -> list['Statistic']:
+    async def get_all_by_company(cls, session_id: str, 
+                                 company_id: int
+                                 ) -> list['Statistic']:
         rows: list[Statistic] = await just_db.find(cls.__tablename__, 
                                   session_id=session_id, company_id=company_id,
                                   to_class=Statistic
@@ -108,7 +130,10 @@ class Statistic(BaseClass, SessionObject):
         return statistics
 
     @classmethod
-    async def get_latest_by_company(cls, session_id: str, company_id: int) -> 'Statistic | None':
+    async def get_latest_by_company(cls, 
+                                    session_id: str, 
+                                    company_id: int
+                                    ) -> 'Statistic | None':
 
         session: Optional[dict] = await just_db.find_one(
             "sessions", id=session_id)
@@ -125,47 +150,4 @@ class Statistic(BaseClass, SessionObject):
 
         stat = cls()
         stat.load_from_base(row)
-        return stat
-
-    @classmethod
-    async def update_me(cls,
-                        company_id: int,
-                        session_id: str,
-                        step: int,
-                        **kwargs
-                        ):
-
-        stat: Statistic = await just_db.find_one(cls.__tablename__,
-                                     company_id=company_id,
-                                     session_id=session_id,
-                                     step=step,
-                                     to_class=Statistic
-                                     ) # type: ignore
-
-        if not stat:
-            stat = await Statistic().create(
-                company_id=company_id,
-                session_id=session_id,
-                step=step
-            )
-
-        for key, value in kwargs.items():
-
-            if not hasattr(stat, key):
-                setattr(stat, key, value)
-            else:
-                if isinstance(stat.__dict__[key], dict) and isinstance(value, dict):
-                    stat.__dict__[key].update(value)
-
-                elif isinstance(stat.__dict__[key], list) and isinstance(value, list):
-                    stat.__dict__[key].extend(value)
-
-                elif isinstance(stat.__dict__[key], (int, float)) and isinstance(value, (int, float)):
-                    stat.__dict__[key] += value
-
-                else:
-                    if hasattr(stat, key):
-                        stat.__dict__[key] = value
-
-        await stat.save_to_base()
         return stat
