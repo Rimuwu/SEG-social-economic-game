@@ -1,9 +1,9 @@
 {
     "warehouse": { // Уровни складов
-        "1": { "capacity": 100, "cost": 0 },
-        "2": { "capacity": 200, "cost": 10000 },
-        "3": { "capacity": 300, "cost": 25000 },
-        "4": { "capacity": 500, "cost": 50000 }
+        "1": { "capacity": 200, "cost": 0 },
+        "2": { "capacity": 400, "cost": 10000 },
+        "3": { "capacity": 800, "cost": 25000 },
+        "4": { "capacity": 1000, "cost": 50000 }
     },
     "contracts": { // Уровни контрактов
         "1": { "max": 5, "cost": 0 },
