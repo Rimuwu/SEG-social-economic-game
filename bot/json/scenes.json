@@ -453,6 +453,10 @@
             "logistic-main-page": {
                 "image": "img/exchange.png",
                 "content": "🚚 Логистика\n\n📊 Количество маршрутов: {count_logistic}\n🚚 Маршруты в пути к вам: {count_our_logistic}\n📦 Доступные для получения: {count_deliver}"
+            },
+            "logistic-info-page": {
+                "image": "img/exchange.png",
+                "content": "Логистика номер {logistic_id}\n\nОт кого: {from_name}\nКому: {to_name}\nРесурс: {resource}\n Доставка через: {step_last}\nСтатус: {status}"
             }
         }
     },
@@ -525,9 +529,9 @@
                 "image": "img/end_game.png",
                 "content": "Админ панель",
                 "to_pages": {
-                    "admin-session-main-page": "↪️ Сессии",
-                    "admin-company-main-page": "↪️ Компании",
-                    "admin-user-main-page": "↪️ Пользователи"
+                    "admin-session-main-page": "↪️ Сессии"
+                    // "admin-company-main-page": "↪️ Компании",
+                    // "admin-user-main-page": "↪️ Пользователи"
                 },
                 "row_width": 2
             },
