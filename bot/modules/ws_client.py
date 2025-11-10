@@ -190,20 +190,33 @@ async def company_complete_free_factories(company_id: int, new_resource: str, co
     )
 
 # Функции для работы с логистикой
-async def get_logistics(session_id: Optional[str] = None, company_id: Optional[int] = None, 
-                       city_id: Optional[int] = None):
+async def get_logistics(session_id: Optional[str] = None, 
+                       from_company_id: Optional[int] = None,
+                       to_company_id: Optional[int] = None, 
+                       to_city_id: Optional[int] = None,
+                       logistics_id: Optional[int] = None,
+                       destination_type: Optional[Literal['company', 'city']] = None,
+                       status: Optional[Literal['in_transit', 'waiting_pickup', 'delivered', 'failed']] = None):
     """Получение списка логистики (доставок)
     
     Args:
         session_id: ID сессии для фильтрации
-        company_id: ID компании для фильтрации
-        city_id: ID города для фильтрации
+        from_company_id: ID компании-отправителя
+        to_company_id: ID компании-получателя
+        to_city_id: ID города-получателя
+        logistics_id: ID конкретной логистики
+        destination_type: Тип назначения ('company' или 'city')
+        status: Статус доставки ('in_transit', 'waiting_pickup', 'delivered', 'failed')
     """
     return await ws_client.send_message(
         "get-logistics",
         session_id=session_id,
-        company_id=company_id,
-        city_id=city_id,
+        from_company_id=from_company_id,
+        to_company_id=to_company_id,
+        to_city_id=to_city_id,
+        logistics_id=logistics_id,
+        destination_type=destination_type,
+        status=status,
         wait_for_response=True
     )
 
