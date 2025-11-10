@@ -68,7 +68,7 @@ class SelectCell(Page):
                             'text': '🏢',
                             'callback_data': 'city'
                         })
-                    elif (real_row, real_col) in free_coords:
+                    elif (real_col, real_row) in free_coords:
                         buttons.append({
                             'text': f"{cell_text}",
                             'callback_data': callback_generator(
