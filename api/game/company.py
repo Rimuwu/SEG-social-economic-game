@@ -320,7 +320,7 @@ class Company(BaseClass, SessionObject):
         elif e_type == "city_sell":
             mod = 3
         elif e_type == "contract":
-            mod = 2
+            mod = 4
 
         resource = RESOURCES.get_resource(item)  # type: ignore
         if not resource:
