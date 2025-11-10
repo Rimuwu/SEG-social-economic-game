@@ -44,7 +44,7 @@ async def stage_game_updater(session_id: str):
             "time_schedule",
             conditions={"id": session.change_turn_schedule_id},
             updates={
-                "execute_at": (datetime.now() + timedelta(seconds=session.time_on_game_stage * 60)).isoformat()
+                "execute_at": (datetime.now() + timedelta(seconds=session.time_on_change_stage * 60)).isoformat()
             }
         )
 
