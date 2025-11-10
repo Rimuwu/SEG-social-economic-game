@@ -422,6 +422,7 @@ class ContractExecutePage(OneUserPage):
         amount = contract.get("amount_per_turn")
         duration = contract.get("duration_turns")
         payment = contract.get("payment_amount")
+        delivered_this_turn = contract.get("delivered_this_turn")
 
         amount_text = str(amount) if amount is not None else "-"
         duration_text = str(duration) if duration is not None else "-"
@@ -436,7 +437,7 @@ class ContractExecutePage(OneUserPage):
             f"⏱️ Длительность: {duration_text} ходов",
             f"💰 Цена: {payment_text}",
             f"🛠️ Создатель: {contract.get('creator_name')}",
-            "⚠️ Доставка в этот ход ещё не выполнена.",
+            "⚠️ Доставка в этот ход ещё не выполнена." if not delivered_this_turn else "✅ Доставка в этот ход уже выполнена.",
         ]
 
         return "\n".join(details)
