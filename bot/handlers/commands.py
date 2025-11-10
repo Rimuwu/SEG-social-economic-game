@@ -276,6 +276,7 @@ async def go_previous_page(message: Message):
             comp_data = await get_company(id=company_id)
             if comp_data.get("in_prison"):
                 await scene.update_page("prison-page")
+                return
             await scene.update_page("main-page")
         except Exception as exc:  # noqa: BLE001
             await message.answer(f"Не удалось переключиться: {exc}")
