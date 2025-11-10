@@ -312,12 +312,14 @@ class Contract(BaseClass, SessionObject):
                     await customer.add_balance(refund_amount, 0.0)
                 # Штраф репутации за невыполнение
                 await supplier.remove_reputation(
-                    REPUTATION.contract.failed
+                    REPUTATION.contract.failed,
+                    f"Репутация снижена на {REPUTATION.contract.failed} за невыполнение контракта."
                 )
             except ValueError:
                 # Если не удалось вернуть деньги - больший штраф
                 await supplier.remove_reputation(
-                    REPUTATION.contract.failed * 2
+                    REPUTATION.contract.failed * 2,
+                    f"Репутация снижена на {REPUTATION.contract.failed * 2} за невыполнение контракта и невозможность возврата средств."
                     )
 
         await websocket_manager.broadcast({
