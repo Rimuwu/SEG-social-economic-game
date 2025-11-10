@@ -69,7 +69,7 @@ class ContractViewMyPage(OneUserPage):
             print(contracts_list)
             contracts = []
             for c in contracts_list:
-                if c.get("who_creator") == company_id:
+                if c.get("supplier_company_id") == company_id or c.get("customer_company_id"):
                     contracts.append(c)
             items_per_page = 5
             total_pages = max(1, (len(contracts) + items_per_page - 1) // items_per_page)

@@ -2,6 +2,7 @@ from modules.ws_client import get_logistics, get_company, get_city
 from scenes.utils.oneuser_page import OneUserPage
 from modules.utils import create_buttons
 from global_modules.load_config import ALL_CONFIGS, Resources
+from oms.utils import callback_generator
 
 
 RESOURCES: Resources = ALL_CONFIGS["resources"]
@@ -64,5 +65,59 @@ class LogisticInfo(OneUserPage):
         
         logistic_page = [logistic_list[i:i+5] for i in range(0, len(logistic_list, 5))]
         for res in logistic_page[cur_page]:
+            logistic_data = await get_logistics(logistics_id=res.get("id"))
+            status_emoji = {
+                "in_transit": "🚚",
+                "waiting_pickup": "📦",
+                "failed": "❌",
+                "delivered": "✅"
+            }
+            status = status_emoji[logistic_data.get("status")]
             
+            from_data = None
+            to_data = None
+            city_data = None
+            from_c = ""
+            to_c = ""
+            
+            if logistic_data.get("from_company_id") != 0:
+                from_data = await get_company(logistic_data.get("from_company_id"))
+            if logistic_data.get("to_company_id") != 0:
+                to_data = await get_company(logistic_data.get("to_company_id"))
+            if logistic_data.get("to_city_id"):
+                city_data = await get_city(id=logistic_data.get("to_city_id"))
+            
+            if from_data is not None:
+                if from_data["id"] == company_id:
+                    from_c = "Вы"
+                else:
+                    from_c = from_data["name"]
+            if to_data is not None:
+                if to_data["id"] == company_id:
+                    to_c = "Вам"
+                else:
+                    to_c = from_data["name"]
+            if city_data is not None:
+                to_c = city_data["name"]
+                
             buttons.append(create_buttons(self.scene.__scene_name__, text=f"{status} {from_c} → {to_c}"))
+        if len(logistic_page) > 1:
+            buttons.append({
+                "text": "◀️",
+                "callback_data": callback_generator(self.scene.__scene_name__, "city_products_prev")
+            })
+            buttons.append({
+                "text": f"{cur_page + 1}/{len(logistic_page)}",
+                "callback_data": callback_generator(self.scene.__scene_name__, "noop")
+            })
+            buttons.append({
+                "text": "▶️",
+                "callback_data": callback_generator(self.scene.__scene_name__, "city_products_next")
+            })
+
+        buttons.append({
+            "text": "⬅️ Назад",
+            "callback_data": callback_generator(self.scene.__scene_name__, "back_main_page")
+        })
+        
+        return buttons

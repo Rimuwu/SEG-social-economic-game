@@ -304,10 +304,7 @@
             "contract-view-page": {
                 "image": "img/contracts.png",
                 "title": "",
-                "content": "📜 *Контракты на рассмотрении*\n{overview_text}{details_text}{error_text}",
-                "to_pages": {
-                    "contract-main-page": "↪️ Назад"
-                }
+                "content": "📜 *Контракты на рассмотрении*\n{overview_text}{details_text}{error_text}"
             },
             "contract-create-page": {
                 "image": "img/contracts.png",
@@ -332,10 +329,7 @@
             },
             "contract-execute-page": {
                 "image": "img/contracts.png",
-                "content": "🚚 *Выполнение контрактов*\n{overview_text}{details_text}{error_text}",
-                "to_pages": {
-                    "contract-main-page": "↪️ Назад"
-                }
+                "content": "🚚 *Выполнение контрактов*\n{overview_text}{details_text}{error_text}"
             },
             "contract-view-my-page": {
                 "image": "img/contracts.png",
@@ -371,7 +365,7 @@
             },
             "change-turn-page": {
                 "image": "img/mejturn.png",
-                "content": "🔄 *Смена хода...*\n\n⏳ Ожидаем следующего этапа...\n\n*Этап* {progress_bar} *{current_step}/{max_steps}*"
+                "content": "🔄 *Смена хода...*\n\n⏳ Ожидаем следующего этапа...\n\nЕсли не обновилась страницу введите команду `/prevpage`\n\n*Этап* {progress_bar} *{current_step}/{max_steps}*"
             },
             "prison-page": {
                 "image": "img/prison.png",

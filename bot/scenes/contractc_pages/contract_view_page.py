@@ -173,8 +173,22 @@ class ContractViewPage(OneUserPage):
                 }
             )
 
+        buttons.append({
+            "text": "↪️ Назад",
+            "callback_data": callback_generator(self.scene.__scene_name__, "back_page_main"),
+            "ignore_row": True
+        })
+        
         return buttons
 
+    @OneUserPage.on_callback("back_page_main")
+    async def back_pagess(self, callback, args):
+        self._contracts_cache = None
+        await self.scene.update_key(self.__page_name__, "error", None)
+        await self.scene.update_page("contract-main-page")
+
+    
+    
     @OneUserPage.on_callback("select_contract")
     async def select_contract(self, callback: CallbackQuery, args: List[str]):
         if len(args) < 2:
