@@ -198,7 +198,7 @@ class Session(BaseClass):
             self.step += 1
             await self.execute_step_schedule(self.step)
 
-            # Доп проверка на тюрьму4
+            # Доп проверка на тюрьму
             for company in await self.companies:
                 if company is None: continue
                 if not company.in_prison: continue
@@ -221,6 +221,24 @@ class Session(BaseClass):
             companies = await self.companies
             for company in companies:
                 if company is None: continue
+                
+                if Settings.tax_autopay:
+                    # Автоматическая уплата налогов
+
+                    try:
+                        tax_amount = company.tax_debt
+                        if company.balance >= tax_amount and tax_amount > 0:
+                            await company.pay_taxes(tax_amount)
+
+                            game_logger.info(f"Компания {company.name} в сессии {self.session_id} автоматически уплатила налоги в размере {tax_amount}.")
+
+                        elif company.balance < tax_amount and tax_amount > 0:
+                            await company.pay_taxes(company.balance)
+
+                            game_logger.info(f"Компания {company.name} в сессии {self.session_id} автоматически уплатила налоги в размере {company.balance}. (недостаточно средств для полной уплаты)")
+
+                    except Exception as e:
+                        game_logger.error(f"Ошибка при автоматической уплате налогов компанией {company.name} в сессии {self.session_id}: {e}")
 
                 st = await Statistic().create(
                     session_id=self.session_id,
