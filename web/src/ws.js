@@ -267,12 +267,20 @@ export class WebSocketManager {
       return null;
     }
 
+    // Check if we have a session ID
+    if (!this.gameState.state.session.id) {
+      console.warn('[WS] No session ID available, skipping session fetch');
+      if (callback) callback({ success: false, error: "No session ID" });
+      return null;
+    }
+
     const request_id = `get_session_${Date.now()}_${Math.random()
       .toString(36)
       .substr(2, 9)}`;
     if (callback && typeof callback === "function") {
       this.pendingCallbacks.set(request_id, callback);
     }
+
     this.socket.send(
       JSON.stringify({
         type: "get-session",
@@ -288,6 +296,13 @@ export class WebSocketManager {
       const error = "WebSocket is not connected";
       this.gameState.setError(error);
       if (callback) callback({ success: false, error });
+      return null;
+    }
+
+    // Check if we have a session ID
+    if (!this.gameState.state.session.id) {
+      console.warn('[WS] No session ID available, skipping event fetch');
+      if (callback) callback({ success: false, error: "No session ID" });
       return null;
     }
 
@@ -412,9 +427,12 @@ export class WebSocketManager {
     if (callback && typeof callback === "function") {
       this.pendingCallbacks.set(request_id, callback);
     }
+    
+    console.log('[WS] Fetching item prices with popularity data');
+    
     this.socket.send(
       JSON.stringify({
-        type: "get-all-item-prices",
+        type: "get-items-price",
         session_id: this.gameState.state.session.id || undefined,
         request_id: request_id,
       })
@@ -571,6 +589,14 @@ export class WebSocketManager {
       if (callback) callback({ success: false, error });
       return null;
     }
+    
+    // Check if we have a session ID before trying to fetch time
+    if (!this.gameState.state.session.id) {
+      console.warn('[WS] No session ID available, skipping time fetch');
+      if (callback) callback({ success: false, error: "No session ID" });
+      return null;
+    }
+    
     const request_id = `get_time_${Date.now()}_${Math.random()
       .toString(36)
       .substr(2, 9)}`;
@@ -663,6 +689,12 @@ export class WebSocketManager {
    * Fetch all necessary game data in the correct order
    */
   fetchAllGameData() {
+    // Don't fetch data if game has ended
+    if (this.gameState.state.session.stage === 'End') {
+      console.log('[WS] Game has ended, skipping data fetch');
+      return;
+    }
+    
     // 1. Session state and map (includes time_to_next_stage)
     this.get_session();
     
@@ -696,6 +728,12 @@ export class WebSocketManager {
    * Fetch frequently updated data (without cities)
    */
   fetchFrequentData() {
+    // Don't fetch data if game has ended
+    if (this.gameState.state.session.stage === 'End') {
+      console.log('[WS] Game has ended, skipping frequent data fetch');
+      return;
+    }
+    
     // 1. Session state and time
     this.get_session();
     this.get_time_to_next_stage();
@@ -1011,12 +1049,26 @@ export class WebSocketManager {
     const requestId = message.request_id;
     const callback = this.pendingCallbacks.get(requestId);
     
-    if (message.data && message.data.prices) {
-      // Update game state with prices object
-      this.gameState.updateItemPrices(message.data.prices);
+    // Handle both formats: array directly or wrapped in prices object
+    let pricesData = null;
+    
+    if (Array.isArray(message.data)) {
+      // New format: array of full item price objects with popularity
+      pricesData = message.data;
+      console.log('[WS] Received item prices array:', pricesData.length, 'items');
+    } else if (message.data && message.data.prices) {
+      // Old format: prices object
+      pricesData = message.data.prices;
+      console.log('[WS] Received item prices object');
+    }
+    
+    if (pricesData) {
+      // Update game state with prices
+      this.gameState.updateItemPrices(pricesData);
       
-      if (callback) callback({ success: true, data: message.data.prices });
+      if (callback) callback({ success: true, data: pricesData });
     } else {
+      console.warn('[WS] No item prices data in response');
       if (callback) callback({ success: false, error: "No item prices data" });
     }
     
@@ -1368,6 +1420,14 @@ export class WebSocketManager {
         
       case 'api-update_session_stage':
         console.log('[WS] Stage update broadcast received');
+        
+        // Check if game has ended - no need to fetch data anymore
+        if (message.data && message.data.new_stage === 'End') {
+          console.log('[WS] Game ended, stopping data fetching');
+          this.stopPolling();
+          break;
+        }
+        
         // Refresh session (includes time_to_next_stage)
         this.get_session();
         

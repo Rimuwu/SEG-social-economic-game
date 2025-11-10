@@ -309,7 +309,7 @@ class Contract(BaseClass, SessionObject):
             try:
                 if supplier.balance >= refund_amount:
                     await supplier.remove_balance(refund_amount)
-                    await customer.add_balance(refund_amount)
+                    await customer.add_balance(refund_amount, 0.0)
                 # Штраф репутации за невыполнение
                 await supplier.remove_reputation(
                     REPUTATION.contract.failed
