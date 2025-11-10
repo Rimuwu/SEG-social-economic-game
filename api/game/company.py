@@ -685,7 +685,9 @@ class Company(BaseClass, SessionObject):
             max_credit = CAPITAL.bank.credit.max
             max_rep = REPUTATION.credit.gained
             reputation_gain = int((amount / max_credit) * max_rep)
-            await self.add_reputation(reputation_gain)
+            await self.add_reputation(
+                max(reputation_gain, 1)
+            )
         else:
             self.credits[credit_index] = credit
             await self.save_to_base()
