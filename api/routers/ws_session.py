@@ -619,19 +619,19 @@ async def handle_notforgame_create_timer(client_id: str, message: dict):
 
             if get_schedule:
                 return {"error": "Timer already exists for this session."}
-        else:
-            new_sid = await scheduler.schedule_task(
-                stage_game_updater,
-                datetime.now() + timedelta(seconds=session.time_on_game_stage * 60),
-                kwargs={"session_id": session.session_id},
-                dont_delete=True
-            )
-            
-            await session.reupdate()
-            session.change_turn_schedule_id = new_sid
-            await session.save_to_base()
 
-            return {"success": True}
+        new_sid = await scheduler.schedule_task(
+            stage_game_updater,
+            datetime.now() + timedelta(seconds=session.time_on_game_stage * 60),
+            kwargs={"session_id": session.session_id},
+            dont_delete=True
+        )
+        
+        await session.reupdate()
+        session.change_turn_schedule_id = new_sid
+        await session.save_to_base()
+
+        return {"success": True}
 
     except ValueError as e:
         return {"error": str(e)}
