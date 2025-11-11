@@ -322,7 +322,7 @@ async def test3():
     session = await session_manager.create_session('test3',
                                                    time_on_change_stage=0.2,
                                                    time_on_game_stage=0.2,
-                                                   max_steps=5
+                                                   max_steps=15
                                                    )
 
     await sleep(5)
@@ -330,8 +330,8 @@ async def test3():
     print("Session created")
 
     users = []
-    comps = []
-    for i in range(15):
+    comps: list[Company] = []
+    for i in range(2):
         user = await User().create(
             i + 1,
             session_id=session.session_id,
@@ -340,26 +340,59 @@ async def test3():
         comp = await user.create_company(f"Company {i + 1}")
         users.append(user)
         comps.append(comp)
+        
     
+    comp1 = comps[0]
+    comp2 = comps[1]
+    
+    await comp1.add_resource('wood', 10000, True)
+
     await session.update_stage(SessionStages.CellSelect)
-    for i in range(5):
-        await sleep(5)
+    await session.update_stage(SessionStages.Game, True)
+
+    cr = await Contract().create(
+        supplier_company_id=comp1.id,
+        customer_company_id=comp2.id,
+        session_id=session.session_id,
+        who_creator=comp1.id,
+        resource='wood',
+        amount_per_turn=10,
+        duration_turns=6,
+        payment_amount=10000
+    )
+    
+    await cr.accept_contract(comp2.id)
+    await session.update_stage(SessionStages.ChangeTurn, True)
+    
+    for i in range(10):
+        await sleep(1)
+        for i in [session, comp1, comp2, cr]:
+            await i.reupdate()
+        
+        print('-> ', cr.successful_deliveries)
+        print(cr.delivered_this_turn)
+        
         await session.update_stage(SessionStages.Game, True)
         
-        for company in comps:
-            await company.reupdate()
-            coins = random.randint(-company.balance, company.balance * 2)
-            company.balance += coins
+        for i in [session, comp1, comp2, cr]:
+            await i.reupdate()
 
-            rep = random.randint(-company.reputation, 10)
-            company.reputation += rep
-            
-            company.economic_power = company.balance // 1000 + company.reputation * 10
+        print(f"\n\n=== STEP {session.step} ===")
+        print(cr.delivered_this_turn)
+        rs = await cr.execute_turn()
+        print('Результат поставки:', rs)
+        await cr.reupdate()
+        print('-> ', cr.successful_deliveries)
+        print(cr.delivered_this_turn)
 
-            await company.save_to_base()
-        
         await session.update_stage(SessionStages.ChangeTurn, True)
         
+        for i in [session, comp1, comp2, cr]:
+            await i.reupdate()
+        
+        print('-> ', cr.successful_deliveries)
+        print(cr.delivered_this_turn)
+
     # await session.update_stage(SessionStages.Game, True)
     # await sleep(1)
     # await session.update_stage(SessionStages.End, True)
