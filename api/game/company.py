@@ -1209,12 +1209,17 @@ class Company(BaseClass, SessionObject):
 
         factories = await self.get_factories()
         for factory in factories:
-            await factory.on_new_game_stage()
+            try:
+                await factory.on_new_game_stage()
+            except Exception as e:
+                game_logger.error(f"Ошибка при обновлении фабрики {factory.id} для компании {self.name} ({self.id}): {e}")
 
-        contracts = await self.get_contracts()
-        for contract in contracts:
-            contract: Contract
-            await contract.on_new_game_step()
+        # contracts = await self.get_contracts()
+        # for contract in contracts:
+        #     try:
+        #         await contract.on_new_game_step()
+        #     except Exception as e:
+        #         game_logger.error(f"Ошибка при обновлении контракта {contract.id} для компании {self.name} ({self.id}): {e}")
 
     @property
     async def exchanges(self) -> list['Exchange']:
