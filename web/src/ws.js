@@ -22,11 +22,29 @@ export class WebSocketManager {
     
     // Auto-reconnection settings
     this.reconnectInterval = null;
-    this.reconnectDelay = 5000; // 5 seconds
+    this.reconnectDelay = 1000; // 5 seconds
     this.isManualDisconnect = false;
     
     // Session persistence key
     this.SESSION_STORAGE_KEY = 'seg_session_id';
+    
+    // Request optimization
+    this.pendingRequests = new Set(); // Track pending requests to avoid duplicates
+    this.debouncedRequests = new Map(); // Map of request type -> timeout ID
+    this.DEBOUNCE_DELAY = 2000; // 1 second debounce for broadcast-triggered requests
+    
+    // Request metrics tracking
+    this.requestMetrics = {
+      total: 0,
+      byType: {},
+      bySource: {
+        polling: 0,
+        broadcast: 0,
+        manual: 0
+      },
+      debounced: 0,
+      startTime: Date.now()
+    };
   }
 
   // Expose game state for Vue components
@@ -190,6 +208,130 @@ export class WebSocketManager {
     }
   }
 
+  /**
+   * Track a request being sent
+   * @param {string} requestType - Type of request (e.g., 'get-companies')
+   * @param {string} source - Source of request: 'polling', 'broadcast', 'manual'
+   */
+  trackRequest(requestType, source = 'manual') {
+    this.requestMetrics.total++;
+    
+    if (!this.requestMetrics.byType[requestType]) {
+      this.requestMetrics.byType[requestType] = 0;
+    }
+    this.requestMetrics.byType[requestType]++;
+    
+    if (this.requestMetrics.bySource[source] !== undefined) {
+      this.requestMetrics.bySource[source]++;
+    }
+  }
+
+  /**
+   * Get request metrics (callable from console: wsManager.getRequestStats())
+   * @returns {Object} Request statistics
+   */
+  getRequestStats() {
+    const elapsed = (Date.now() - this.requestMetrics.startTime) / 1000; // seconds
+    const perMinute = (this.requestMetrics.total / elapsed) * 60;
+    
+    const stats = {
+      total: this.requestMetrics.total,
+      elapsed_seconds: Math.round(elapsed),
+      requests_per_minute: Math.round(perMinute * 10) / 10,
+      by_source: { ...this.requestMetrics.bySource },
+      by_type: { ...this.requestMetrics.byType },
+      debounced_count: this.requestMetrics.debounced
+    };
+    
+    // Sort by type from most to least requests
+    const sortedByType = Object.entries(stats.by_type)
+      .sort((a, b) => b[1] - a[1])
+      .reduce((obj, [key, value]) => {
+        obj[key] = value;
+        return obj;
+      }, {});
+    
+    stats.by_type = sortedByType;
+    
+    console.log('=== WebSocket Request Statistics ===');
+    console.log(`Total Requests: ${stats.total}`);
+    console.log(`Elapsed Time: ${stats.elapsed_seconds}s`);
+    console.log(`Rate: ${stats.requests_per_minute} requests/minute`);
+    console.log(`Debounced: ${stats.debounced_count}`);
+    console.log('\nBy Source:');
+    console.table(stats.by_source);
+    console.log('\nBy Type (Top 10):');
+    const top10 = Object.entries(sortedByType).slice(0, 10);
+    console.table(Object.fromEntries(top10));
+    console.log('\nFull data returned as object');
+    
+    return stats;
+  }
+
+  /**
+   * Reset request metrics (callable from console: wsManager.resetRequestStats())
+   */
+  resetRequestStats() {
+    this.requestMetrics = {
+      total: 0,
+      byType: {},
+      bySource: {
+        polling: 0,
+        broadcast: 0,
+        manual: 0
+      },
+      debounced: 0,
+      startTime: Date.now()
+    };
+    console.log('[WS] Request metrics reset');
+  }
+
+  /**
+   * Print live request rate (callable from console: wsManager.printRequestRate())
+   */
+  printRequestRate() {
+    const elapsed = (Date.now() - this.requestMetrics.startTime) / 1000;
+    const perMinute = (this.requestMetrics.total / elapsed) * 60;
+    
+    console.log(`[WS] Current rate: ${Math.round(perMinute * 10) / 10} requests/minute (${this.requestMetrics.total} total)`);
+    return perMinute;
+  }
+
+  /**
+   * Start monitoring request rate (callable from console: wsManager.startMonitoring(intervalSeconds))
+   * @param {number} intervalSeconds - How often to print stats (default: 30)
+   * @returns {number} - Interval ID (use clearInterval(id) to stop)
+   */
+  startMonitoring(intervalSeconds = 30) {
+    if (this._monitoringInterval) {
+      console.log('[WS] Monitoring already running, stopping old one');
+      clearInterval(this._monitoringInterval);
+    }
+    
+    console.log(`[WS] Starting request monitoring (every ${intervalSeconds}s)`);
+    this.resetRequestStats();
+    
+    this._monitoringInterval = setInterval(() => {
+      this.printRequestRate();
+    }, intervalSeconds * 1000);
+    
+    return this._monitoringInterval;
+  }
+
+  /**
+   * Stop monitoring request rate (callable from console: wsManager.stopMonitoring())
+   */
+  stopMonitoring() {
+    if (this._monitoringInterval) {
+      clearInterval(this._monitoringInterval);
+      this._monitoringInterval = null;
+      console.log('[WS] Request monitoring stopped');
+      this.getRequestStats(); // Print final stats
+    } else {
+      console.log('[WS] No monitoring running');
+    }
+  }
+
   join_session(session_id, callback = null) {
     if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
       const error = "WebSocket is not connected";
@@ -259,7 +401,7 @@ export class WebSocketManager {
     return request_id;
   }
 
-  get_session(callback = null) {
+  get_session(callback = null, source = 'manual') {
     if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
       const error = "WebSocket is not connected";
       this.gameState.setError(error);
@@ -280,6 +422,8 @@ export class WebSocketManager {
     if (callback && typeof callback === "function") {
       this.pendingCallbacks.set(request_id, callback);
     }
+
+    this.trackRequest('get-session', source);
 
     this.socket.send(
       JSON.stringify({
@@ -312,6 +456,9 @@ export class WebSocketManager {
     if (callback && typeof callback === "function") {
       this.pendingCallbacks.set(request_id, callback);
     }
+    
+    this.trackRequest('get-session-event', 'manual');
+    
     this.socket.send(
       JSON.stringify({
         type: "get-session-event",
@@ -322,7 +469,7 @@ export class WebSocketManager {
     return request_id;
   }
 
-  get_companies(callback = null) {
+  get_companies(callback = null, source = 'manual') {
     if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
       const error = "WebSocket is not connected";
       this.gameState.setError(error);
@@ -335,6 +482,9 @@ export class WebSocketManager {
     if (callback && typeof callback === "function") {
       this.pendingCallbacks.set(request_id, callback);
     }
+    
+    this.trackRequest('get-companies', source);
+    
     this.socket.send(
       JSON.stringify({
         type: "get-companies",
@@ -345,13 +495,16 @@ export class WebSocketManager {
     return request_id;
   }
 
-  get_users(callback = null) {
+  get_users(callback = null, source = 'manual') {
     if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
       const error = "WebSocket is not connected";
       this.gameState.setError(error);
       if (callback) callback({ success: false, error });
       return null;
     }
+    
+    this.trackRequest('get-users', source);
+    
     const request_id = `get_users_${Date.now()}_${Math.random()
       .toString(36)
       .substr(2, 9)}`;
@@ -368,13 +521,16 @@ export class WebSocketManager {
     return request_id;
   }
 
-  get_factories(company_id, callback = null) {
+  get_factories(company_id, callback = null, source = 'manual') {
     if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
       const error = "WebSocket is not connected";
       this.gameState.setError(error);
       if (callback) callback({ success: false, error });
       return null;
     }
+    
+    this.trackRequest('get-factories', source);
+    
     const request_id = `get_factories_${Date.now()}_${Math.random()
       .toString(36)
       .substr(2, 9)}`;
@@ -391,13 +547,16 @@ export class WebSocketManager {
     return request_id;
   }
 
-  get_exchanges(callback = null) {
+  get_exchanges(callback = null, source = 'manual') {
     if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
       const error = "WebSocket is not connected";
       this.gameState.setError(error);
       if (callback) callback({ success: false, error });
       return null;
     }
+    
+    this.trackRequest('get-exchanges', source);
+    
     const request_id = `get_exchanges_${Date.now()}_${Math.random()
       .toString(36)
       .substr(2, 9)}`;
@@ -414,13 +573,16 @@ export class WebSocketManager {
     return request_id;
   }
 
-  get_all_item_prices(callback = null) {
+  get_all_item_prices(callback = null, source = 'manual') {
     if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
       const error = "WebSocket is not connected";
       this.gameState.setError(error);
       if (callback) callback({ success: false, error });
       return null;
     }
+    
+    this.trackRequest('get-items-price', source);
+    
     const request_id = `get_all_item_prices_${Date.now()}_${Math.random()
       .toString(36)
       .substr(2, 9)}`;
@@ -440,13 +602,16 @@ export class WebSocketManager {
     return request_id;
   }
 
-  get_cities(callback = null) {
+  get_cities(callback = null, source = 'manual') {
     if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
       const error = "WebSocket is not connected";
       this.gameState.setError(error);
       if (callback) callback({ success: false, error });
       return null;
     }
+    
+    this.trackRequest('get-cities', source);
+    
     const request_id = `get_cities_${Date.now()}_${Math.random()
       .toString(36)
       .substr(2, 9)}`;
@@ -463,13 +628,16 @@ export class WebSocketManager {
     return request_id;
   }
 
-  get_city(cityId, callback = null) {
+  get_city(cityId, callback = null, source = 'manual') {
     if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
       const error = "WebSocket is not connected";
       this.gameState.setError(error);
       if (callback) callback({ success: false, error });
       return null;
     }
+    
+    this.trackRequest('get-city', source);
+    
     const request_id = `get_city_${Date.now()}_${Math.random()
       .toString(36)
       .substr(2, 9)}`;
@@ -536,53 +704,7 @@ export class WebSocketManager {
     return request_id;
   }
 
-  get_contracts(callback = null) {
-    if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
-      const error = "WebSocket is not connected";
-      this.gameState.setError(error);
-      if (callback) callback({ success: false, error });
-      return null;
-    }
-    const request_id = `get_contracts_${Date.now()}_${Math.random()
-      .toString(36)
-      .substr(2, 9)}`;
-    if (callback && typeof callback === "function") {
-      this.pendingCallbacks.set(request_id, callback);
-    }
-    this.socket.send(
-      JSON.stringify({
-        type: "get-contracts",
-        session_id: this.gameState.state.session.id || undefined,
-        request_id: request_id,
-      })
-    );
-    return request_id;
-  }
-
-  get_contract(contractId, callback = null) {
-    if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
-      const error = "WebSocket is not connected";
-      this.gameState.setError(error);
-      if (callback) callback({ success: false, error });
-      return null;
-    }
-    const request_id = `get_contract_${Date.now()}_${Math.random()
-      .toString(36)
-      .substr(2, 9)}`;
-    if (callback && typeof callback === "function") {
-      this.pendingCallbacks.set(request_id, callback);
-    }
-    this.socket.send(
-      JSON.stringify({
-        type: "get-contract",
-        id: contractId,
-        request_id: request_id,
-      })
-    );
-    return request_id;
-  }
-
-  get_time_to_next_stage(callback = null) {
+  get_time_to_next_stage(callback = null, source = 'manual') {
     if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
       const error = "WebSocket is not connected";
       this.gameState.setError(error);
@@ -596,6 +718,8 @@ export class WebSocketManager {
       if (callback) callback({ success: false, error: "No session ID" });
       return null;
     }
+    
+    this.trackRequest('get-session-time-to-next-stage', source);
     
     const request_id = `get_time_${Date.now()}_${Math.random()
       .toString(36)
@@ -616,13 +740,15 @@ export class WebSocketManager {
     return request_id;
   }
 
-  get_session_statistics(callback = null) {
+  get_session_statistics(callback = null, source = 'manual') {
     if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
       const error = "WebSocket is not connected";
       this.gameState.setError(error);
       if (callback) callback({ success: false, error });
       return null;
     }
+    
+    this.trackRequest('get-all-session-statistics', source);
     
     const request_id = `get_statistics_${Date.now()}_${Math.random()
       .toString(36)
@@ -672,17 +798,107 @@ export class WebSocketManager {
     return request_id;
   }
 
-  startPolling(intervalMs = 5000) {
+  /**
+   * Debounce a request - delays execution and resets timer on repeated calls
+   * @param {string} requestKey - Unique key for this request type
+   * @param {Function} requestFn - Function to call after debounce
+   * @param {number} delay - Delay in milliseconds (default: DEBOUNCE_DELAY)
+   * @param {string} source - Source of request (default: 'broadcast')
+   */
+  debounceRequest(requestKey, requestFn, delay = this.DEBOUNCE_DELAY, source = 'broadcast') {
+    // Clear existing timer for this request type
+    if (this.debouncedRequests.has(requestKey)) {
+      clearTimeout(this.debouncedRequests.get(requestKey));
+      this.requestMetrics.debounced++; // Count debounced requests
+    }
+    
+    // Set new timer
+    const timeoutId = setTimeout(() => {
+      this.debouncedRequests.delete(requestKey);
+      requestFn(source); // Pass source to request function
+    }, delay);
+    
+    this.debouncedRequests.set(requestKey, timeoutId);
+  }
+
+  /**
+   * Check if a request is already pending to avoid duplicates
+   * @param {string} requestType - Type of request
+   * @returns {boolean} - True if request is already pending
+   */
+  isRequestPending(requestType) {
+    return this.pendingRequests.has(requestType);
+  }
+
+  /**
+   * Mark request as pending
+   * @param {string} requestType - Type of request
+   */
+  markRequestPending(requestType) {
+    this.pendingRequests.add(requestType);
+  }
+
+  /**
+   * Mark request as completed
+   * @param {string} requestType - Type of request
+   */
+  markRequestComplete(requestType) {
+    this.pendingRequests.delete(requestType);
+  }
+
+  /**
+   * Get polling interval based on game stage
+   * @returns {number} Interval in milliseconds
+   */
+  getPollingInterval() {
+    const stage = this.gameState.state.session.stage;
+    
+    switch (stage) {
+      case 'Setup':
+      case 'Lobby':
+        return 10000; // 10 seconds - less critical
+      case 'Between':
+        return 7000; // 7 seconds - moderate
+      case 'Active':
+        return 5000; // 5 seconds - most critical
+      case 'End':
+        return 0; // No polling
+      default:
+        return 5000; // Default to 5 seconds
+    }
+  }
+
+  startPolling(intervalMs = null) {
     this.stopPolling();
+    
+    // Use stage-based interval if not specified
+    const interval = intervalMs !== null ? intervalMs : this.getPollingInterval();
+    
+    if (interval === 0) {
+      console.log('[WS] Polling disabled for current stage');
+      return;
+    }
     
     // Initial comprehensive fetch
     this.fetchAllGameData();
     
     this._pollInterval = setInterval(() => {
       this.fetchAllGameData();
-    }, intervalMs);
+    }, interval);
     
-    console.log('[WS] Polling started');
+    console.log(`[WS] Polling started with ${interval}ms interval`);
+  }
+
+  /**
+   * Restart polling with updated interval based on current stage
+   */
+  restartPolling() {
+    const interval = this.getPollingInterval();
+    if (interval > 0) {
+      this.startPolling(interval);
+    } else {
+      this.stopPolling();
+    }
   }
 
   /**
@@ -696,32 +912,29 @@ export class WebSocketManager {
     }
     
     // 1. Session state and map (includes time_to_next_stage)
-    this.get_session();
+    this.get_session(null, 'polling');
     
     // 2. Explicitly fetch time to ensure it's always fresh
-    this.get_time_to_next_stage();
+    this.get_time_to_next_stage(null, 'polling');
     
     // 3. Event data
-    this.get_session_event();
+    this.get_session_event(null, 'polling');
     
     // 4. Companies and their users
-    this.get_companies();
-    this.get_users();
+    this.get_companies(null, 'polling');
+    this.get_users(null, 'polling');
     
     // 5. Cities
-    this.get_cities();
+    this.get_cities(null, 'polling');
     
-    // 6. Contracts
-    this.get_contracts();
+    // 6. Exchange data
+    this.get_exchanges(null, 'polling');
     
-    // 7. Exchange data
-    this.get_exchanges();
-    
-    // 8. Item prices
-    this.get_all_item_prices();
+    // 7. Item prices
+    this.get_all_item_prices(null, 'polling');
     
     // Note: Factories are fetched per company when needed
-    // Events, contracts, winners are handled via broadcasts
+    // Events are handled via broadcasts
   }
 
   /**
@@ -745,8 +958,7 @@ export class WebSocketManager {
     this.get_companies();
     this.get_users();
     
-    // 4. Contracts and exchanges (active data)
-    this.get_contracts();
+    // 4. Exchanges (active data)
     this.get_exchanges();
     
     // 5. Item prices
@@ -803,10 +1015,6 @@ export class WebSocketManager {
         this.handleCityResponse(message);
       } else if (message.request_id.startsWith("sell_to_city_")) {
         this.handleSellToCityResponse(message);
-      } else if (message.request_id.startsWith("get_contracts_")) {
-        this.handleContractsResponse(message);
-      } else if (message.request_id.startsWith("get_contract_")) {
-        this.handleContractResponse(message);
       } else if (message.request_id.startsWith("get_time_")) {
         this.handleTimeResponse(message);
       } else if (message.request_id.startsWith("get_statistics_")) {
@@ -1165,55 +1373,6 @@ export class WebSocketManager {
     if (callback) this.pendingCallbacks.delete(requestId);
   }
 
-  handleContractsResponse(message) {
-    const requestId = message.request_id;
-    const callback = this.pendingCallbacks.get(requestId);
-    
-    if (message.data) {
-      let contractsData = [];
-      
-      if (Array.isArray(message.data)) {
-        contractsData = message.data;
-      } else if (Array.isArray(message.data.contracts)) {
-        contractsData = message.data.contracts;
-      }
-      
-      // Update game state
-      this.gameState.updateContracts(contractsData);
-      
-      if (callback) callback({ success: true, data: contractsData });
-    } else {
-      if (callback) callback({ success: false, error: "No contracts data" });
-    }
-    
-    if (callback) this.pendingCallbacks.delete(requestId);
-  }
-
-  handleContractResponse(message) {
-    const requestId = message.request_id;
-    const callback = this.pendingCallbacks.get(requestId);
-    
-    if (message.data) {
-      // Update this specific contract in the contracts array
-      const contractData = message.data;
-      const existingIndex = this.gameState.state.contracts.findIndex(
-        c => c.id === contractData.id
-      );
-      
-      if (existingIndex >= 0) {
-        this.gameState.state.contracts[existingIndex] = contractData;
-      } else {
-        this.gameState.state.contracts.push(contractData);
-      }
-      
-      if (callback) callback({ success: true, data: contractData });
-    } else {
-      if (callback) callback({ success: false, error: message.error || "No contract data" });
-    }
-    
-    if (callback) this.pendingCallbacks.delete(requestId);
-  }
-
   handleTimeResponse(message) {
     const requestId = message.request_id;
     const callback = this.pendingCallbacks.get(requestId);
@@ -1385,21 +1544,21 @@ export class WebSocketManager {
       console.log('[WS] EVENT BROADCAST DETECTED:', message.type, message.data);
     }
     
-    // Handle different broadcast types
+    // Handle different broadcast types with debouncing
     switch (message.type) {
       case 'api-create_company':
       case 'api-company_deleted':
       case 'api-user_added_to_company':
       case 'api-user_left_company':
-        // Refresh companies
-        this.get_companies();
+        // Debounced refresh companies
+        this.debounceRequest('companies', () => this.get_companies(null, 'broadcast'), 1000, 'broadcast');
         break;
 
       case 'api-company_set_position':
         // Log position change details
         console.log('[WS] Company position changed:', message.data);
-        // Refresh companies - this will trigger map update in handleCompaniesResponse
-        this.get_companies();
+        // Debounced refresh companies - this will trigger map update
+        this.debounceRequest('companies', () => this.get_companies(null, 'broadcast'), 1000, 'broadcast');
         break;
 
       case 'api-company_improvement_upgraded':
@@ -1407,15 +1566,15 @@ export class WebSocketManager {
         if (message.data) {
           this.gameState.addUpgrade(message.data);
         }
-        // Refresh companies
-        this.get_companies();
+        // Debounced refresh companies
+        this.debounceRequest('companies', () => this.get_companies(null, 'broadcast'), 1000, 'broadcast');
         break;
         
       case 'api-create_user':
       case 'api-update_user':
       case 'api-user_deleted':
-        // Refresh users
-        this.get_users();
+        // Debounced refresh users
+        this.debounceRequest('users', () => this.get_users(null, 'broadcast'), 1000, 'broadcast');
         break;
         
       case 'api-update_session_stage':
@@ -1428,23 +1587,21 @@ export class WebSocketManager {
           break;
         }
         
-        // Refresh session (includes time_to_next_stage)
-        this.get_session();
-        
-        // Explicitly refresh time to ensure we get the new timer value
-        this.get_time_to_next_stage();
-        
-        // Refresh event data (might have changed)
-        this.get_session_event();
+        // Immediate refresh for critical stage changes (no debounce, but mark as broadcast)
+        this.get_session(null, 'broadcast');
+        this.get_time_to_next_stage(null, 'broadcast');
+        this.get_session_event(null, 'broadcast');
 
         // If stage changed, reload map
         if (message.data && message.data.new_stage) {
           this.loadMapToDOM();
+          // Restart polling with new interval based on stage
+          this.restartPolling();
         }
         break;
         
       case 'api-session_deleted':
-        // Clear session if it's the current one
+        // Clear session if it's the current one (immediate, no debounce)
         if (message.data && message.data.session_id === this.gameState.state.session.id) {
           this.leaveSession();
         }
@@ -1456,16 +1613,19 @@ export class WebSocketManager {
         if (message.data && message.data.winners) {
           this.gameState.updateWinners(message.data.winners);
         }
-        // Refresh session to get End stage
-        this.get_session();
-        // Fetch statistics for the ended game
-        this.get_session_statistics();
+        // Stop polling for ended game
+        this.stopPolling();
+        // Immediate refresh (no debounce for game end, but mark as broadcast)
+        this.get_session(null, 'broadcast');
+        this.get_session_statistics(null, 'broadcast');
         break;
         
       case 'api-factory-start-complectation':
-        // Refresh factories if we have a company
+        // Debounced refresh factories if we have a company
         if (this.gameState.hasCompany) {
-          this.get_factories(this.gameState.state.currentUser.company_id);
+          this.debounceRequest('factories', () => {
+            this.get_factories(this.gameState.state.currentUser.company_id, null, 'broadcast');
+          }, 1000, 'broadcast');
         }
         break;
         
@@ -1483,14 +1643,14 @@ export class WebSocketManager {
             barter_amount: message.data.offer.barter_amount
           });
         }
-        // Refresh exchanges
-        this.get_exchanges();
+        // Debounced refresh exchanges
+        this.debounceRequest('exchanges', () => this.get_exchanges(null, 'broadcast'), 1000, 'broadcast');
         break;
         
       case 'api-exchange_offer_updated':
       case 'api-exchange_offer_cancelled':
-        // Refresh exchanges
-        this.get_exchanges();
+        // Debounced refresh exchanges
+        this.debounceRequest('exchanges', () => this.get_exchanges(null, 'broadcast'), 1000, 'broadcast');
         break;
         
       case 'api-exchange_trade_completed':
@@ -1508,40 +1668,45 @@ export class WebSocketManager {
             barter_amount: message.data.barter_amount
           });
         }
-        // Refresh exchanges and companies
-        this.get_exchanges();
-        this.get_companies();
+        // Debounced refresh exchanges and companies (batched together)
+        this.debounceRequest('exchanges', () => this.get_exchanges(null, 'broadcast'), 1000, 'broadcast');
+        this.debounceRequest('companies', () => this.get_companies(null, 'broadcast'), 1000, 'broadcast');
         break;
         
       case 'api-city-create':
       case 'api-city-delete':
-        // Refresh cities list
-        this.get_cities();
+        // Debounced refresh cities list
+        this.debounceRequest('cities', () => this.get_cities(null, 'broadcast'), 1000, 'broadcast');
         break;
         
       case 'api-city-update-demands':
-        // Update specific city demands
+        // Debounced update specific city demands
         if (message.data && message.data.city_id) {
-          this.get_city(message.data.city_id);
+          this.debounceRequest(`city_${message.data.city_id}`, () => {
+            this.get_city(message.data.city_id, null, 'broadcast');
+          }, 1000, 'broadcast');
         } else {
-          this.get_cities();
+          this.debounceRequest('cities', () => this.get_cities(null, 'broadcast'), 1000, 'broadcast');
         }
         break;
         
       case 'api-city-trade':
-        // Refresh cities and companies after trade
-        this.get_cities();
-        this.get_companies();
-        break;
+        // Track product sales from city trades
+        if (message.data && message.data.resource_id && message.data.amount) {
+          const resource = message.data.resource_id;
+          const amount = message.data.amount;
+          
+          if (!this.gameState.state.productSales[resource]) {
+            this.gameState.state.productSales[resource] = 0;
+          }
+          this.gameState.state.productSales[resource] += amount;
+          
+          console.log('[WS] City trade tracked:', resource, 'amount:', amount, 'total:', this.gameState.state.productSales[resource]);
+        }
         
-      case 'api-contract_created':
-      case 'api-contract_accepted':
-      case 'api-contract_declined':
-      case 'api-contract_cancelled':
-      case 'api-contract_deleted':
-        // Refresh contracts and companies
-        this.get_contracts();
-        this.get_companies();
+        // Debounced refresh cities and companies after trade
+        this.debounceRequest('cities', () => this.get_cities(null, 'broadcast'), 1000, 'broadcast');
+        this.debounceRequest('companies', () => this.get_companies(null, 'broadcast'), 1000, 'broadcast');
         break;
         
       case 'api-item_price_updated':
@@ -1550,8 +1715,8 @@ export class WebSocketManager {
         if (message.data && message.data.item_id && message.data.price !== undefined) {
           this.gameState.updateItemPrice(message.data.item_id, message.data.price);
         }
-        // Refresh all item prices to stay in sync
-        this.get_all_item_prices();
+        // Debounced refresh all item prices to stay in sync
+        this.debounceRequest('item_prices', () => this.get_all_item_prices(null, 'broadcast'), 1000, 'broadcast');
         break;
       
       case 'api-event_generated':

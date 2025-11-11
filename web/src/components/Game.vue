@@ -140,33 +140,6 @@ const formatExchangeText = (activity) => {
   return ''
 }
 
-// Computed property for contracts (latest 2, newest first)
-const latestContracts = computed(() => {
-  const contracts = wsManager?.gameState?.state?.contracts || []
-  const sessionContracts = contracts.filter(c => 
-    c.session_id === wsManager?.gameState?.state?.session?.id
-  )
-  // Show pending contracts first (not yet accepted)
-  const pendingContracts = sessionContracts.filter(c => !c.accepted)
-  // Get the last 2 contracts (most recent) and reverse to show newest first
-  return pendingContracts.slice(-2).reverse()
-})
-
-// Helper function to format contract text (matching the existing format)
-const formatContractText = (contract) => {
-  const customerName = getCompanyName(contract.customer_company_id)
-  const resourceName = wsManager?.gameState?.getResourceName(contract.resource)
-  
-  if (contract.supplier_company_id === 0) {
-    // Free contract
-    return `${customerName} создала свободный контракт на ${resourceName} на ${contract.duration_turns} ходов`
-  } else {
-    // Direct contract
-    const supplierName = getCompanyName(contract.supplier_company_id)
-    return `${customerName} создала контракт с ${supplierName} на ${resourceName} на ${contract.duration_turns} ходов`
-  }
-}
-
 // Computed property for recent upgrades (latest 4)
 const recentUpgrades = computed(() => {
   return wsManager?.gameState?.getRecentUpgrades(4) || []
