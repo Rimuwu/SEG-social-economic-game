@@ -268,6 +268,15 @@ onMounted(async () => {
     
     console.log('[Endgame] Fetching data for session:', wsManager.gameState.state.session.id)
     
+    // Fetch companies first (needed for chart labels)
+    wsManager.get_companies((response) => {
+      if (response.success) {
+        console.log('[Endgame] Companies fetched:', wsManager.gameState.state.companies.length)
+      } else {
+        console.error('[Endgame] Failed to fetch companies:', response.error)
+      }
+    })
+    
     // Fetch leaders/winners
     wsManager.get_session_leaders((response) => {
       if (response.success) {
