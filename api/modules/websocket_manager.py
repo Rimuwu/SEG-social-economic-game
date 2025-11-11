@@ -1,7 +1,13 @@
+from pathlib import Path
 from fastapi import WebSocket, WebSocketDisconnect
 from typing import Dict, List, Any, Optional
 import json
 from modules.logs import websocket_logger
+import json
+from global_modules.load_config import load_json
+
+config_path = Path(__file__).parent.parent / "config"
+events = load_json("broadcast.json", config_path)
 
 class WebSocketManager:
     """Менеджер для управления WebSocket соединениями"""
@@ -118,17 +124,24 @@ class WebSocketManager:
         """
         exclude = exclude or []
         success_count = 0
+        event_type = message.get('type')
 
         # Создаем копию списка клиентов, чтобы избежать изменения во время итерации
         clients = list(self.active_connections.keys())
 
         for client_id in clients:
             if client_id not in exclude:
-                if await self.send_message(client_id, message, False):
-                    success_count += 1
+                # Получаем первые 3 символа ID клиента
+                client_prefix = client_id[:3]
 
-        websocket_logger.info(
-            f"Broadcast ({message['type']}) for {success_count} clients")
+                # Проверяем, есть ли префикс в events и событие в списке
+                if client_prefix in events and event_type in events[client_prefix]:
+                    if await self.send_message(client_id, message, False):
+                        success_count += 1
+
+        if success_count:
+            websocket_logger.info(
+                f"Broadcast ({event_type}) for {success_count} clients")
         return success_count
 
     def get_connected_clients(self) -> List[str]:

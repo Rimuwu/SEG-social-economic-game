@@ -44,7 +44,7 @@ async def _get_user_mention(user: dict) -> str:
 
 async def _format_winners_message(winners: dict, session_id: str) -> str:
     """Форматировать сообщение о победителях"""
-    message = f"🏆 *Результаты игры {session_id}:*\n\n"
+    message = f"🏆 Результаты игры {session_id}:\n\n"
 
     for category, company_data in winners.items():
         if not company_data:
@@ -57,18 +57,18 @@ async def _format_winners_message(winners: dict, session_id: str) -> str:
         }
 
         company_name = company_data.get('name', 'Неизвестная компания')
-        message += f"{category_names.get(category, category)}: *{company_name}*\n"
+        message += f"{category_names.get(category, category)}: {company_name}\n"
 
         # Получаем участников компании
         try:
             users_data = company_data.get('users', [])
             if users_data:
-                message += "Участники: "
+                message += "Участники: \n"
                 mentions = []
                 for user in users_data:
                     mention = await _get_user_mention(user)
                     mentions.append(mention)
-                message += ", ".join(mentions) + "\n"
+                message += "\n- ".join(mentions)
         except Exception as e:
             bot_logger.error(f"Ошибка при получении участников компании: {e}")
 
@@ -93,7 +93,7 @@ async def on_company_to_prison(message: dict):
             await bot.send_message(
                 GROUP_ID,
                 winners_message,
-                parse_mode="Markdown"
+                parse_mode=None
             )
         except Exception as e:
             bot_logger.error(f"Ошибка при отправке сообщения админу {GROUP_ID}: {e}")

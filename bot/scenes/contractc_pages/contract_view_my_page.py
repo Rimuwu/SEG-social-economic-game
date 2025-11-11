@@ -41,7 +41,7 @@ class ContractViewMyPage(OneUserPage):
             
             text = ""
             if contract.get("accepted"):
-                text = f"🚚 Доставлен: {'Да' if contract.get('delivered_this_turn') else 'Нет'}"
+                text = f"\n🚚 Доставлен: {'Да' if contract.get('delivered_this_turn') else 'Нет'}"
             return self.content.format(
                 c_id=contract.get("id"),
                 resource_label=f"{resource.emoji} {resource.label}",
@@ -69,8 +69,11 @@ class ContractViewMyPage(OneUserPage):
             print(contracts_list)
             contracts = []
             for c in contracts_list:
-                if c.get("who_creator") == company_id:
-                    contracts.append(c)
+                if c.get("supplier_company_id") == company_id or c.get("customer_company_id") == company_id:
+                    if c.get("who_creator") != company_id and c.get("accepted") == True:
+                        contracts.append(c)
+                    elif c.get("who_creator") == company_id:
+                        contracts.append(c)
             items_per_page = 5
             total_pages = max(1, (len(contracts) + items_per_page - 1) // items_per_page)
             page %= total_pages

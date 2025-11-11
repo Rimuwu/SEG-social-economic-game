@@ -7,6 +7,7 @@ from modules.ws_client import (
     get_company,
     execute_contract,
     cancel_contract,
+    decline_contract
 )
 from global_modules.load_config import ALL_CONFIGS, Resources
 from oms.utils import callback_generator
@@ -174,8 +175,20 @@ class ContractExecutePage(OneUserPage):
                 }
             )
 
+        buttons.append({
+            "text": "↪️ Назад",
+            "callback_data": callback_generator(self.scene.__scene_name__, "back_page_main"),
+            "ignore_row": True
+        })
+        
         return buttons
 
+    @OneUserPage.on_callback("back_page_main")
+    async def back_pagess(self, callback, args):
+        self._contracts_cache = None
+        await self.scene.update_key(self.__page_name__, "error", None)
+        await self.scene.update_page("contract-main-page")
+    
     @OneUserPage.on_callback("select_contract")
     async def select_contract(self, callback: CallbackQuery, args: List[str]):
         if len(args) < 2:
@@ -279,7 +292,7 @@ class ContractExecutePage(OneUserPage):
             await callback.answer("Компания не найдена", show_alert=True)
             return
 
-        response = await cancel_contract(contract_id=contract_id, who_canceller=company_id)
+        response = await decline_contract(contract_id=contract_id, who_decliner=company_id)
         if isinstance(response, dict) and response.get("error"):
             error_message = str(response.get("error"))
             await self.scene.update_key(self.__page_name__, "error", error_message)
@@ -422,6 +435,7 @@ class ContractExecutePage(OneUserPage):
         amount = contract.get("amount_per_turn")
         duration = contract.get("duration_turns")
         payment = contract.get("payment_amount")
+        delivered_this_turn = contract.get("delivered_this_turn")
 
         amount_text = str(amount) if amount is not None else "-"
         duration_text = str(duration) if duration is not None else "-"
@@ -436,7 +450,7 @@ class ContractExecutePage(OneUserPage):
             f"⏱️ Длительность: {duration_text} ходов",
             f"💰 Цена: {payment_text}",
             f"🛠️ Создатель: {contract.get('creator_name')}",
-            "⚠️ Доставка в этот ход ещё не выполнена.",
+            "⚠️ Доставка в этот ход ещё не выполнена." if not delivered_this_turn else "✅ Доставка в этот ход уже выполнена.",
         ]
 
         return "\n".join(details)

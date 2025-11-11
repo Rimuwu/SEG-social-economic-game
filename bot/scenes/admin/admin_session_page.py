@@ -162,8 +162,9 @@ class SessionAdd(Page):
             await self.scene.update_message()
         
     
-    @Page.on_text("str")
-    async def handle_str(self, message, value: str):
+    @Page.on_text("all")
+    async def handle_str(self, message):
+        value = message.text
         try:
             data = json.loads(self.scene.get_key(self.__page_name__, "settings"))
         except:

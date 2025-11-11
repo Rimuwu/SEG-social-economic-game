@@ -268,10 +268,15 @@ async def go_previous_page(message: Message):
     scene = scene_manager.get_scene(user_id)
     scene_data = scene.get_data('scene') or {}
     session_id = scene_data.get('session')
+    company_id = scene_data.get("company_id")
     s = await get_session(session_id=session_id)
     stage = s.get('stage')
     if stage == "Game":
         try:
+            comp_data = await get_company(id=company_id)
+            if comp_data.get("in_prison"):
+                await scene.update_page("prison-page")
+                return
             await scene.update_page("main-page")
         except Exception as exc:  # noqa: BLE001
             await message.answer(f"Не удалось переключиться: {exc}")
