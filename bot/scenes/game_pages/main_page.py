@@ -12,19 +12,38 @@ class MainPage(Page):
 
     async def data_preparate(self):
         session_id = self.scene.get_key("scene", "session")
-        s = await get_session(session_id=session_id)
-        if self.scene.get_key(self.__page_name__, "max_time") is None:
-            await self.scene.update_key(self.__page_name__, "max_time", s.get("time_to_next_stage"))
-        else:
-            await self.scene.update_key(self.__page_name__, "max_time", max(s.get("time_to_next_stage"), self.scene.get_key(self.__page_name__, "max_time")))
-
-    async def content_worker(self) -> str:
         company_id = self.scene.get_key("scene", "company_id")
-        session_id = self.scene.get_key("scene", "session")
+        # Загружаем все необходимые данные заранее
         s = await get_session(session_id=session_id)
         company = await get_company(id=company_id)
         warehouses = await get_company_warehouse(company_id=company_id)
         contracts = await get_contracts(session_id=session_id)
+        ev = await get_session_event(session_id=session_id)
+
+        # Сохраняем кэшированные данные
+        await self.scene.update_key(self.__page_name__, "session_data", s)
+        await self.scene.update_key(self.__page_name__, "company_data", company)
+        await self.scene.update_key(self.__page_name__, "warehouses_data", warehouses)
+        await self.scene.update_key(self.__page_name__, "contracts_data", contracts)
+        await self.scene.update_key(self.__page_name__, "event_data", ev)
+
+        # Отслеживаем максимум таймера до следующей стадии, чтобы строить прогресс-бар
+        if self.scene.get_key(self.__page_name__, "max_time") is None:
+            await self.scene.update_key(self.__page_name__, "max_time", s.get("time_to_next_stage"))
+        else:
+            await self.scene.update_key(
+                self.__page_name__,
+                "max_time",
+                max(s.get("time_to_next_stage"), self.scene.get_key(self.__page_name__, "max_time"))
+            )
+
+    async def content_worker(self) -> str:
+        company_id = self.scene.get_key("scene", "company_id")
+        session_id = self.scene.get_key("scene", "session")
+        s = self.scene.get_key(self.__page_name__, "session_data")
+        company = self.scene.get_key(self.__page_name__, "company_data")
+        warehouses = self.scene.get_key(self.__page_name__, "warehouses_data")
+        contracts = self.scene.get_key(self.__page_name__, "contracts_data")
         contract_new = 0
         contract_not_delivered = 0
         for c in contracts:
@@ -43,7 +62,7 @@ class MainPage(Page):
         max_time = self.scene.get_key(self.__page_name__, "max_time")
         field = int(((max_time - time_to_next_stage) / max_time) * 15)
         progress_bar = "█" * field + "░" * (15 - field)
-        ev = await get_session_event(session_id=session_id)
+        ev = self.scene.get_key(self.__page_name__, "event_data")
         event_text = "Нет"
         if ev["event"] != {}:
             event_text = ev["event"]["name"]

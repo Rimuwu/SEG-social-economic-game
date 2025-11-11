@@ -11,14 +11,20 @@ class BankCreditPay(Page):
     __page_name__ = "bank-credit-pay"
     __for_blocked_pages__ = ["bank-menu"]
     
+    async def data_preparate(self):
+        """Кэшируем данные компании для страницы оплаты кредита"""
+        company_id = self.scene.get_key("scene", "company_id")
+        company_data = await get_company(id=company_id)
+        await self.scene.update_key(self.__page_name__, "company_data", company_data)
+    
     async def content_worker(self):
         scene_data = self.scene.get_data('scene')
         company_id = scene_data.get('company_id')
         pay_credit_index = scene_data.get('pay_credit_index', 0)
         error = scene_data.get('error_message', '')
         
-        # Получаем данные компании
-        company_data = await get_company(id=company_id)
+        # Получаем данные компании из кэша
+        company_data = self.scene.get_key(self.__page_name__, "company_data")
         
         if isinstance(company_data, str):
             return f"❌ Ошибка при получении данных: {company_data}"
@@ -81,8 +87,8 @@ class BankCreditPay(Page):
         # Очищаем предыдущую ошибку
         scene_data['error_message'] = ''
         
-        # Получаем данные для проверки
-        company_data = await get_company(id=company_id)
+        # Получаем данные для проверки из кэша
+        company_data = self.scene.get_key(self.__page_name__, "company_data")
         if isinstance(company_data, str):
             scene_data['error_message'] = f'Ошибка: {company_data}'
             await self.scene.set_data('scene', scene_data)
@@ -142,4 +148,6 @@ class BankCreditPay(Page):
             scene_data['error_message'] = ''
             scene_data['success_message'] = f'Платеж выполнен: {value:,} 💰'.replace(",", " ")
             await self.scene.set_data('scene', scene_data)
+            # Инвалидируем кэш на главной кредитной странице
+            await self.scene.update_key('bank-credit-main', 'company_data', None)
             await self.scene.update_page('bank-credit-main')

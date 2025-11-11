@@ -94,10 +94,13 @@ class ExchangeFilter(OneUserPage):
             return
         
         # Проверяем, есть ли предложения с этим ресурсом
-        exchanges = await get_exchanges(
-            session_id=session_id,
-            sell_resource=resource_id
-        )
+        # Проверяем наличие через основной кеш, при необходимости делаем запрос
+        exchanges = self.scene.get_key('exchange-main-page', 'exchanges_list')
+        if exchanges is None:
+            exchanges = await get_exchanges(session_id=session_id, sell_resource=resource_id)
+        else:
+            # Если в кеше все предложения без фильтра — отфильтруем локально
+            exchanges = [e for e in exchanges if e.get('sell_resource') == resource_id]
         
         if isinstance(exchanges, str) or not exchanges or len(exchanges) == 0:
             resource_name = self.item_filter.get_resource_name(resource_id)
@@ -113,6 +116,9 @@ class ExchangeFilter(OneUserPage):
         await self.scene.set_data('scene', scene_data)
         
         resource_name = self.item_filter.get_resource_name(resource_id)
+        # Сбросим кеш списка (теперь нужен список с фильтром)
+        await self.scene.update_key('exchange-main-page', 'exchanges_list', None)
+        await self.scene.update_key('exchange-main-page', 'exchanges_error', None)
         await self.scene.update_page('exchange-main-page')
         await callback.answer(f"✅ Поиск: {resource_name}")
     
@@ -125,6 +131,9 @@ class ExchangeFilter(OneUserPage):
         scene_data['list_page'] = 0
         await self.scene.set_data('scene', scene_data)
         
+        # Сброс кеша для обновленного общего списка
+        await self.scene.update_key('exchange-main-page', 'exchanges_list', None)
+        await self.scene.update_key('exchange-main-page', 'exchanges_error', None)
         await self.scene.update_page('exchange-main-page')
         await callback.answer("🔄 Поиск сброшен")
     

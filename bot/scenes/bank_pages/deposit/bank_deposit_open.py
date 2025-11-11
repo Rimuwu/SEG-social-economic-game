@@ -11,13 +11,18 @@ class BankDepositOpenAmount(Page):
     
     __page_name__ = "bank-deposit-open-amount"
     __for_blocked_pages__ = ["bank-menu"]
+    async def data_preparate(self):
+        """Кэшируем данные компании для страницы"""
+        company_id = self.scene.get_key("scene", "company_id")
+        company_data = await get_company(id=company_id)
+        await self.scene.update_key(self.__page_name__, "company_data", company_data)
     async def content_worker(self):
         scene_data = self.scene.get_data('scene')
         company_id = scene_data.get('company_id')
         error = scene_data.get('error_message', '')
         
-        # Получаем данные компании
-        company_data = await get_company(id=company_id)
+        # Получаем данные компании из кэша
+        company_data = self.scene.get_key(self.__page_name__, "company_data")
         
         if isinstance(company_data, str):
             return f"❌ Ошибка при получении данных: {company_data}"
@@ -81,8 +86,8 @@ class BankDepositOpenAmount(Page):
         min_deposit = CAPITAL.bank.contribution.min
         max_deposit = CAPITAL.bank.contribution.max
         
-        # Получаем баланс
-        company_data = await get_company(id=company_id)
+        # Получаем баланс из кэша
+        company_data = self.scene.get_key(self.__page_name__, "company_data")
         if isinstance(company_data, str):
             scene_data['error_message'] = f'Ошибка: {company_data}'
             await self.scene.set_data('scene', scene_data)
@@ -121,6 +126,14 @@ class BankDepositOpenPeriod(Page):
     """Страница ввода срока вклада"""
     
     __page_name__ = "bank-deposit-open-period"
+    async def data_preparate(self):
+        """Кэшируем данные компании и сессии для страницы"""
+        company_id = self.scene.get_key("scene", "company_id")
+        session_id = self.scene.get_key("scene", "session")
+        company_data = await get_company(id=company_id)
+        session_data = await get_session(session_id=session_id)
+        await self.scene.update_key(self.__page_name__, "company_data", company_data)
+        await self.scene.update_key(self.__page_name__, "session_data", session_data)
     
     async def content_worker(self):
         scene_data = self.scene.get_data('scene')
@@ -129,9 +142,9 @@ class BankDepositOpenPeriod(Page):
         deposit_amount = scene_data.get('deposit_amount', 0)
         error = scene_data.get('error_message', '')
         
-        # Получаем данные компании и сессии
-        company_data = await get_company(id=company_id)
-        session_data = await get_session(session_id=session_id)
+        # Получаем данные компании и сессии из кэша
+        company_data = self.scene.get_key(self.__page_name__, "company_data")
+        session_data = self.scene.get_key(self.__page_name__, "session_data")
         
         if isinstance(company_data, str):
             return f"❌ Ошибка при получении данных: {company_data}"
@@ -196,8 +209,8 @@ class BankDepositOpenPeriod(Page):
         # Очищаем предыдущую ошибку
         scene_data['error_message'] = ''
         
-        # Получаем данные сессии для проверки срока
-        session_data = await get_session(session_id=session_id)
+        # Получаем данные сессии для проверки срока из кэша
+        session_data = self.scene.get_key(self.__page_name__, "session_data")
         if isinstance(session_data, str):
             scene_data['error_message'] = f'Ошибка: {session_data}'
             await self.scene.set_data('scene', scene_data)
@@ -232,6 +245,11 @@ class BankDepositOpenConfirm(Page):
     """Страница подтверждения открытия вклада"""
     
     __page_name__ = "bank-deposit-open-confirm"
+    async def data_preparate(self):
+        """Кэшируем данные компании для страницы"""
+        company_id = self.scene.get_key("scene", "company_id")
+        company_data = await get_company(id=company_id)
+        await self.scene.update_key(self.__page_name__, "company_data", company_data)
     
     async def content_worker(self):
         scene_data = self.scene.get_data('scene')
@@ -239,8 +257,8 @@ class BankDepositOpenConfirm(Page):
         deposit_amount = scene_data.get('deposit_amount', 0)
         deposit_period = scene_data.get('deposit_period', 0)
         
-        # Получаем данные компании
-        company_data = await get_company(id=company_id)
+        # Получаем данные компании из кэша
+        company_data = self.scene.get_key(self.__page_name__, "company_data")
         
         if isinstance(company_data, str):
             return f"❌ Ошибка при получении данных: {company_data}"
@@ -324,6 +342,9 @@ class BankDepositOpenConfirm(Page):
             scene_data['deposit_amount'] = 0
             scene_data['deposit_period'] = 0
             await self.scene.set_data('scene', scene_data)
+            # Инвалидируем кэш компании на главной странице вкладов, чтобы при открытии она обновилась
+            await self.scene.update_key('bank-deposit-main', 'company_data', None)
+            await self.scene.update_key('bank-deposit-main', 'session_data', None)
             await self.scene.update_page('bank-deposit-main')
         elif isinstance(result, dict) and 'error' in result:
             # Обрабатываем ошибку из API
@@ -346,6 +367,9 @@ class BankDepositOpenConfirm(Page):
             scene_data['deposit_amount'] = 0
             scene_data['deposit_period'] = 0
             await self.scene.set_data('scene', scene_data)
+            # Инвалидируем кэш главной страницы вкладов
+            await self.scene.update_key('bank-deposit-main', 'company_data', None)
+            await self.scene.update_key('bank-deposit-main', 'session_data', None)
             await self.scene.update_page('bank-deposit-main')
         else:
             # Успешное открытие вклада
@@ -354,6 +378,9 @@ class BankDepositOpenConfirm(Page):
             scene_data['success_message'] = f'Вклад открыт! Внесено: {deposit_amount:,} 💰 на {deposit_period} ход(ов)'.replace(",", " ")
             await self.scene.set_data('scene', scene_data)
             
+            # Инвалидируем кэш главной страницы вкладов
+            await self.scene.update_key('bank-deposit-main', 'company_data', None)
+            await self.scene.update_key('bank-deposit-main', 'session_data', None)
             await self.scene.update_page('bank-deposit-main')
             await callback.answer(
                 f"✅ Вклад открыт!\n"

@@ -19,6 +19,9 @@ class ContractViewMyPage(OneUserPage):
             await self.scene.update_key(self.__page_name__, "page", 0)
         if self.scene.get_key(self.__page_name__, "selected_contract_id") is None:
             await self.scene.update_key(self.__page_name__, "selected_contract_id", None)
+        # Предзагрузка и кэширование списка "моих" контрактов
+        contracts = await self._build_my_contracts_list()
+        await self.scene.update_key(self.__page_name__, "contracts_list_my", contracts)
     
     async def content_worker(self):
         view = self.scene.get_key(self.__page_name__, "view")
@@ -63,17 +66,7 @@ class ContractViewMyPage(OneUserPage):
         if view:
             buttons.append(create_buttons(self.scene.__scene_name__, "↪ К выбору", "back_to_s", ignore_row=True))
         else:
-            company_id = self.scene.get_key("scene", "company_id")
-            session_id = self.scene.get_key("scene", "session")
-            contracts_list = await get_contracts(session_id=session_id)
-            print(contracts_list)
-            contracts = []
-            for c in contracts_list:
-                if c.get("supplier_company_id") == company_id or c.get("customer_company_id") == company_id:
-                    if c.get("who_creator") != company_id and c.get("accepted") == True:
-                        contracts.append(c)
-                    elif c.get("who_creator") == company_id:
-                        contracts.append(c)
+            contracts = self.scene.get_key(self.__page_name__, "contracts_list_my") or []
             items_per_page = 5
             total_pages = max(1, (len(contracts) + items_per_page - 1) // items_per_page)
             page %= total_pages
@@ -97,9 +90,12 @@ class ContractViewMyPage(OneUserPage):
                 )
             else:
                 for contract in page_contracts:
-                    text = (
-                        f"• #{contract.get('id')} — {RESOURCES.get_resource(contract.get('resource')).emoji}  {RESOURCES.get_resource(contract.get('resource')).label}"
-                    )
+                    # Ожидаем, что список уже содержит готовую подпись ресурса
+                    res_label = contract.get("resource_label")
+                    if not res_label:
+                        r = RESOURCES.get_resource(contract.get("resource"))
+                        res_label = f"{r.emoji} {r.label}" if r else str(contract.get("resource"))
+                    text = f"• #{contract.get('id')} — {res_label}"
                     buttons.append(
                         {
                             "text": text,
@@ -150,13 +146,7 @@ class ContractViewMyPage(OneUserPage):
     @OneUserPage.on_callback("contracts_next_page")
     async def next_page(self, callback: CallbackQuery, args):
         page_index = self.scene.get_key(self.__page_name__, "page") or 0
-        company_id = self.scene.get_key("scene", "company_id")
-        session_id = self.scene.get_key("scene", "session")
-        contracts_list = await get_contracts(session_id=session_id)
-        contracts = []
-        for c in contracts_list:
-            if c.get("who_creator") == company_id:
-                contracts.append(c)
+        contracts = self.scene.get_key(self.__page_name__, "contracts_list_my") or []
         items_per_page = 5
         total_pages = max(1, (len(contracts) + items_per_page - 1) // items_per_page)
         await self.scene.update_key(
@@ -167,13 +157,7 @@ class ContractViewMyPage(OneUserPage):
     @OneUserPage.on_callback("contracts_prev_page")
     async def prev_page(self, callback: CallbackQuery, args):
         page_index = self.scene.get_key(self.__page_name__, "page") or 0
-        company_id = self.scene.get_key("scene", "company_id")
-        session_id = self.scene.get_key("scene", "session")
-        contracts_list = await get_contracts(session_id=session_id)
-        contracts = []
-        for c in contracts_list:
-            if c.get("who_creator") == company_id:
-                contracts.append(c)
+        contracts = self.scene.get_key(self.__page_name__, "contracts_list_my") or []
         items_per_page = 5
         total_pages = max(1, (len(contracts) + items_per_page - 1) // items_per_page)
         await self.scene.update_key(
@@ -194,3 +178,33 @@ class ContractViewMyPage(OneUserPage):
         await self.scene.update_key(self.__page_name__, "view", False)
         await self.scene.update_key(self.__page_name__, "selected_contract_id", None)
         await self.scene.update_message()
+
+    async def _build_my_contracts_list(self):
+        session_id = self.scene.get_key("scene", "session")
+        company_id = self.scene.get_key("scene", "company_id")
+        if session_id is None or company_id is None:
+            return []
+
+        contracts_list = await get_contracts(session_id=session_id)
+        contracts = []
+        if isinstance(contracts_list, list):
+            for c in contracts_list:
+                try:
+                    supplier_id = c.get("supplier_company_id")
+                    customer_id = c.get("customer_company_id")
+                except Exception:
+                    continue
+                if supplier_id == company_id or customer_id == company_id:
+                    if c.get("who_creator") != company_id and c.get("accepted") == True:
+                        contracts.append(c)
+                    elif c.get("who_creator") == company_id:
+                        contracts.append(c)
+
+        # обогащаем подпись ресурса для кнопок
+        for c in contracts:
+            res_id = c.get("resource") or c.get("resource_id")
+            r = RESOURCES.get_resource(res_id) if res_id else None
+            c["resource_label"] = f"{r.emoji} {r.label}" if r else str(res_id)
+
+        contracts.sort(key=lambda item: item.get("id", 0))
+        return contracts

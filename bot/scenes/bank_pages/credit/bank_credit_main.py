@@ -14,11 +14,21 @@ class BankCreditMain(Page):
     
     __for_blocked_pages__ = ["bank-menu"]
     
+    async def data_preparate(self):
+        """Кэшируем данные компании для страницы кредитов"""
+        company_id = self.scene.get_key("scene", "company_id")
+        company_data = await get_company(id=company_id)
+        await self.scene.update_key(self.__page_name__, "company_data", company_data)
+    
     async def content_worker(self):
         scene_data = self.scene.get_data('scene')
         company_id = scene_data.get('company_id')
     
-        company_data = await get_company(id=company_id)     
+        # Достаём данные компании из кэша (подготовлены в data_preparate)
+        company_data = self.scene.get_key(self.__page_name__, "company_data")
+        if isinstance(company_data, str):
+            return f"❌ Ошибка при получении данных: {company_data}"
+        
         reputation = company_data.get('reputation', 0)
         credits = company_data.get('credits', [])
         
@@ -91,8 +101,8 @@ class BankCreditMain(Page):
         buttons = []
         self.row_width = 1
         
-        # Получаем данные компании
-        company_data = await get_company(id=company_id)
+        # Получаем данные компании из кэша
+        company_data = self.scene.get_key(self.__page_name__, "company_data")
         
         if isinstance(company_data, dict):
             reputation = company_data.get('reputation', 0)
@@ -141,7 +151,7 @@ class BankCreditMain(Page):
         company_id = scene_data.get('company_id')
         
         # Проверяем репутацию и количество кредитов перед началом процесса
-        company_data = await get_company(id=company_id)
+        company_data = self.scene.get_key(self.__page_name__, "company_data")
         if isinstance(company_data, dict):
             reputation = company_data.get('reputation', 0)
             credits = company_data.get('credits', [])
@@ -194,8 +204,8 @@ class BankCreditMain(Page):
             await callback.answer("❌ Ошибка: компания не найдена", show_alert=True)
             return
         
-        # Получаем данные компании
-        company_data = await get_company(id=company_id)
+        # Получаем данные компании из кэша
+        company_data = self.scene.get_key(self.__page_name__, "company_data")
         if isinstance(company_data, str):
             await callback.answer(f"❌ Ошибка: {company_data}", show_alert=True)
             return

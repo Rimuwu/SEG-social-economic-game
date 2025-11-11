@@ -11,6 +11,22 @@ class ExchangeMain(OneUserPage):
     """Главная страница биржи со списком предложений"""
     
     __page_name__ = "exchange-main-page"
+    async def data_preparate(self):
+        """Единичная подгрузка списка предложений с учетом фильтра."""
+        scene_data = self.scene.get_data('scene')
+        session_id = scene_data.get('session')
+        filter_resource = scene_data.get('filter_resource', None)
+        if not session_id:
+            await self.scene.update_key(self.__page_name__, 'exchanges_list', [])
+            return
+        # Загружаем и кешируем предложения
+        if filter_resource:
+            exchanges = await get_exchanges(session_id=session_id, sell_resource=filter_resource)
+        else:
+            exchanges = await get_exchanges(session_id=session_id)
+        # В случае ошибки сохраняем пустой список, а текст ошибки покажем в контенте
+        await self.scene.update_key(self.__page_name__, 'exchanges_error', exchanges if isinstance(exchanges, str) else None)
+        await self.scene.update_key(self.__page_name__, 'exchanges_list', exchanges if isinstance(exchanges, list) else [])
     
     async def content_worker(self):
         """Генерация контента - список предложений"""
@@ -38,16 +54,19 @@ class ExchangeMain(OneUserPage):
             resource = RESOURCES.get_resource(filter_resource)
             if resource:
                 filter_text = f"🔍 Поиск: {resource.emoji} {resource.label}\n\n"
-            exchanges = await get_exchanges(
-                session_id=session_id,
-                sell_resource=filter_resource
-            )
         else:
             filter_text = "📋 Все предложения:\n\n"
-            exchanges = await get_exchanges(session_id=session_id)
+        # Используем кешированный список
+        exchanges_error = self.scene.get_key(self.__page_name__, 'exchanges_error')
+        exchanges = self.scene.get_key(self.__page_name__, 'exchanges_list')
+        if exchanges is None:
+            # Если кеш пуст, подгружаем сейчас
+            await self.data_preparate()
+            exchanges_error = self.scene.get_key(self.__page_name__, 'exchanges_error')
+            exchanges = self.scene.get_key(self.__page_name__, 'exchanges_list')
         
-        if isinstance(exchanges, str):
-            return f"❌ Ошибка при получении предложений: {exchanges}"
+        if exchanges_error:
+            return f"❌ Ошибка при получении предложений: {exchanges_error}"
         
         # Формируем текст предложений
         if not exchanges or len(exchanges) == 0:
@@ -71,7 +90,7 @@ class ExchangeMain(OneUserPage):
         scene_data['total_pages'] = total_pages
         await self.scene.set_data('scene', scene_data)
         
-        # Получаем предложения для текущей страницы
+    # Получаем предложения для текущей страницы
         start_idx = current_page * items_per_page
         end_idx = start_idx + items_per_page
         page_exchanges = exchanges[start_idx:end_idx]
@@ -117,14 +136,11 @@ class ExchangeMain(OneUserPage):
         
         buttons = []
         
-        # Получаем предложения для генерации кнопок
-        if filter_resource:
-            exchanges = await get_exchanges(
-                session_id=session_id,
-                sell_resource=filter_resource
-            )
-        else:
-            exchanges = await get_exchanges(session_id=session_id)
+        # Получаем предложения из кеша для генерации кнопок
+        exchanges = self.scene.get_key(self.__page_name__, 'exchanges_list')
+        if exchanges is None:
+            await self.data_preparate()
+            exchanges = self.scene.get_key(self.__page_name__, 'exchanges_list')
         
         if isinstance(exchanges, list) and len(exchanges) > 0:
             # Пагинация
@@ -309,6 +325,9 @@ class ExchangeMain(OneUserPage):
         scene_data['selected_exchange_id'] = None
         scene_data['success_message'] = ''
         await self.scene.set_data('scene', scene_data)
+        # Сброс кеша списка предложений
+        await self.scene.update_key(self.__page_name__, 'exchanges_list', None)
+        await self.scene.update_key(self.__page_name__, 'exchanges_error', None)
         
         # Переходим на страницу главного меню
         await self.scene.update_page('main-page')

@@ -37,8 +37,11 @@ class FactoryChangeMode(Page):
             scene_data.pop('change_mode_error', None)
             await self.scene.set_data('scene', scene_data)
         
-        # Получаем все заводы компании
-        factories = await get_factories(company_id)
+        # Получаем заводы из кеша страницы или делаем запрос
+        factories = self.scene.get_key(self.__page_name__, 'factories_data')
+        if factories is None:
+            factories = await get_factories(company_id)
+            await self.scene.update_key(self.__page_name__, 'factories_data', factories)
         
         if not factories or not isinstance(factories, list):
             return "❌ Не удалось загрузить список заводов"
@@ -164,8 +167,11 @@ class FactoryChangeMode(Page):
         
         buttons = []
         
-        # Получаем заводы
-        factories = await get_factories(company_id)
+        # Получаем заводы (используем кеш)
+        factories = self.scene.get_key(self.__page_name__, 'factories_data')
+        if factories is None:
+            factories = await get_factories(company_id)
+            await self.scene.update_key(self.__page_name__, 'factories_data', factories)
         
         if not factories or not isinstance(factories, list):
             buttons.append({
@@ -353,8 +359,11 @@ class FactoryChangeMode(Page):
             await self._set_status("❌ Ошибка: недостаточно данных", "error")
             return
         
-        # Получаем заводы
-        factories = await get_factories(company_id)
+        # Получаем заводы (используем кеш)
+        factories = self.scene.get_key(self.__page_name__, 'factories_data')
+        if factories is None:
+            factories = await get_factories(company_id)
+            await self.scene.update_key(self.__page_name__, 'factories_data', factories)
         
         if not factories or not isinstance(factories, list):
             await self._set_status("❌ Не удалось загрузить заводы", "error")
@@ -447,6 +456,9 @@ class FactoryChangeMode(Page):
         await self.scene.set_data('scene', scene_data)
         
         await self.scene.update_page('factory-menu')
+        # Инвалидация кешей после смены режима
+        await self.scene.update_key('factory-menu', 'factories_data', None)
+        await self.scene.update_key(self.__page_name__, 'factories_data', None)
     
     def _set_status(self, message: str, level: str = "info"):
         """Установить статусное сообщение"""

@@ -10,6 +10,14 @@ class BankDepositView(Page):
     
     __page_name__ = "bank-deposit-view"
     __for_blocked_pages__ = ["bank-menu"]
+    async def data_preparate(self):
+        """Кэшируем данные компании и сессии для страницы"""
+        company_id = self.scene.get_key("scene", "company_id")
+        session_id = self.scene.get_key("scene", "session")
+        company_data = await get_company(id=company_id)
+        session_data = await get_session(session_id=session_id)
+        await self.scene.update_key(self.__page_name__, "company_data", company_data)
+        await self.scene.update_key(self.__page_name__, "session_data", session_data)
     async def content_worker(self):
         scene_data = self.scene.get_data('scene')
         company_id = scene_data.get('company_id')
@@ -19,9 +27,9 @@ class BankDepositView(Page):
         if not company_id:
             return "❌ Ошибка: компания не найдена"
         
-        # Получаем данные компании и сессии
-        company_data = await get_company(id=company_id)
-        session_data = await get_session(session_id=session_id)
+        # Получаем данные компании и сессии из кэша
+        company_data = self.scene.get_key(self.__page_name__, "company_data")
+        session_data = self.scene.get_key(self.__page_name__, "session_data")
         
         if isinstance(company_data, str):
             return f"❌ Ошибка при получении данных: {company_data}"
@@ -90,9 +98,9 @@ class BankDepositView(Page):
         
         buttons = []
         
-        # Получаем данные для проверки возможности снятия
-        company_data = await get_company(id=company_id)
-        session_data = await get_session(session_id=session_id)
+        # Получаем данные для проверки возможности снятия из кэша
+        company_data = self.scene.get_key(self.__page_name__, "company_data")
+        session_data = self.scene.get_key(self.__page_name__, "session_data")
         
         if isinstance(company_data, dict) and isinstance(session_data, dict):
             deposits = company_data.get('deposits', [])
@@ -137,10 +145,10 @@ class BankDepositView(Page):
             await callback.answer("❌ Ошибка: компания не найдена", show_alert=True)
             return
         
-        # Получаем данные компании и сессии
-        company_data = await get_company(id=company_id)
-        session_data = await get_session(session_id=session_id)
-        
+        # Получаем данные компании и сессии из кэша
+        company_data = self.scene.get_key(self.__page_name__, "company_data")
+        session_data = self.scene.get_key(self.__page_name__, "session_data")
+
         if isinstance(company_data, str):
             await callback.answer(f"❌ Ошибка: {company_data}", show_alert=True)
             return
@@ -177,11 +185,14 @@ class BankDepositView(Page):
         elif isinstance(result, dict) and 'error' in result:
             await callback.answer(f"❌ Ошибка: {result['error']}", show_alert=True)
         else:
-            # Успешное изъятие - возвращаемся к основному экрану
+            # Успешное изъятие - инвалидируем кэш и возвращаемся к основному экрану
             scene_data['success_message'] = f'Вклад изъят! Получено: {current_balance:,} 💰'.replace(",", " ")
             scene_data['viewing_deposit_index'] = None
             await self.scene.set_data('scene', scene_data)
-            
+            # Сбросим кэш главной страницы вкладов, чтобы она подтянула свежие данные
+            await self.scene.update_key('bank-deposit-main', 'company_data', None)
+            await self.scene.update_key('bank-deposit-main', 'session_data', None)
+
             await self.scene.update_page('bank-deposit-main')
             await callback.answer(f"✅ Вклад изъят: {current_balance:,} 💰".replace(",", " "), show_alert=True)
     

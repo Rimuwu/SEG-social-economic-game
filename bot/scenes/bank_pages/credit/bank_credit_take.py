@@ -12,17 +12,23 @@ class BankCreditTakePeriod(Page):
     __page_name__ = "bank-credit-take-period"
     __for_blocked_pages__ = ["bank-menu"]
     
+    async def data_preparate(self):
+        """Кэшируем данные сессии для страницы ввода срока"""
+        session_id = self.scene.get_key("scene", "session")
+        session_data = await get_session(session_id=session_id)
+        await self.scene.update_key(self.__page_name__, "session_data", session_data)
+    
     async def content_worker(self):
         scene_data = self.scene.get_data('scene')
         session_id = scene_data.get('session')
         error = scene_data.get('error_message', '')
         
-        # Получаем данные сессии
-        session_data = await get_session(session_id=session_id)
+        # Получаем данные сессии из кэша
+        session_data = self.scene.get_key(self.__page_name__, "session_data")
         
         # Получаем текущий ход и максимум
         current_step = session_data.get('step', 0)
-        max_step = session_data.get('max_step', 15)
+        max_step = session_data.get('max_steps', 15)
         max_period = max_step - current_step
         
         text = self.content.format(
@@ -74,8 +80,8 @@ class BankCreditTakePeriod(Page):
             await self.scene.update_message()
             return
         
-        # Получаем данные для проверки максимального срока
-        session_data = await get_session(session_id=session_id)
+        # Получаем данные для проверки максимального срока из кэша
+        session_data = self.scene.get_key(self.__page_name__, "session_data")
         
         current_step = session_data.get('step')
         max_step = session_data.get('max_steps')
@@ -181,14 +187,20 @@ class BankCreditTakeConfirm(Page):
     
     __page_name__ = "bank-credit-take-confirm"
     
+    async def data_preparate(self):
+        """Кэшируем данные компании для подтверждения кредита"""
+        company_id = self.scene.get_key("scene", "company_id")
+        company_data = await get_company(id=company_id)
+        await self.scene.update_key(self.__page_name__, "company_data", company_data)
+    
     async def content_worker(self):
         scene_data = self.scene.get_data('scene')
         company_id = scene_data.get('company_id')
         credit_period = scene_data.get('credit_period', 0)
         credit_amount = scene_data.get('credit_amount', 0)
         
-        # Получаем данные компании
-        company_data = await get_company(id=company_id)
+        # Получаем данные компании из кэша
+        company_data = self.scene.get_key(self.__page_name__, "company_data")
         
         if isinstance(company_data, str):
             return f"❌ Ошибка при получении данных: {company_data}"
@@ -266,6 +278,8 @@ class BankCreditTakeConfirm(Page):
             scene_data['credit_amount'] = 0
             scene_data['credit_period'] = 0
             await self.scene.set_data('scene', scene_data)
+            # Инвалидируем кэш главной страницы кредитов
+            await self.scene.update_key('bank-credit-main', 'company_data', None)
             await self.scene.update_page('bank-credit-main')
         elif isinstance(result, dict) and 'error' in result:
             # Обрабатываем ошибку из API
@@ -283,6 +297,8 @@ class BankCreditTakeConfirm(Page):
             scene_data['credit_amount'] = 0
             scene_data['credit_period'] = 0
             await self.scene.set_data('scene', scene_data)
+            # Инвалидируем кэш главной страницы кредитов
+            await self.scene.update_key('bank-credit-main', 'company_data', None)
             await self.scene.update_page('bank-credit-main')
         else:
             await callback.answer(
@@ -296,6 +312,8 @@ class BankCreditTakeConfirm(Page):
             scene_data['credit_period'] = 0
             scene_data['success_message'] = f'Кредит оформлен: {credit_amount:,} 💰 на {credit_period} ход(ов)'.replace(",", " ")
             await self.scene.set_data('scene', scene_data)
+            # Инвалидируем кэш главной страницы кредитов
+            await self.scene.update_key('bank-credit-main', 'company_data', None)
             await self.scene.update_page('bank-credit-main')
     
     @Page.on_callback('cancel')

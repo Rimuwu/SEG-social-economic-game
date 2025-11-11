@@ -11,6 +11,16 @@ class BankDepositMain(Page):
     
     __page_name__ = "bank-deposit-main"
     __for_blocked_pages__ = ["bank-menu"]
+    async def data_preparate(self):
+        """Кэшируем данные компании и сессии для страницы"""
+        company_id = self.scene.get_key("scene", "company_id")
+        session_id = self.scene.get_key("scene", "session")
+
+        company_data = await get_company(id=company_id)
+        session_data = await get_session(session_id=session_id)
+
+        await self.scene.update_key(self.__page_name__, "company_data", company_data)
+        await self.scene.update_key(self.__page_name__, "session_data", session_data)
     async def content_worker(self):
         scene_data = self.scene.get_data('scene')
         company_id = scene_data.get('company_id')
@@ -19,9 +29,9 @@ class BankDepositMain(Page):
         if not company_id:
             return "❌ Ошибка: компания не найдена"
         
-        # Получаем данные компании
-        company_data = await get_company(id=company_id)
-        session_data = await get_session(session_id=session_id)
+        # Получаем данные компании и сессии из кэша (загружается в data_preparate)
+        company_data = self.scene.get_key(self.__page_name__, "company_data")
+        session_data = self.scene.get_key(self.__page_name__, "session_data")
         
         if isinstance(company_data, str):
             return f"❌ Ошибка при получении данных: {company_data}"
@@ -93,9 +103,9 @@ class BankDepositMain(Page):
         
         buttons = []
         
-        # Получаем данные компании и сессии
-        company_data = await get_company(id=company_id)
-        session_data = await get_session(session_id=session_id)
+        # Получаем данные компании и сессии из кэша
+        company_data = self.scene.get_key(self.__page_name__, "company_data")
+        session_data = self.scene.get_key(self.__page_name__, "session_data")
         
         if isinstance(company_data, dict) and isinstance(session_data, dict):
             reputation = company_data.get('reputation', 0)
@@ -157,9 +167,9 @@ class BankDepositMain(Page):
         company_id = scene_data.get('company_id')
         session_id = scene_data.get('session')
         
-        # Проверяем репутацию и время до конца игры
-        company_data = await get_company(id=company_id)
-        session_data = await get_session(session_id=session_id)
+        # Проверяем репутацию и время до конца игры (используем кэш)
+        company_data = self.scene.get_key(self.__page_name__, "company_data")
+        session_data = self.scene.get_key(self.__page_name__, "session_data")
         
         if isinstance(company_data, dict) and isinstance(session_data, dict):
             reputation = company_data.get('reputation', 0)
@@ -186,7 +196,7 @@ class BankDepositMain(Page):
                 )
                 return
         
-        # Переходим на страницу ввода суммы вклада
+    # Переходим на страницу ввода суммы вклада
         await self.scene.update_page('bank-deposit-open-amount')
         await callback.answer("💬 Введите сумму вклада")
     
@@ -211,6 +221,6 @@ class BankDepositMain(Page):
         scene_data['viewing_deposit_index'] = deposit_index
         await self.scene.set_data('scene', scene_data)
         
-        # Переходим на страницу просмотра вклада
+    # Переходим на страницу просмотра вклада
         await self.scene.update_page('bank-deposit-view')
         await callback.answer()

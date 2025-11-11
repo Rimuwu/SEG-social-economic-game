@@ -335,6 +335,10 @@ class ContractCreateMain(OneUserPage):
             return
 
         await callback.answer("✅ Контракт создан!", show_alert=True)
+        # Инвалидация кэшей страниц контрактов – новый контракт может появиться в списках
+        await self.scene.update_key("contract-view-page", "contracts_list", None)
+        await self.scene.update_key("contract-execute-page", "contracts_list_execute", None)
+        await self.scene.update_key("contract-view-my-page", "contracts_list_my", None)
         await self._reset_form(keep_role=True)
         await self.scene.update_page("contract-main-page")
 

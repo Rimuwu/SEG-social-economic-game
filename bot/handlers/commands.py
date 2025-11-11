@@ -7,7 +7,7 @@ import os
 import asyncio
 
 from modules.ws_client import *
-from modules.utils import go_to_page, update_page
+from modules.utils import go_to_page, update_all_page
 from modules.db import db
 from modules.load_scenes import load_scenes_from_db
 from filters.admins import *
@@ -270,6 +270,7 @@ async def go_previous_page(message: Message):
     session_id = scene_data.get('session')
     company_id = scene_data.get("company_id")
     s = await get_session(session_id=session_id)
+    await message.delete()
     stage = s.get('stage')
     if stage == "Game":
         try:
@@ -371,9 +372,7 @@ async def on_update_session_stage(message: dict):
                                 await scene.update_page("main-page")
     
     elif new_stage == "ChangeTurn":
-        await go_to_page(session_id, None, "change-turn-page")
-        await asyncio.sleep(5)
-        await go_to_page(session_id, None, "change-turn-page")
+        await update_all_page(session_id, "change-turn-page")
         
     
     elif new_stage == "End":

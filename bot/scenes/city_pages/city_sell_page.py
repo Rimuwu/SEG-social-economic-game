@@ -11,29 +11,37 @@ class CitySell(OneUserPage):
     __for_blocked_pages__ = ["city-main-page"]
     
     async def data_preparate(self):
+        # UI-состояние
         if self.scene.get_key(self.__page_name__, "bool") is None:
             await self.scene.update_key(self.__page_name__, "bool", False)
         if self.scene.get_key(self.__page_name__, "is_company_have") is None:
             await self.scene.update_key(self.__page_name__, "is_company_have", False)
         if self.scene.get_key(self.__page_name__, "error") is None:
             await self.scene.update_key(self.__page_name__, "error", "")
+        # Кэш города и компании для страницы продажи
+        city_id = self.scene.get_key("city-main-page", "select_city_id")
+        session_id = self.scene.get_key("scene", "session")
+        if city_id is not None:
+            city_data = await get_city(id=int(city_id), session_id=session_id)
+            await self.scene.update_key(self.__page_name__, "city_cache", city_data)
+        company_id = self.scene.get_key("scene", "company_id")
+        company_data = await get_company(id=company_id)
+        await self.scene.update_key(self.__page_name__, "company_data", company_data)
 
     async def content_worker(self):
-        city_id = self.scene.get_key("city-main-page", "select_city_id")
-        company_id = self.scene.get_key("scene", "company_id")
         resource_id = self.scene.get_key("city-view-page", "selected_resource")
-        session_id = self.scene.get_key("scene", "session")
-        city_data = await get_city(id=int(city_id), session_id=session_id)
+        city_data = self.scene.get_key(self.__page_name__, "city_cache") or {}
+        company_data = self.scene.get_key(self.__page_name__, "company_data") or {}
 
         resource = RESOURCE.get_resource(resource_id)
-        demand = city_data.get("demands").get(resource_id)
+        demand = (city_data.get("demands") or {}).get(resource_id, {})
         max_amount = demand.get("amount")
         price = demand.get("price")
         city_name = city_data.get("name")
-        company_data = await get_company(id=company_id)
         company_amount = 0
-        if company_data.get("warehouses").get(resource_id) is not None:
-            company_amount = company_data.get("warehouses").get(resource_id)
+        warehouses = (company_data.get("warehouses") or {})
+        if warehouses.get(resource_id) is not None:
+            company_amount = warehouses.get(resource_id)
             await self.scene.update_key(self.__page_name__, "is_company_have", True)
         else:
             await self.scene.update_key(self.__page_name__, "is_company_have", False)
@@ -56,7 +64,6 @@ class CitySell(OneUserPage):
         city_id = self.scene.get_key("city-main-page", "select_city_id")
         resource_id = self.scene.get_key("city-view-page", "selected_resource")
         company_id = self.scene.get_key("scene", "company_id")
-        session_id = self.scene.get_key("scene", "session")
         buttons = []
         bool_val = self.scene.get_key(self.__page_name__, "bool")
         is_company_have = self.scene.get_key(self.__page_name__, "is_company_have")
@@ -68,11 +75,11 @@ class CitySell(OneUserPage):
                 })
             else:
                 self.row_width = 4
-                city_data = await get_city(id=int(city_id), session_id=session_id)
-                company_data = await get_company(id=company_id)
-                demand = city_data.get("demands").get(resource_id)
-                max_amount = demand.get("amount")
-                company_amount = company_data.get("warehouses").get(resource_id)
+                city_data = self.scene.get_key(self.__page_name__, "city_cache") or {}
+                company_data = self.scene.get_key(self.__page_name__, "company_data") or {}
+                demand = (city_data.get("demands") or {}).get(resource_id, {})
+                max_amount = demand.get("amount", 0)
+                company_amount = (company_data.get("warehouses") or {}).get(resource_id, 0)
                 cur_count = min(4, company_amount)
                 cur_count = min(cur_count, max_amount)
                 cur_warehouses = min(max_amount, company_amount)
@@ -115,6 +122,9 @@ class CitySell(OneUserPage):
         await callback.answer("✅ Товар успешно продан!", show_alert=True)
         await self.scene.update_key(self.__page_name__, "bool", False)
         await self.scene.update_key(self.__page_name__, "error", "")
+        # Инвалидация релевантных кэшей (городские спросы и склад компании могли измениться)
+        await self.scene.update_key(self.__page_name__, "company_data", None)
+        await self.scene.update_key(self.__page_name__, "city_cache", None)
         await self.scene.update_page("city-view-page")
     
     @OneUserPage.on_callback("back")
@@ -142,4 +152,7 @@ class CitySell(OneUserPage):
             return
         await self.scene.update_key(self.__page_name__, "error", "✅ Товар успешно продан!")
         await self.scene.update_key(self.__page_name__, "bool", False)
+        # Инвалидация кэшей после успешной продажи
+        await self.scene.update_key(self.__page_name__, "company_data", None)
+        await self.scene.update_key(self.__page_name__, "city_cache", None)
         await self.scene.update_message()
