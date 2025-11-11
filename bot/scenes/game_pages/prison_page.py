@@ -26,6 +26,7 @@ class PrisonPage(Page):
             text_chance = f"...осталось ходов до выхода: {steps_remaining}."
         
         return self.content.format(
+            prison_reason=company_response.get('prison_reason'),
             text_chance=text_chance
         )
             
