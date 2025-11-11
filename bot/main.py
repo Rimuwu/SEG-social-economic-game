@@ -13,6 +13,9 @@ from handlers.errors import error_handler
 # Настройка логирования
 bot_logger = Logger.get_logger("bot")
 logging.basicConfig(level=logging.INFO)
+logging.getLogger("aiogram").setLevel(logging.WARNING)
+logging.getLogger("aiohttp").setLevel(logging.WARNING)
+logging.getLogger("asyncio").setLevel(logging.ERROR)
 
 
 async def main():

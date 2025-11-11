@@ -282,17 +282,17 @@ class ContractCreateMain(OneUserPage):
     @OneUserPage.on_callback("set_amount_per_turn")
     async def set_amount_handler(self, callback: CallbackQuery, args: list):
         await self.scene.update_key(self.__page_name__, "input_state", "amount")
-        await callback.answer("Введите количество ресурса за ход в чат", show_alert=True)
+        await callback.answer("Введите и отправьте в чат количество ресурса за ход в чат", show_alert=True)
 
     @OneUserPage.on_callback("set_duration_turns")
     async def set_duration_handler(self, callback: CallbackQuery, args: list):
         await self.scene.update_key(self.__page_name__, "input_state", "duration")
-        await callback.answer("Введите длительность контракта в ходах", show_alert=True)
+        await callback.answer("Введите и отправьте в чат длительность контракта в ходах", show_alert=True)
 
     @OneUserPage.on_callback("set_payment_amount")
     async def set_payment_handler(self, callback: CallbackQuery, args: list):
         await self.scene.update_key(self.__page_name__, "input_state", "payment")
-        await callback.answer("Введите оплату за ход в чат", show_alert=True)
+        await callback.answer("Введите и отправьте в чат оплату за контракт в чат", show_alert=True)
 
     @OneUserPage.on_callback("submit_contract")
     async def submit_contract_handler(self, callback: CallbackQuery, args: list):
@@ -335,6 +335,10 @@ class ContractCreateMain(OneUserPage):
             return
 
         await callback.answer("✅ Контракт создан!", show_alert=True)
+        # Инвалидация кэшей страниц контрактов – новый контракт может появиться в списках
+        await self.scene.update_key("contract-view-page", "contracts_list", None)
+        await self.scene.update_key("contract-execute-page", "contracts_list_execute", None)
+        await self.scene.update_key("contract-view-my-page", "contracts_list_my", None)
         await self._reset_form(keep_role=True)
         await self.scene.update_page("contract-main-page")
 

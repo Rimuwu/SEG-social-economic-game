@@ -7,7 +7,7 @@ import os
 import asyncio
 
 from modules.ws_client import *
-from modules.utils import go_to_page, update_page
+from modules.utils import go_to_page, update_all_page
 from modules.db import db
 from modules.load_scenes import load_scenes_from_db
 from filters.admins import *
@@ -270,6 +270,7 @@ async def go_previous_page(message: Message):
     session_id = scene_data.get('session')
     company_id = scene_data.get("company_id")
     s = await get_session(session_id=session_id)
+    await message.delete()
     stage = s.get('stage')
     if stage == "Game":
         try:
@@ -346,34 +347,22 @@ async def on_update_session_stage(message: dict):
     elif new_stage == "Game":
         # Проверяем каждую компанию на нахождение в тюрьме
         companies = await get_companies(session_id=session_id)
-        
+        users_ign = []
         for company in companies:
-            company_id = company.get('id')
-            in_prison = company.get('in_prison', False)
-            
-            # Получаем всех пользователей компании
-            users = await get_users(session_id=session_id, company_id=company_id)
-            
-            for user in users:
-                user_id = user.get('id')
-                
-                if user_id and scene_manager.has_scene(user_id):
-                    scene = scene_manager.get_scene(user_id)
-                    if scene:
-                        current_page = scene.page
-                        
-                        # Если компания в тюрьме - переводим на страницу тюрьмы
-                        if in_prison:
+            if company.get("in_prison"):
+                for u in company.get("users"):
+                    users_ign.append(u.get("id"))
+                    if scene_manager.has_scene(u.get("id")):
+                        scene = scene_manager.get_scene(u.get("id"))
+                        if scene:
                             await scene.update_page("prison-page")
-                        else:
-                            # Переводим с wait-game-stage-page или change-turn-page на main-page
-                            if current_page not in ["start", "name-enter", "company-create", "company-join", "wait-start-page"]:
-                                await scene.update_page("main-page")
+        print("Перенос людей на игру")
+        await update_all_page(session_id, "main-page", users_ign)
+                
     
     elif new_stage == "ChangeTurn":
-        await go_to_page(session_id, None, "change-turn-page")
-        await asyncio.sleep(5)
-        await go_to_page(session_id, None, "change-turn-page")
+        print("Перенос людей на ожидание")
+        await update_all_page(session_id, "change-turn-page")
         
     
     elif new_stage == "End":
@@ -398,6 +387,14 @@ async def on_disconnect():
 
     print("❌ Не удалось подключиться после 15 попыток, выход.")
 
+
+@dp.message(Command("ts"))
+async def strat_timer(message):
+    args = message.text.split()[1]
+    if len(args) == 0:
+        return
+    result = await notforgame_create_timer(session_id=args)
+    print(result)
 
 @ws_client.on_message("api-company_to_prison")
 async def on_company_to_prison(message: dict):

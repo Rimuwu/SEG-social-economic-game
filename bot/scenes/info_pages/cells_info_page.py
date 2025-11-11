@@ -12,11 +12,15 @@ class CellsInfo(Page):
     
     __page_name__ = "cells-info-page"
     
-    async def content_worker(self):
-        scene_data = self.scene.get_data('scene')
-        company_id = scene_data.get('company_id')
-        
+    async def data_preparate(self):
+        company_id = self.scene.get_key('scene', 'company_id')
         company_data = await get_company(id=company_id)
+        await self.scene.update_key(self.__page_name__, 'company_data', company_data)
+    
+    async def content_worker(self):
+        company_data = self.scene.get_key(self.__page_name__, 'company_data')
+        if isinstance(company_data, str):
+            return f"❌ Ошибка загрузки клетки: {company_data}"
         cell_info = company_data.get('cell_info', {})
         position_coords = company_data.get('position_coords', [0, 0])
         resource_data = RESOURCES.get_resource(cell_info["resource_id"])

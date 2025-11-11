@@ -15,8 +15,11 @@ class FactorySelectMode(Page):
         scene_data = self.scene.get_data('scene')
         company_id = scene_data.get('company_id')
         
-        # Получаем все заводы компании
-        factories = await get_factories(company_id)
+        # Получаем список заводов из кеша или делаем запрос один раз
+        factories = self.scene.get_key(self.__page_name__, 'factories_data')
+        if factories is None:
+            factories = await get_factories(company_id)
+            await self.scene.update_key(self.__page_name__, 'factories_data', factories)
         
         if not factories or not isinstance(factories, list):
             return "❌ Не удалось загрузить список заводов"
@@ -39,8 +42,11 @@ class FactorySelectMode(Page):
         
         buttons = []
         
-        # Получаем заводы для подсчёта
-        factories = await get_factories(company_id)
+        # Получаем заводы (стараемся не дергать повторно)
+        factories = self.scene.get_key(self.__page_name__, 'factories_data')
+        if factories is None:
+            factories = await get_factories(company_id)
+            await self.scene.update_key(self.__page_name__, 'factories_data', factories)
         
         if factories and isinstance(factories, list):
             # Считаем заводы по режимам
@@ -118,4 +124,6 @@ class FactorySelectMode(Page):
     @Page.on_callback('back_to_menu')
     async def back_to_menu_handler(self, callback: CallbackQuery, args: list):
         """Возврат в меню заводов"""
+        # Инвалидация локального кеша при выходе
+        await self.scene.update_key(self.__page_name__, 'factories_data', None)
         await self.scene.update_page('factory-menu')

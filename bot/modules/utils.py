@@ -47,6 +47,22 @@ async def update_page(user_company_id, page_name, user_id = None):
                         await scene.update_message()
 
 
+async def update_all_page(session_id, page_name, list_ignore = []):
+    users = await get_users(session_id=session_id)
+    for user in users:
+        if user["id"] not in list_ignore:
+            if scene_manager.has_scene(user["id"]):
+                scene = scene_manager.get_scene(user["id"])
+                if scene.__scene_name__ == "scene-manager":
+                    await asyncio.sleep(0.1)
+                    await scene.update_page(page_name)
+                    await asyncio.sleep(0.1)
+                    scene = scene_manager.get_scene(user["id"])
+                    if scene.page != page_name:
+                        await asyncio.sleep(0.1)
+                        await scene.update_page(page_name)
+
+
 async def go_to_page(session_id, old_page_name, new_page_name):
     companies = await get_companies(session_id=session_id)
     for c in companies:

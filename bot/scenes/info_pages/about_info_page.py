@@ -6,10 +6,15 @@ class AboutInfo(Page):
     
     __page_name__ = "about-info-menu"
     
-    async def content_worker(self):
-        scene_data = self.scene.get_data('scene')
-        company_id = scene_data.get('company_id')
+    async def data_preparate(self):
+        company_id = self.scene.get_key('scene', 'company_id')
         company_data = await get_company(id=company_id)
+        await self.scene.update_key(self.__page_name__, 'company_data', company_data)
+    
+    async def content_worker(self):
+        company_data = self.scene.get_key(self.__page_name__, 'company_data')
+        if isinstance(company_data, str):
+            return f"❌ Ошибка загрузки компании: {company_data}"
         name = company_data.get('name', 'Неизвестно')
         balance = company_data.get('balance', 0)
         business_type = company_data.get('business_type', 'unknown')

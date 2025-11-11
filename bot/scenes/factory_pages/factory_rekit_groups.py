@@ -22,8 +22,10 @@ class FactoryRekitGroups(Page):
             return "❌ Ошибка: компания не найдена"
         
         try:
-            # Получаем все заводы
-            factories = await get_factories(company_id=company_id)
+            factories = self.scene.get_key(self.__page_name__, 'factories_data')
+            if factories is None:
+                factories = await get_factories(company_id=company_id)
+                await self.scene.update_key(self.__page_name__, 'factories_data', factories)
             
             # get_factories возвращает список напрямую
             if not factories or not isinstance(factories, list):
@@ -72,8 +74,10 @@ class FactoryRekitGroups(Page):
         buttons = []
         
         if company_id:
-            # Получаем свежие данные о заводах
-            factories = await get_factories(company_id=company_id)
+            factories = self.scene.get_key(self.__page_name__, 'factories_data')
+            if factories is None:
+                factories = await get_factories(company_id=company_id)
+                await self.scene.update_key(self.__page_name__, 'factories_data', factories)
             
             # get_factories возвращает список напрямую
             if factories and isinstance(factories, list):

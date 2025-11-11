@@ -28,7 +28,10 @@ class FactoryRekitCount(Page):
         available_count = 0
         
         if company_id:
-            factories = await get_factories(company_id)
+            factories = self.scene.get_key(self.__page_name__, 'factories_data')
+            if factories is None:
+                factories = await get_factories(company_id)
+                await self.scene.update_key(self.__page_name__, 'factories_data', factories)
             # Проверяем, что получили корректный ответ (список)
             if factories and isinstance(factories, list):
                 # Считаем заводы в выбранной группе
@@ -65,7 +68,10 @@ class FactoryRekitCount(Page):
         # Получаем количество доступных заводов
         available_count = 0
         if company_id and group_type:
-            factories = await get_factories(company_id)
+            factories = self.scene.get_key(self.__page_name__, 'factories_data')
+            if factories is None:
+                factories = await get_factories(company_id)
+                await self.scene.update_key(self.__page_name__, 'factories_data', factories)
             if factories and isinstance(factories, list):
                 if group_type == 'idle':
                     available_count = sum(1 for f in factories if f.get('complectation') is None)
@@ -127,7 +133,10 @@ class FactoryRekitCount(Page):
             return
         
         # Проверяем доступное количество заводов
-        factories = await get_factories(company_id)
+        factories = self.scene.get_key(self.__page_name__, 'factories_data')
+        if factories is None:
+            factories = await get_factories(company_id)
+            await self.scene.update_key(self.__page_name__, 'factories_data', factories)
         # get_factories возвращает список напрямую
         if factories and isinstance(factories, list):
             if group_type == 'idle':

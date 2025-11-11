@@ -66,8 +66,9 @@ class UpgradeMenu(Page):
             for key, meta in IMPROVEMENT_OPTIONS.items():
                 level = self._as_int(improvements.get(key, 1), 1)
                 lines.append(f"{meta['emoji']} {meta['label']}: уровень {level}")
-            lines.append(f"Улучшение логистики: {'Да' if comp_data.get('fast_logistic') else 'Нет'}")
-            lines.append(f"Улучшение перекомплектации: {'Да' if comp_data.get('fast_complectation') else 'Нет'}")
+            lines.append(f"🚚 Улучшение логистики: {'Да' if comp_data.get('fast_logistic') else 'Нет'}")
+            lines.append(f"🏭 Улучшение перекомплектации: {'Да' if comp_data.get('fast_complectation') else 'Нет'}")
+            lines.append(f"💰 Автоплатеж налогов: {'Да' if comp_data.get('autopay_taxes') else 'Нет'}")
         elif stage == "details":
             selected_type = page_data.get("selected_type")
             if not selected_type:
@@ -108,7 +109,9 @@ class UpgradeMenu(Page):
                 buttons.append({"text": "🚚 Логистика", "callback_data": callback_generator(self.scene.__scene_name__, "to_page", "upgrade-logistic-page")})
             if not comp_data.get("fast_complectation"):
                 buttons.append({"text": "📦 Перекомплектовка", "callback_data": callback_generator(self.scene.__scene_name__, "to_page", "upgrade-recompletion-page")})
-            buttons.append({"text": "🔑 Смена клетки", "callback_data": callback_generator(self.scene.__scene_name__, "to_page", "change-cell-page")})
+            if not comp_data.get("autopay_taxes"):
+                buttons.append({"text": "💰 Автоплатеж налогов", "callback_data": callback_generator(self.scene.__scene_name__, "to_page", "upgrade-auto-tax-page")})
+            buttons.append({"text": "🔑 Смена клетки", "callback_data": callback_generator(self.scene.__scene_name__, "to_page", "change-cell-page"), "ignore_row": True})
             buttons.append({"text": "↪ Назад", "callback_data": callback_generator(self.scene.__scene_name__, "to_page", "main-page"), "ignore_row": True})
         elif stage == "details":
             self.row_width = 1

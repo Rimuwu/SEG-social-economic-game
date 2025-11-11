@@ -6,10 +6,16 @@ class InventoryPage(Page):
     
     __page_name__ = "inventory-page"
     
-    async def content_worker(self):
-        scene_data = self.scene.get_data('scene')
-        company_id = scene_data.get('company_id')
+    async def data_preparate(self):
+        """Предзагрузка данных компании (склад)"""
+        company_id = self.scene.get_key('scene', 'company_id')
         company_data = await get_company(id=company_id)
+        await self.scene.update_key(self.__page_name__, 'company_data', company_data)
+    
+    async def content_worker(self):
+        company_data = self.scene.get_key(self.__page_name__, 'company_data')
+        if isinstance(company_data, str):
+            return f"❌ Ошибка загрузки склада: {company_data}"
         warehouses = company_data.get('warehouses', {})
         warehouse_capacity = company_data.get('warehouse_capacity', 0)
         resources_amount = company_data.get('resources_amount', 0)

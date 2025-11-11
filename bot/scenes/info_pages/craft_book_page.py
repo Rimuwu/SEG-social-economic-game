@@ -15,6 +15,10 @@ class CraftBookPage(Page):
             await self.scene.update_key("craft-book-page", "page_number", 0)
         if self.scene.get_key("craft-book-page", "resource") is None:
             await self.scene.update_key("craft-book-page", "resource", None)
+        # Кэшируем склад компании для отображения количества материалов
+        company_id = self.scene.get_key('scene', 'company_id')
+        warehouses = await get_company_warehouse(company_id)
+        await self.scene.update_key(self.__page_name__, 'warehouses_data', warehouses)
     
     async def content_worker(self):
         resource = self.scene.get_key("craft-book-page", "resource")
@@ -27,6 +31,7 @@ class CraftBookPage(Page):
         craft_material = craft_prod.materials
         craft_output = craft_prod.output
         craft_list = []
+        price = resource_data.basePrice
         for i in craft_material.keys():
             mat_res = RESOURCES.get_resource(i)
             craft_list.append(f"{craft_material[i]}× {mat_res.emoji} {mat_res.label}")
@@ -34,7 +39,7 @@ class CraftBookPage(Page):
         craft_text = " + ".join(craft_list)
         craft_text += f" → {craft_output}× {resorce_name}"
         
-        warehouses = await get_company_warehouse(company_id)
+        warehouses = self.scene.get_key(self.__page_name__, 'warehouses_data')
         resource_in_craft_with_count = ""
         for i in craft_material.keys():
             mat_res = RESOURCES.get_resource(i)
@@ -44,7 +49,8 @@ class CraftBookPage(Page):
         return self.content.format(
             resource=resorce_name,
             craft=craft_text,
-            resource_in_craft_with_count=resource_in_craft_with_count
+            resource_in_craft_with_count=resource_in_craft_with_count,
+            average_price=price
             )
     
     async def buttons_worker(self):

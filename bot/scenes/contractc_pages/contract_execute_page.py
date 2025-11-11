@@ -29,11 +29,14 @@ class ContractExecutePage(OneUserPage):
             await self.scene.update_key(self.__page_name__, "selected_contract_id", None)
         if self.scene.get_key(self.__page_name__, "error") is None:
             await self.scene.update_key(self.__page_name__, "error", None)
-        if not hasattr(self, "_contracts_cache"):
-            self._contracts_cache: Optional[List[Dict]] = None
+        # Предзагрузка и кэширование списка контрактов для выполнения
+        contracts = await self._build_contracts_list()
+        await self.scene.update_key(self.__page_name__, "contracts_list_execute", contracts)
 
     async def content_worker(self):
-        contracts = await self._load_contracts()
+        self.clear_content()
+        await self._ensure_contracts_loaded()
+        contracts = self.scene.get_key(self.__page_name__, "contracts_list_execute") or []
         selected_id = self.scene.get_key(self.__page_name__, "selected_contract_id")
 
         if selected_id and not any(c.get("id") == selected_id for c in contracts):
@@ -75,7 +78,8 @@ class ContractExecutePage(OneUserPage):
         )
 
     async def buttons_worker(self):
-        contracts = await self._load_contracts()
+        await self._ensure_contracts_loaded()
+        contracts = self.scene.get_key(self.__page_name__, "contracts_list_execute") or []
         selected_id = self.scene.get_key(self.__page_name__, "selected_contract_id")
         page_index = self.scene.get_key(self.__page_name__, "page") or 0
 
@@ -185,7 +189,7 @@ class ContractExecutePage(OneUserPage):
 
     @OneUserPage.on_callback("back_page_main")
     async def back_pagess(self, callback, args):
-        self._contracts_cache = None
+        await self.scene.update_key(self.__page_name__, "contracts_list_execute", None)
         await self.scene.update_key(self.__page_name__, "error", None)
         await self.scene.update_page("contract-main-page")
     
@@ -208,7 +212,8 @@ class ContractExecutePage(OneUserPage):
     @OneUserPage.on_callback("contracts_next_page")
     async def next_page(self, callback: CallbackQuery, args: List[str]):
         page_index = self.scene.get_key(self.__page_name__, "page") or 0
-        contracts = await self._load_contracts()
+        await self._ensure_contracts_loaded()
+        contracts = self.scene.get_key(self.__page_name__, "contracts_list_execute") or []
         items_per_page = 5
         total_pages = max(1, (len(contracts) + items_per_page - 1) // items_per_page)
         await self.scene.update_key(
@@ -219,7 +224,8 @@ class ContractExecutePage(OneUserPage):
     @OneUserPage.on_callback("contracts_prev_page")
     async def prev_page(self, callback: CallbackQuery, args: List[str]):
         page_index = self.scene.get_key(self.__page_name__, "page") or 0
-        contracts = await self._load_contracts()
+        await self._ensure_contracts_loaded()
+        contracts = self.scene.get_key(self.__page_name__, "contracts_list_execute") or []
         items_per_page = 5
         total_pages = max(1, (len(contracts) + items_per_page - 1) // items_per_page)
         await self.scene.update_key(
@@ -233,7 +239,7 @@ class ContractExecutePage(OneUserPage):
 
     @OneUserPage.on_callback("refresh_contracts")
     async def refresh_contracts(self, callback: CallbackQuery, args: List[str]):
-        self._contracts_cache = None
+        await self.scene.update_key(self.__page_name__, "contracts_list_execute", None)
         await self.scene.update_key(self.__page_name__, "error", None)
         await self.scene.update_message()
         await callback.answer("Данные обновлены")
@@ -244,8 +250,8 @@ class ContractExecutePage(OneUserPage):
         if contract_id is None:
             await callback.answer("Контракт не выбран", show_alert=True)
             return
-
-        contracts = await self._load_contracts()
+        await self._ensure_contracts_loaded()
+        contracts = self.scene.get_key(self.__page_name__, "contracts_list_execute") or []
         contract = next((c for c in contracts if c.get("id") == contract_id), None)
         if contract is None:
             await callback.answer("Контракт не найден", show_alert=True)
@@ -264,7 +270,7 @@ class ContractExecutePage(OneUserPage):
             await callback.answer(error_message, show_alert=True)
             return
 
-        self._contracts_cache = None
+        await self.scene.update_key(self.__page_name__, "contracts_list_execute", None)
         await self.scene.update_key(self.__page_name__, "selected_contract_id", None)
         await self.scene.update_key(self.__page_name__, "error", None)
         await self.scene.update_message()
@@ -280,8 +286,8 @@ class ContractExecutePage(OneUserPage):
         if contract_id is None:
             await callback.answer("Контракт не выбран", show_alert=True)
             return
-
-        contracts = await self._load_contracts()
+        await self._ensure_contracts_loaded()
+        contracts = self.scene.get_key(self.__page_name__, "contracts_list_execute") or []
         contract = next((c for c in contracts if c.get("id") == contract_id), None)
         if contract is None:
             await callback.answer("Контракт не найден", show_alert=True)
@@ -300,17 +306,20 @@ class ContractExecutePage(OneUserPage):
             await callback.answer(error_message, show_alert=True)
             return
 
-        self._contracts_cache = None
+        await self.scene.update_key(self.__page_name__, "contracts_list_execute", None)
         await self.scene.update_key(self.__page_name__, "selected_contract_id", None)
         await self.scene.update_key(self.__page_name__, "error", None)
         await self.scene.update_message()
         await callback.answer("Контракт отменён", show_alert=True)
+        # Инвалидация связанных страниц: мои контракты
+        await self.scene.update_key("contract-view-my-page", "contracts_list_my", None)
 
-    async def _load_contracts(self) -> List[Dict]:
-        cache = getattr(self, "_contracts_cache", None)
-        if cache is not None:
-            return cache
+    async def _ensure_contracts_loaded(self):
+        if self.scene.get_key(self.__page_name__, "contracts_list_execute") is None:
+            contracts = await self._build_contracts_list()
+            await self.scene.update_key(self.__page_name__, "contracts_list_execute", contracts)
 
+    async def _build_contracts_list(self) -> List[Dict]:
         scene_data = self.scene.get_data("scene")
         session_id = scene_data.get("session")
         company_id_raw = scene_data.get("company_id")
@@ -321,13 +330,11 @@ class ContractExecutePage(OneUserPage):
             company_id = None
 
         if session_id is None or company_id is None:
-            self._contracts_cache = []
             return []
 
         response = await get_contracts(session_id=session_id)
         if isinstance(response, dict) and response.get("error"):
             await self.scene.update_key(self.__page_name__, "error", str(response.get("error")))
-            self._contracts_cache = []
             return []
 
         contracts_raw = response if isinstance(response, list) else []
@@ -351,7 +358,6 @@ class ContractExecutePage(OneUserPage):
 
             if not accepted:
                 continue
-
 
             if supplier_id != company_id:
                 continue
@@ -389,7 +395,6 @@ class ContractExecutePage(OneUserPage):
             )
 
         filtered.sort(key=lambda item: item.get("id", 0))
-        self._contracts_cache = filtered
         return filtered
 
     async def _get_company_name(

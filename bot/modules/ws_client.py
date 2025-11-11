@@ -394,6 +394,27 @@ async def get_company_contracts(company_id: int, as_supplier: Optional[bool] = N
         wait_for_response=True
     )
 
+
+async def set_autopay_taxe(company_id: int):
+    """Установка автоплатежа налогов для компании"""
+    return await ws_client.send_message(
+        "set-autopay-taxes",
+        company_id=company_id,
+        password=UPDATE_PASSWORD,
+        wait_for_response=True
+    )
+
+
+async def notforgame_create_timer(session_id):
+    """Создание таймера для сессии. НЕ ИСПОЛЬЗОВАТЬ В ИГРОВОМ ПРОЦЕССЕ!"""
+    return await ws_client.send_message(
+        "notforgame-create-timer",
+        session_id=session_id,
+        password=UPDATE_PASSWORD,
+        wait_for_response=True
+    )
+
+
 async def get_company_users(company_id: int):
     """Получение списка пользователей компании"""
     return await ws_client.send_message(

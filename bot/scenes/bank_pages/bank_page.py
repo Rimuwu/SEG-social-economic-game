@@ -10,15 +10,14 @@ class BankPage(Page):
     __for_blocked_pages__ = ["bank-credit-main", "bank-deposit-main"]
     __page_name__ = "bank-menu"
     
-    async def content_worker(self):
-        scene_data = self.scene.get_data('scene')
-        company_id = scene_data.get('company_id')
-        
-        if not company_id:
-            return "❌ Ошибка: компания не найдена"
-        
+    async def data_preparate(self):
+        compane_id = self.scene.get_key("scene", "company_id")
+        comp_data = await get_company(id=compane_id)
+        await self.scene.update_key(self.__page_name__, "company_data", comp_data)
+    
+    async def content_worker(self):  
         # Получаем данные компании
-        company_data = await get_company(id=company_id)
+        company_data = self.scene.get_key(self.__page_name__, "company_data")
         
         if isinstance(company_data, str):
             return f"❌ Ошибка при получении данных: {company_data}"
@@ -67,11 +66,9 @@ class BankPage(Page):
     
     async def buttons_worker(self):
         """Генерация кнопок для страницы банка"""
-        scene_data = self.scene.get_data('scene')
-        company_id = scene_data.get('company_id')
         self.row_width = 2
         # Получаем данные компании для проверки налогов
-        company_data = await get_company(id=company_id)
+        company_data = self.scene.get_key(self.__page_name__, "company_data")
         tax_debt = 0
         if isinstance(company_data, dict):
             tax_debt = company_data.get('tax_debt', 0)
@@ -129,7 +126,7 @@ class BankPage(Page):
             return
         
         # Получаем текущий долг
-        company_data = await get_company(id=company_id)
+        company_data = self.scene.get_key(self.__page_name__, "company_data")
         if isinstance(company_data, str):
             await callback.answer(f"❌ Ошибка: {company_data}", show_alert=True)
             return

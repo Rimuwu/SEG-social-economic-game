@@ -10,24 +10,25 @@ EVENTS: Events = ALL_CONFIGS["events"]
 class AboutTurnPage(Page):
     __page_name__ = "about-turn-page"
     
+    async def data_preparate(self):
+        session_id = self.scene.get_key("scene", "session")
+        session_data = await get_session(session_id)
+        event_response = await get_session_event(session_id)
+        await self.scene.update_key(self.__page_name__, 'session_data', session_data)
+        await self.scene.update_key(self.__page_name__, 'event_response', event_response)
+    
     async def content_worker(self):
         data = self.scene.get_data("scene")
         session_id = data.get("session")
         if not session_id:
             return "❌ Сессия не выбрана"
-
-        session_data = await get_session(session_id)
+        session_data = self.scene.get_key(self.__page_name__, 'session_data')
         if not isinstance(session_data, dict):
             return "❌ Не удалось получить данные сессии"
-
         step = session_data.get("step")
         max_steps = session_data.get("max_steps")
-
-        event_response = await get_session_event(session_id)
-        event_payload = {}
-        event_text = ""
-        if isinstance(event_response, dict):
-            event_payload = event_response.get("event") or {}
+        event_response = self.scene.get_key(self.__page_name__, 'event_response')
+        event_payload = event_response.get("event") if isinstance(event_response, dict) else {}
         if not event_payload:
             event_text = ("🔕 Активных событий нет")
         else:

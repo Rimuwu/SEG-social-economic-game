@@ -18,6 +18,9 @@ class ExchangeCreateMain(OneUserPage):
         # Инициализируем поля, если их нет
         if self.scene.get_key(self.__page_name__, 'offer_type') is None:
             await self.scene.update_key(self.__page_name__, 'offer_type', 'money')
+        # Локальный кеш склада для валидации на этой странице (может быть заполнен страницей выбора товара)
+        if self.scene.get_key(self.__page_name__, 'warehouse_cache') is None:
+            await self.scene.update_key(self.__page_name__, 'warehouse_cache', None)
     
     async def content_worker(self):
         """Генерация контента страницы"""
@@ -198,16 +201,28 @@ class ExchangeCreateMain(OneUserPage):
             # Проверяем наличие товара
             scene_data = self.scene.get_data('scene')
             company_id = scene_data.get('company_id')
-            company_data = await get_company(id=company_id)
-            
-            if not isinstance(company_data, dict):
+            # Пытаемся использовать кеш склада с предыдущей страницы выбора
+            warehouse = (
+                self.scene.get_key('exchange-create-set-sell-page', 'warehouse_cache')
+                or self.scene.get_key(self.__page_name__, 'warehouse_cache')
+            )
+            if warehouse is None:
+                company_data = await get_company(id=company_id)
+                if not isinstance(company_data, dict):
+                    await self.scene.update_key(self.__page_name__, 'error', "Не удалось получить данные компании")
+                    await self.scene.update_key(self.__page_name__, 'input_state', None)
+                    await self.scene.update_message()
+                    return
+                warehouse = company_data.get('warehouses', {})
+                await self.scene.update_key(self.__page_name__, 'warehouse_cache', warehouse)
+
+            if not isinstance(warehouse, dict):
                 await self.scene.update_key(self.__page_name__, 'error', "Не удалось получить данные компании")
                 await self.scene.update_key(self.__page_name__, 'input_state', None)
                 await self.scene.update_message()
                 return
             
-            warehouses = company_data.get('warehouses', {})
-            available = warehouses.get(sell_resource, 0)
+            available = warehouse.get(sell_resource, 0)
             
             if total_needed > available:
                 await self.scene.update_key(self.__page_name__, 'error', f"Недостаточно товара! Требуется: {total_needed} ({sell_amount} x {value}), Доступно: {available}")
@@ -345,6 +360,9 @@ class ExchangeCreateMain(OneUserPage):
             await self.scene.update_key(self.__page_name__, 'input_state', None)
             
             await callback.answer("✅ Предложение создано!", show_alert=True)
+            # Инвалидация кэша списка предложений на главной странице биржи
+            await self.scene.update_key('exchange-main-page', 'exchanges_list', None)
+            await self.scene.update_key('exchange-main-page', 'exchanges_error', None)
             await self.scene.update_page('exchange-main-page')
     
     @OneUserPage.on_callback('clear_exchange_offer')
@@ -377,6 +395,13 @@ class ExchangeCreateSetSell(OneUserPage):
             await self.scene.update_key(self.__page_name__, 'state', 'select_resource')
         if self.scene.get_key(self.__page_name__, 'error') is None:
             await self.scene.update_key(self.__page_name__, 'error', None)
+        # Предзагружаем склад компании в локальный кеш
+        if self.scene.get_key(self.__page_name__, 'warehouse_cache') is None:
+            scene_data = self.scene.get_data('scene')
+            company_id = scene_data.get('company_id')
+            company_data = await get_company(id=company_id)
+            warehouse = company_data.get('warehouses', {}) if isinstance(company_data, dict) else {}
+            await self.scene.update_key(self.__page_name__, 'warehouse_cache', warehouse)
     
     async def content_worker(self):
         """Контент"""
@@ -442,14 +467,14 @@ class ExchangeCreateSetSell(OneUserPage):
         cur_page = self.scene.get_key(self.__page_name__, 'page') or 0
         self.row_width = 1
         
-        scene_data = self.scene.get_data('scene')
-        company_id = scene_data.get('company_id')
-        company_data = await get_company(id=company_id)
-        
-        if not isinstance(company_data, dict):
-            warehouse = {}
-        else:
-            warehouse = company_data.get('warehouses', {})
+        # Используем кеш склада, при отсутствии — один запрос и кешируем
+        warehouse = self.scene.get_key(self.__page_name__, 'warehouse_cache')
+        if warehouse is None:
+            scene_data = self.scene.get_data('scene')
+            company_id = scene_data.get('company_id')
+            company_data = await get_company(id=company_id)
+            warehouse = company_data.get('warehouses', {}) if isinstance(company_data, dict) else {}
+            await self.scene.update_key(self.__page_name__, 'warehouse_cache', warehouse)
         
         # Фильтруем ресурсы
         all_resources = []
@@ -531,16 +556,9 @@ class ExchangeCreateSetSell(OneUserPage):
             return
         
         resource_id = args[1]
-        scene_data = self.scene.get_data('scene')
-        company_id = scene_data.get('company_id')
-        
-        company_data = await get_company(id=company_id)
-        if not isinstance(company_data, dict):
-            await callback.answer("❌ Ошибка получения данных")
-            return
-        
-        warehouses = company_data.get('warehouses', {})
-        max_amount = warehouses.get(resource_id, 0)
+        # Берем количество из кеша склада
+        warehouse = self.scene.get_key(self.__page_name__, 'warehouse_cache') or {}
+        max_amount = warehouse.get(resource_id, 0)
         
         if max_amount <= 0:
             await callback.answer("❌ Ресурса нет на складе")
@@ -611,10 +629,7 @@ class ExchangeCreateSetSell(OneUserPage):
         """Следующая страница"""
         cur_page = self.scene.get_key(self.__page_name__, 'page') or 0
         
-        scene_data = self.scene.get_data('scene')
-        company_id = scene_data.get('company_id')
-        company_data = await get_company(id=company_id)
-        warehouse = company_data.get('warehouses', {}) if isinstance(company_data, dict) else {}
+        warehouse = self.scene.get_key(self.__page_name__, 'warehouse_cache') or {}
         
         all_resources = [r for r in RESOURCES.resources.items() if r[0] in warehouse and warehouse[r[0]] > 0]
         items_per_page = 5
@@ -628,10 +643,7 @@ class ExchangeCreateSetSell(OneUserPage):
         """Предыдущая страница"""
         cur_page = self.scene.get_key(self.__page_name__, 'page') or 0
         
-        scene_data = self.scene.get_data('scene')
-        company_id = scene_data.get('company_id')
-        company_data = await get_company(id=company_id)
-        warehouse = company_data.get('warehouses', {}) if isinstance(company_data, dict) else {}
+        warehouse = self.scene.get_key(self.__page_name__, 'warehouse_cache') or {}
         
         all_resources = [r for r in RESOURCES.resources.items() if r[0] in warehouse and warehouse[r[0]] > 0]
         items_per_page = 5

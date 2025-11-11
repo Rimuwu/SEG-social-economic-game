@@ -114,7 +114,14 @@ class FactoryRekitProduce(Page):
             return
         
         # Сначала получаем список заводов для перекомплектации
-        all_factories = await get_factories(company_id=company_id)
+        all_factories = (
+            self.scene.get_key('factory-rekit-groups', 'factories_data')
+            or self.scene.get_key('factory-menu', 'factories_data')
+            or self.scene.get_key(self.__page_name__, 'factories_data')
+        )
+        if all_factories is None:
+            all_factories = await get_factories(company_id=company_id)
+            await self.scene.update_key(self.__page_name__, 'factories_data', all_factories)
         
         if not all_factories or not isinstance(all_factories, list):
             await callback.answer("❌ Не удалось получить список заводов", show_alert=True)
@@ -164,6 +171,11 @@ class FactoryRekitProduce(Page):
             
             
             # Возвращаемся в меню заводов
+            # Инвалидация кешей связанных страниц
+            await self.scene.update_key('factory-menu', 'factories_data', None)
+            await self.scene.update_key('factory-rekit-groups', 'factories_data', None)
+            await self.scene.update_key('factory-rekit-count', 'factories_data', None)
+            await self.scene.update_key(self.__page_name__, 'factories_data', None)
             await self.scene.update_page('factory-menu')
         else:
             await callback.answer("❌ Не удалось перекомплектовать заводы", show_alert=True)

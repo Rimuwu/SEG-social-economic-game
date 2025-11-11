@@ -27,9 +27,11 @@ class FactoryStartGroups(Page):
         """Показать доступные группы ресурсов для запуска"""
         scene_data = self.scene.get_data('scene')
         company_id = scene_data.get('company_id')
-        
-        # Получаем все заводы компании
-        factories = await get_factories(company_id)
+        # Кэшируем список заводов на время рендера страницы
+        factories = self.scene.get_key(self.__page_name__, 'factories_data')
+        if factories is None:
+            factories = await get_factories(company_id)
+            await self.scene.update_key(self.__page_name__, 'factories_data', factories)
         
         if not factories or not isinstance(factories, list):
             return "❌ Не удалось загрузить список заводов"
@@ -87,9 +89,11 @@ class FactoryStartGroups(Page):
         company_id = scene_data.get('company_id')
         
         buttons = []
-        
-        # Получаем заводы
-        factories = await get_factories(company_id)
+        # Используем кэш фабрик
+        factories = self.scene.get_key(self.__page_name__, 'factories_data')
+        if factories is None:
+            factories = await get_factories(company_id)
+            await self.scene.update_key(self.__page_name__, 'factories_data', factories)
         
         if factories and isinstance(factories, list):
             # Фильтруем заводы готовые к запуску:
@@ -195,6 +199,8 @@ class FactoryStartGroups(Page):
                 f"✅ Запущено {resource_display}: {success_count} шт.",
                 show_alert=True
             )
+            # Инвалидация кэша меню заводов
+            await self.scene.update_key('factory-menu', 'factories_data', None)
             await self.scene.update_page('factory-menu')
         else:
             await callback.answer("❌ Ошибка запуска", show_alert=True)
@@ -241,6 +247,8 @@ class FactoryStartGroups(Page):
                 f"✅ Запущено заводов: {success_count}",
                 show_alert=True
             )
+            # Инвалидация кэша меню заводов
+            await self.scene.update_key('factory-menu', 'factories_data', None)
             await self.scene.update_page('factory-menu')
         else:
             await callback.answer("❌ Ошибка запуска", show_alert=True)
