@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from modules.websocket_manager import websocket_manager
 from modules.ws_hadnler import message_handler
 from modules.db import just_db
@@ -578,6 +579,59 @@ async def handle_notforgame_update_session_max_steps(client_id: str, message: di
             "old_max_steps": old_max_steps,
             "new_max_steps": session.max_steps
         }
+
+    except ValueError as e:
+        return {"error": str(e)}
+
+
+
+@message_handler(
+    "notforgame-create-timer", 
+    doc="Обработчик создания таймера сессии. Требуется пароль для взаимодействия. НЕ ИСПОЛЬЗОВАТЬ В ИГРОВОМ ПРОЦЕССЕ!",
+    datatypes=[
+        "session_id: str",
+        "password: str"
+    ],
+    messages=[]
+)
+async def handle_notforgame_create_timer(client_id: str, message: dict):
+    """Обработчик создания таймера сессии"""
+    
+    from modules.sheduler import scheduler
+    from game.stages import stage_game_updater
+
+    session_id = message.get("session_id", "")
+    password = message.get("password", "")
+    
+    try:
+        check_password(password)
+
+        session = await session_manager.get_session(session_id=session_id)
+        if not session:
+            return {"error": "Session not found."}
+
+        sid = session.change_turn_schedule_id
+        
+        if sid:
+            get_schedule: dict = await scheduler.get_scheduled_tasks(
+                sid
+            ) # type: ignore
+
+            if get_schedule:
+                return {"error": "Timer already exists for this session."}
+        else:
+            new_sid = await scheduler.schedule_task(
+                stage_game_updater,
+                datetime.now() + timedelta(seconds=session.time_on_game_stage * 60),
+                kwargs={"session_id": session.session_id},
+                dont_delete=True
+            )
+            
+            await session.reupdate()
+            session.change_turn_schedule_id = new_sid
+            await session.save_to_base()
+
+            return {"success": True}
 
     except ValueError as e:
         return {"error": str(e)}
