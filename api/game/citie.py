@@ -169,7 +169,9 @@ class Citie(BaseClass, SessionObject):
                     branch_modifier = 1.5
 
                 min_amount = random.randint(min_min, max(int(resource.massModifier * 0.5), 2))
-                max_amount = int(resource.massModifier * users_count * 2 * mod_count * branch_modifier)
+                max_amount = int(
+                    resource.massModifier * users_count * 2 * mod_count * branch_modifier * SETTINGS.city_mod
+                    )
                 amount = random.randint(min_amount, max(min_amount, max_amount, amount))
 
 
