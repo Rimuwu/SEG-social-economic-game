@@ -73,6 +73,10 @@ async def handle_get_session(client_id: str, message: dict):
 )
 async def handle_create_session(client_id: str, message: dict):
     """Обработчик создания сессии"""
+    
+    for i in list(message.keys()):
+        if message[i] is None:
+            del message[i]
 
     session_id = message.get("session_id", "")
     password = message.get("password", "")

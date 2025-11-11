@@ -211,6 +211,9 @@ class Contract(BaseClass, SessionObject):
                     "step": session.step
                 }
             })
+
+            game_logger.info(
+                f"Контракт {self.id}, поставка выполнена за ход {session.step} ресурс {self.resource} в количестве {self.amount_per_turn}. Компании: поставщик {supplier.id}, заказчик {customer.id}. Осталоьсь поставок: {self.duration_turns - self.successful_deliveries}.")
             return True
 
         except ValueError as e: 
@@ -312,12 +315,14 @@ class Contract(BaseClass, SessionObject):
                     await customer.add_balance(refund_amount, 0.0)
                 # Штраф репутации за невыполнение
                 await supplier.remove_reputation(
-                    REPUTATION.contract.failed
+                    REPUTATION.contract.failed,
+                    f"Репутация снижена на {REPUTATION.contract.failed} за невыполнение контракта."
                 )
             except ValueError:
                 # Если не удалось вернуть деньги - больший штраф
                 await supplier.remove_reputation(
-                    REPUTATION.contract.failed * 2
+                    REPUTATION.contract.failed * 2,
+                    f"Репутация снижена на {REPUTATION.contract.failed * 2} за невыполнение контракта и невозможность возврата средств."
                     )
 
         await websocket_manager.broadcast({
@@ -337,7 +342,6 @@ class Contract(BaseClass, SessionObject):
     async def is_first_step(self) -> bool:
         """ Проверяет, является ли текущий ход ходом создания контракта """
         step_now = (await self.get_session_or_error()).step
-        print(step_now, self.created_at_step)
         return (self.created_at_step == step_now)
 
     async def on_new_game_step(self):
@@ -363,10 +367,12 @@ class Contract(BaseClass, SessionObject):
 
         else:
 
-            if not self.delivered_this_turn and not await self.is_first_step:
-                # Отменяем контракт с возвратом части денег и штрафом репутации
-                await self.cancel_with_refund(self.who_creator)
-                return True
+            if not self.delivered_this_turn:
+                if not await self.is_first_step:
+
+                    # Отменяем контракт с возвратом части денег и штрафом репутации
+                    await self.cancel_with_refund(self.who_creator)
+                    return True
 
             self.delivered_this_turn = False
             await self.save_to_base()

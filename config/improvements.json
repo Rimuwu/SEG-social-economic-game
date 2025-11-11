@@ -20,9 +20,9 @@
         },
         "factory": { // Фабрика по переработке
             "1": { "tasksPerTurn": 15, "cost": 0 },
-            "2": { "tasksPerTurn": 30, "cost": 10000 },
-            "3": { "tasksPerTurn": 60, "cost": 50000 },
-            "4": { "tasksPerTurn": 90, "cost": 100000 }
+            "2": { "tasksPerTurn": 30, "cost": 5000 },
+            "3": { "tasksPerTurn": 60, "cost": 30000 },
+            "4": { "tasksPerTurn": 90, "cost": 50000 }
         }
     },
     "forest": { // Уровни улучшений в лесу
@@ -34,9 +34,9 @@
         },
         "factory": {
             "1": { "tasksPerTurn": 15, "cost": 0 },
-            "2": { "tasksPerTurn": 30, "cost": 10000 },
-            "3": { "tasksPerTurn": 60, "cost": 50000 },
-            "4": { "tasksPerTurn": 90, "cost": 100000 }
+            "2": { "tasksPerTurn": 30, "cost": 5000 },
+            "3": { "tasksPerTurn": 60, "cost": 30000 },
+            "4": { "tasksPerTurn": 90, "cost": 50000 }
         }
     },
     "water": { // Уровни улучшений на воде
@@ -48,9 +48,9 @@
         },
         "factory": {
             "1": { "tasksPerTurn": 3, "cost": 0 },
-            "2": { "tasksPerTurn": 6, "cost": 10000 },
-            "3": { "tasksPerTurn": 12, "cost": 50000 },
-            "4": { "tasksPerTurn": 18, "cost": 100000 }
+            "2": { "tasksPerTurn": 6, "cost": 5000 },
+            "3": { "tasksPerTurn": 12, "cost": 30000 },
+            "4": { "tasksPerTurn": 18, "cost": 50000 }
         }
     },
     "field": { // Уровни улучшений в поле
@@ -62,9 +62,9 @@
         },
         "factory": {
             "1": { "tasksPerTurn": 3, "cost": 0 },
-            "2": { "tasksPerTurn": 6, "cost": 10000 },
-            "3": { "tasksPerTurn": 12, "cost": 50000 },
-            "4": { "tasksPerTurn": 18, "cost": 100000 }
+            "2": { "tasksPerTurn": 6, "cost": 5000 },
+            "3": { "tasksPerTurn": 12, "cost": 30000 },
+            "4": { "tasksPerTurn": 18, "cost": 50000 }
         }
     }
 }

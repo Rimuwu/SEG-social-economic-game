@@ -691,7 +691,9 @@ async def handle_notforgame_to_prison(
         company = await Company(id=company_id).reupdate()
         if not company: raise ValueError("Компания не найдена.")
 
-        await company.to_prison()
+        await company.to_prison(
+            reason="По решению администрации."
+        )
 
     except ValueError as e:
         return {"error": str(e)}
@@ -925,7 +927,8 @@ async def handle_get_company_prison_status(client_id: str, message: dict):
 
     return {
         "in_prison": company.in_prison,
-        "prison_end_step": company.prison_end_step
+        "prison_end_step": company.prison_end_step,
+        "prison_reason": company.prison_reason
     }
 
 

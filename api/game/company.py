@@ -40,6 +40,7 @@ class Company(BaseClass, SessionObject):
 
         self.in_prison: bool = False
         self.prison_end_step: Optional[int] = None
+        self.prison_reason: Optional[str] = None
 
         self.credits: list = []
         self.deposits: list = []
@@ -497,7 +498,7 @@ class Company(BaseClass, SessionObject):
         game_logger.info(f"Репутация компании {self.name} ({self.id}) увеличена на {amount}. Новая репутация: {self.reputation}")
         return True
 
-    async def remove_reputation(self, amount: int):
+    async def remove_reputation(self, amount: int, reason: Optional[str] = None):
         if not isinstance(amount, int):
             raise ValueError("Сумма должна быть целым числом.")
 
@@ -520,9 +521,11 @@ class Company(BaseClass, SessionObject):
             })
 
             if self.reputation <= REPUTATION.prison.on_reputation: 
-                await self.to_prison()
-            
-            game_logger.info(f"Репутация компании {self.name} ({self.id}) уменьшена на {amount}. Новая репутация: {self.reputation}")
+                await self.to_prison(
+                    "Достигнута критическая репутация для получения санкций. " + (reason or "")
+                )
+
+            game_logger.info(f"Репутация компании {self.name} ({self.id}) уменьшена на {amount}, по причине: {reason}. Новая репутация: {self.reputation}")
             return True
         return False
 
@@ -616,10 +619,15 @@ class Company(BaseClass, SessionObject):
 
             elif credit["steps_now"] > credit["steps_total"]:
                 # Просрочка - не увеличиваем steps_now больше, но снижаем репутацию
-                await self.remove_reputation(REPUTATION.credit.lost)
+                await self.remove_reputation(
+                    REPUTATION.credit.lost,
+                    reason=f"Репутация снижена на {REPUTATION.credit.lost} за просрочку по кредитам."
+                    )
 
             if credit["steps_now"] - credit["steps_total"] > REPUTATION.credit.max_overdue:
-                await self.to_prison()
+                await self.to_prison(
+                    reason=f"Превышена максимальная просрочка по кредитам. ({REPUTATION.credit.max_overdue} ходов)"
+                )
 
         await self.save_to_base()
 
@@ -662,9 +670,9 @@ class Company(BaseClass, SessionObject):
 
         credit = self.credits[credit_index]
 
-        if amount < credit["need_pay"]:
-            raise ValueError(
-                "Сумма платежа должна быть не менее требуемой для этого хода.")
+        # if amount < credit["need_pay"]:
+        #     raise ValueError(
+        #         "Сумма платежа должна быть не менее требуемой для этого хода.")
 
         # Досрочное закрытие кредита - можно заплатить больше чем need_pay
         remaining_debt = credit["total_to_pay"] - credit["paid"]
@@ -705,7 +713,7 @@ class Company(BaseClass, SessionObject):
         })
         return True
 
-    async def to_prison(self):
+    async def to_prison(self, reason: Optional[str] = None):
         """ Сажает компанию в тюрьму за неуплату кредитов
         """
 
@@ -716,6 +724,7 @@ class Company(BaseClass, SessionObject):
 
         self.in_prison = True
         self.prison_end_step = end_step
+        self.prison_reason = reason
 
         self.reputation = REPUTATION.start
         self.credits = []
@@ -750,7 +759,7 @@ class Company(BaseClass, SessionObject):
                 "end_step": end_step
             }
         })
-        game_logger.info(f"Компания {self.name} ({self.id}) отправлена в тюрьму до шага {end_step} в сессии {self.session_id}")
+        game_logger.info(f"Компания {self.name} ({self.id}) отправлена в тюрьму до шага {end_step} в сессии {self.session_id} по причине: {reason}")
 
     async def leave_prison(self):
         """ Выход из тюрьмы по времени
@@ -761,6 +770,7 @@ class Company(BaseClass, SessionObject):
 
         self.in_prison = False
         self.prison_end_step = None
+        self.prison_reason = None
 
         await self.save_to_base()
         await websocket_manager.broadcast({
@@ -804,7 +814,10 @@ class Company(BaseClass, SessionObject):
 
         if self.tax_debt > 0:
             self.overdue_steps += 1
-            await self.remove_reputation(REPUTATION.tax.late)
+            await self.remove_reputation(
+                REPUTATION.tax.late,
+                reason=f"Репутация снижена на {REPUTATION.tax.late} за просрочку по налогам."
+                )
             game_logger.warning(f"Компания {self.name} ({self.id}) имеет просроченный налоговый долг. Просрочка: {self.overdue_steps} шагов")
 
         if self.overdue_steps > REPUTATION.tax.not_paid_stages:
@@ -812,9 +825,15 @@ class Company(BaseClass, SessionObject):
             self.overdue_steps = 0
             self.tax_debt = 0
 
-            if self.reputation > 0:
-                await self.remove_reputation(self.reputation)
-            await self.to_prison()
+            # if self.reputation > 0:
+            #     await self.remove_reputation(
+            #         self.reputation,
+            #         f"Репутация снижена на {self.reputation} за просрочку по налогам."
+            #         )
+
+            await self.to_prison(
+                reason=f'Превышена максимальная просрочка по налогам. ({REPUTATION.tax.not_paid_stages} ходов)'
+            )
             return
 
         percent = await self.business_tax()
@@ -955,7 +974,7 @@ class Company(BaseClass, SessionObject):
             deposit["steps_now"] += 1
 
             # Если срок депозита истек, то снимаем
-            if deposit["steps_now"] >= deposit["steps_total"]:
+            if deposit["steps_now"] > deposit["steps_total"]:
 
                 if self.in_prison is False:
                     await self.withdraw_deposit(index)
@@ -1190,12 +1209,17 @@ class Company(BaseClass, SessionObject):
 
         factories = await self.get_factories()
         for factory in factories:
-            await factory.on_new_game_stage()
+            try:
+                await factory.on_new_game_stage()
+            except Exception as e:
+                game_logger.error(f"Ошибка при обновлении фабрики {factory.id} для компании {self.name} ({self.id}): {e}")
 
-        contracts = await self.get_contracts()
-        for contract in contracts:
-            contract: Contract
-            await contract.on_new_game_step()
+        # contracts = await self.get_contracts()
+        # for contract in contracts:
+        #     try:
+        #         await contract.on_new_game_step()
+        #     except Exception as e:
+        #         game_logger.error(f"Ошибка при обновлении контракта {contract.id} для компании {self.name} ({self.id}): {e}")
 
     @property
     async def exchanges(self) -> list['Exchange']:
@@ -1233,6 +1257,7 @@ class Company(BaseClass, SessionObject):
             "reputation": self.reputation,
             "in_prison": self.in_prison,
             "prison_end_step": self.prison_end_step,
+            "prison_reason": self.prison_reason,
 
             # Позиция и местоположение
             "cell_position": self.cell_position,

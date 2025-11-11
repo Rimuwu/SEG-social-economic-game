@@ -62,6 +62,25 @@ class Session(BaseClass):
         time_on_game_stage: int = settings.time_on_game_stage,
         time_on_change_stage: int = settings.time_on_change_stage
         ): 
+
+        if not isinstance(session_id, str):
+            session_id = str(session_id)
+
+        if not session_id:
+            session_id = generate_code(8, use_letters=True, 
+                                            use_numbers=True, 
+                                            use_uppercase=True
+                                            )
+
+        if map_pattern not in ['random']:
+            map_pattern = 'random'
+
+        if not isinstance(max_steps, int) or max_steps <= 0:
+            max_steps = 15
+
+        if not isinstance(max_companies, int) or max_companies <= 0:
+            max_companies = settings.max_companies
+
         self.session_id = session_id
         self.cells: list[str] = []
         self.map_size: dict = map_size if map_size else {
@@ -131,6 +150,7 @@ class Session(BaseClass):
         elif new_stage == SessionStages.Game:
             from game.logistics import Logistics
             from game.item_price import ItemPrice
+            from game.contract import Contract
 
             if self.step == 0:
                 companies = await self.companies
@@ -195,10 +215,17 @@ class Session(BaseClass):
             for item_price in items_prices:
                 await item_price.on_new_game_step()
 
+            session_contracts = await just_db.find(
+                Contract.__tablename__, Contract,
+                session_id=self.session_id
+            )
+            for contract in session_contracts:
+                await contract.on_new_game_step()
+
             self.step += 1
             await self.execute_step_schedule(self.step)
 
-            # Доп проверка на тюрьму4
+            # ===== Дополнительная проверка на тюрьму
             for company in await self.companies:
                 if company is None: continue
                 if not company.in_prison: continue
@@ -212,7 +239,6 @@ class Session(BaseClass):
                         await company.leave_prison()
 
         elif new_stage == SessionStages.ChangeTurn:
-            from game.company import Company
             from game.item_price import ItemPrice
 
             # Генерируем события каждые 5 этапов
@@ -221,6 +247,24 @@ class Session(BaseClass):
             companies = await self.companies
             for company in companies:
                 if company is None: continue
+
+                if settings.tax_autopay:
+                    # Автоматическая уплата налогов
+
+                    try:
+                        tax_amount = company.tax_debt
+                        if company.balance >= tax_amount and tax_amount > 0:
+                            await company.pay_taxes(tax_amount)
+
+                            game_logger.info(f"Компания {company.name} в сессии {self.session_id} автоматически уплатила налоги в размере {tax_amount}.")
+
+                        elif company.balance < tax_amount and tax_amount > 0:
+                            await company.pay_taxes(company.balance)
+
+                            game_logger.info(f"Компания {company.name} в сессии {self.session_id} автоматически уплатила налоги в размере {company.balance}. (недостаточно средств для полной уплаты)")
+
+                    except Exception as e:
+                        game_logger.error(f"Ошибка при автоматической уплате налогов компанией {company.name} в сессии {self.session_id}: {e}")
 
                 st = await Statistic().create(
                     session_id=self.session_id,
