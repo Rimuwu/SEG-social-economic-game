@@ -70,12 +70,12 @@ class SessionAdd(Page):
 
     @Page.on_callback("set_size")
     async def set_size(self, callback, args):
-        await callback.answer("Введите размер карты в чат или - чтобы оставить по умолчанию", show_alert=True)
+        await callback.answer("Введите размер карты в чат или 0 чтобы оставить по умолчанию", show_alert=True)
         await self.scene.update_key(self.__page_name__, "state", "set_size")
 
     @Page.on_callback("set_max_steps")
     async def set_max_steps(self, callback, args):
-        await callback.answer("Введите кол-во этапов в чат или - чтобы оставить по умолчанию", show_alert=True)
+        await callback.answer("Введите кол-во этапов в чат или 0 чтобы оставить по умолчанию", show_alert=True)
         await self.scene.update_key(self.__page_name__, "state", "set_max_steps")
 
     @Page.on_callback("set_url")
@@ -85,22 +85,22 @@ class SessionAdd(Page):
 
     @Page.on_callback("set_count_comp")
     async def set_count_comp(self, callback, args):
-        await callback.answer("Введите кол-во компаний в чат или - чтобы оставить по умолчанию", show_alert=True)
+        await callback.answer("Введите кол-во компаний в чат или 0 чтобы оставить по умолчанию", show_alert=True)
         await self.scene.update_key(self.__page_name__, "state", "set_count_comp")
 
     @Page.on_callback("set_count_player_in_comp")
     async def set_count_player_in_comp(self, callback, args):
-        await callback.answer("Введите кол-во игроков в компании в чат или - чтобы оставить по умолчанию", show_alert=True)
+        await callback.answer("Введите кол-во игроков в компании в чат или 0 чтобы оставить по умолчанию", show_alert=True)
         await self.scene.update_key(self.__page_name__, "state", "set_count_player_in_comp")
 
     @Page.on_callback("set_time_game_stage")
     async def set_time_game_stage(self, callback, args):
-        await callback.answer("Введите время этапа в чат или - чтобы оставить по умолчанию", show_alert=True)
+        await callback.answer("Введите время этапа в чат или 0 чтобы оставить по умолчанию", show_alert=True)
         await self.scene.update_key(self.__page_name__, "state", "set_time_game_stage")
 
     @Page.on_callback("set_time_change_stage")
     async def set_time_change_stage(self, callback, args):
-        await callback.answer("Введите время межэтапа в чат или - чтобы оставить по умолчанию", show_alert=True)
+        await callback.answer("Введите время межэтапа в чат или 0 чтобы оставить по умолчанию", show_alert=True)
         await self.scene.update_key(self.__page_name__, "state", "set_time_change_stage")
     
     @Page.on_callback("create_session")
@@ -111,14 +111,14 @@ class SessionAdd(Page):
             data = self.scene.get_key(self.__page_name__, "settings")
         result = await create_session(
             session_id=data.get("session_id"),
-            map_pattern=data.get("map_pattern") if data.get("map_pattern") is not None else "random",
-            size=data.get("size") if data.get("size") is not None else 7,
-            max_steps=data.get("max_steps") if data.get("max_steps") is not None else 15,
-            session_group_url=data.get("session_group_url") if data.get("session_group_url") is not None else "",
-            max_companies=data.get("max_companies") if data.get("max_companies") is not None else 10,
-            max_players_in_company=data.get("max_player_in_company") if data.get("max_player_in_company") is not None else 5,
-            time_on_game_stage=data.get("time_on_game_stage") if data.get("time_on_game_stage") is not None else 3,
-            time_on_change_stage=data.get("time_on_change_stage") if data.get("time_on_change_stage") is not None else 1
+            map_pattern=data.get("map_pattern"),
+            size=data.get("size"),
+            max_steps=data.get("max_steps"),
+            session_group_url=data.get("session_group_url"),
+            max_companies=data.get("max_companies"),
+            max_players_in_company=data.get("max_player_in_company"),
+            time_on_game_stage=data.get("time_on_game_stage"),
+            time_on_change_stage=data.get("time_on_change_stage")
         )
 
         if "error" in result:
@@ -137,27 +137,27 @@ class SessionAdd(Page):
         state = self.scene.get_key(self.__page_name__, "state")
         
         if state == "set_size":
-            data["size"] = value
+            data["size"] = value if value != 0 else None
             await self.scene.update_key(self.__page_name__, "settings", json.dumps(data))
             await self.scene.update_message()
         elif state == "set_max_steps":
-            data["max_steps"] = value
+            data["max_steps"] = value if value != 0 else None
             await self.scene.update_key(self.__page_name__, "settings", json.dumps(data))
             await self.scene.update_message()
         elif state == "set_count_comp":
-            data["max_companies"] = value
+            data["max_companies"] = value if value != 0 else None
             await self.scene.update_key(self.__page_name__, "settings", json.dumps(data))
             await self.scene.update_message()
         elif state == "set_count_player_in_comp":
-            data["max_player_in_company"] = value
+            data["max_player_in_company"] = value if value != 0 else None
             await self.scene.update_key(self.__page_name__, "settings", json.dumps(data))
             await self.scene.update_message()
         elif state == "set_time_game_stage":
-            data["time_on_game_stage"] = value
+            data["time_on_game_stage"] = value if value != 0 else None
             await self.scene.update_key(self.__page_name__, "settings", json.dumps(data))
             await self.scene.update_message()
         elif state == "set_time_change_stage":
-            data["time_on_change_stage"] = value
+            data["time_on_change_stage"] = value if value != 0 else None
             await self.scene.update_key(self.__page_name__, "settings", json.dumps(data))
             await self.scene.update_message()
         
@@ -172,15 +172,15 @@ class SessionAdd(Page):
         state = self.scene.get_key(self.__page_name__, "state")
         
         if state == "set_id":
-            data["session_id"] = value
+            data["session_id"] = value if value != "-" else None
             await self.scene.update_key(self.__page_name__, "settings", json.dumps(data))
             await self.scene.update_message()
         elif state == "set_pattern":
-            data["map_pattern"] = value
+            data["map_pattern"] = value if value != "-" else None
             await self.scene.update_key(self.__page_name__, "settings", json.dumps(data))
             await self.scene.update_message()
         elif state == "set_url":
-            data["session_group_url"] = value
+            data["session_group_url"] = value if value != "-" else None
             await self.scene.update_key(self.__page_name__, "settings", json.dumps(data))
             await self.scene.update_message()
         

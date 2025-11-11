@@ -21,8 +21,7 @@ class UserName(Page):
         )
         if "error" in res:
             self.clear_content()
-            self.content = self.content.replace("Введите ваше имя для продолжения: ", 
-                                                res["error"])
+            self.content += f"\n{res['error']}"
 
             await self.scene.update_message()
         else:
