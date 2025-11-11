@@ -238,6 +238,15 @@ class Session(BaseClass):
                     if company.prison_end_step <= self.step:
                         await company.leave_prison()
 
+            # ===== Доп проверка на ивент 
+            if self.step > (self.event_end or 100_000):
+                self.event_type = None
+                self.event_start = None
+                self.event_end = None
+
+                await self.save_to_base()
+                game_logger.warning(f"Событие принудительно завершено в сессии {self.session_id} по достижении шага {self.step}.")
+
         elif new_stage == SessionStages.ChangeTurn:
             from game.item_price import ItemPrice
 
@@ -248,7 +257,7 @@ class Session(BaseClass):
             for company in companies:
                 if company is None: continue
 
-                if settings.tax_autopay:
+                if company.autopay_taxes:
                     # Автоматическая уплата налогов
 
                     try:

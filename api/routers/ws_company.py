@@ -1171,3 +1171,35 @@ async def handle_change_position(
     except ValueError as e:
         return {"error": str(e)}
 
+@message_handler(
+    "set-autopay-taxes", 
+    doc="Обработчик установки автоматической уплаты налогов. Требуется пароль для взаимодействия. Отправляет ответ на request_id",
+    datatypes=[
+        "company_id: int",
+        "password: str",
+        "request_id: str"
+    ],
+    messages=["api-company_set_autopay_taxes (broadcast)"]
+)
+async def handle_set_autopay_taxes(client_id: str, message: dict):
+    """Обработчик установки автоматической уплаты налогов"""
+
+    password = message.get("password")
+    company_id = message.get("company_id")
+
+    for i in [company_id, password]:
+        if i is None: 
+            return {"error": "Missing required fields."}
+
+    try:
+        check_password(password)
+
+        company = await Company(id=company_id).reupdate()
+        if not company:
+            return {"error": "Company not found."}
+
+        await company.set_autopay_taxes()
+        return {"success": True}
+
+    except ValueError as e:
+        return {"error": str(e)}

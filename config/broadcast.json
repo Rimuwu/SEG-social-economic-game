@@ -1,0 +1,40 @@
+{
+    // Тут описано какие события по broadcast-каналам будут отправляться на клиент
+    "bot": [
+        "api-update_session_stage",
+        "api-company_to_prison",
+        "api-company_set_position",
+        "api-game_ended",
+        "api-price_difference",
+        "api-user_deleted"
+    ],
+
+    "web": [
+        "api-create_company",
+        "api-company_deleted",
+        "api-user_added_to_company",
+        "api-user_left_company",
+        "api-company_set_position",
+        "api-company_improvement_upgraded",
+        "api-update_user",
+        "api-user_deleted",
+        "api-update_session_stage",
+        "api-session_deleted",
+        "api-game_ended",
+        "api-exchange_offer_created",
+        "api-exchange_offer_updated",
+        "api-exchange_offer_cancelled",
+        "api-exchange_trade_completed",
+        "api-city-create",
+        "api-city-update-demands",
+        "api-city-trade",
+        "api-item_price_updated",
+        "api-event_generated",
+        "api-event_started",
+        "api-event_ended",
+        "api-company_fast_logistic_set",
+        "api-company_fast_complectation_set",
+        "api-company_set_autopay_taxes"
+    ]
+
+}

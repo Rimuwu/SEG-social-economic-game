@@ -66,6 +66,7 @@ class Company(BaseClass, SessionObject):
 
         self.fast_logistic: bool = False
         self.fast_complectation: bool = False
+        self.autopay_taxes: bool = False
 
     async def set_owner(self, user_id: int):
         if self.owner != 0:
@@ -1301,6 +1302,7 @@ class Company(BaseClass, SessionObject):
 
             "fast_complectation": self.fast_complectation,
             "fast_logistic": self.fast_logistic,
+            "autopay_taxes": self.autopay_taxes,
 
             "profit": self.profit,
             "start_step_capital": self.start_step_capital
@@ -1378,3 +1380,18 @@ class Company(BaseClass, SessionObject):
         """ Возвращает прибыль компании за последний ход. """
         profit = self.balance - self.start_step_capital
         return profit
+
+    async def set_autopay_taxes(self):
+        """ Разовое улучшение автоматической уплаты налогов. """
+
+        await self.remove_balance(SETTINGS.tax_autopay_price)
+
+        self.autopay_taxes = True
+        await self.save_to_base()
+
+        await websocket_manager.broadcast({
+            "type": "api-company_set_autopay_taxes",
+            "data": {
+                "company_id": self.id
+            }
+        })
