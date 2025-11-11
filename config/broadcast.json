@@ -31,7 +31,10 @@
         "api-item_price_updated",
         "api-event_generated",
         "api-event_started",
-        "api-event_ended"
+        "api-event_ended",
+        "api-company_fast_logistic_set",
+        "api-company_fast_complectation_set",
+        "api-company_set_autopay_taxes"
     ]
 
 }
