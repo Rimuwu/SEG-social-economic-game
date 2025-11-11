@@ -257,7 +257,7 @@ class Session(BaseClass):
             for company in companies:
                 if company is None: continue
 
-                if settings.tax_autopay:
+                if company.autopay_taxes:
                     # Автоматическая уплата налогов
 
                     try:

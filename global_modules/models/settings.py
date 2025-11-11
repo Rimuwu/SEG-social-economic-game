@@ -35,7 +35,7 @@ class Settings:
 
     change_location_price: dict[str, int] # Ключи big & small с ценой
 
-    tax_autopay: bool  # Автоматическая уплата налогов
+    tax_autopay_price: int  # Цена улучшения автоплатежа налогов
 
     @classmethod
     def load_from_json(cls, data: dict):
