@@ -62,6 +62,25 @@ class Session(BaseClass):
         time_on_game_stage: int = settings.time_on_game_stage,
         time_on_change_stage: int = settings.time_on_change_stage
         ): 
+
+        if not isinstance(session_id, str):
+            session_id = str(session_id)
+
+        if not session_id:
+            session_id = generate_code(8, use_letters=True, 
+                                            use_numbers=True, 
+                                            use_uppercase=True
+                                            )
+
+        if map_pattern not in ['random']:
+            map_pattern = 'random'
+
+        if not isinstance(max_steps, int) or max_steps <= 0:
+            max_steps = 15
+
+        if not isinstance(max_companies, int) or max_companies <= 0:
+            max_companies = settings.max_companies
+
         self.session_id = session_id
         self.cells: list[str] = []
         self.map_size: dict = map_size if map_size else {
