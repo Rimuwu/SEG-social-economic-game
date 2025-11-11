@@ -33,6 +33,7 @@ class ContractExecutePage(OneUserPage):
             self._contracts_cache: Optional[List[Dict]] = None
 
     async def content_worker(self):
+        self.clear_content()
         contracts = await self._load_contracts()
         selected_id = self.scene.get_key(self.__page_name__, "selected_contract_id")
 
