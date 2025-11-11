@@ -32,21 +32,30 @@ class CityMain(OneUserPage):
         matrix_cells = do_matrix_7x7_with_large(cells_matrix) if cells_matrix else []
         cities_data = self.scene.get_key(self.__page_name__, "cities_data") or []
         city_ids = [c.get("id") for c in cities_data]
+        print(city_ids)
         
         count_city = 0
         # Генерируем карту 7x7
         for x in range(7):
             for y in range(7):
-                cell_position = xy_into_cell(x, y)
+                cell_position = xy_into_cell(y, x)
                 
                 # Проверяем, есть ли город в этой позиции
-                if cell_position in ["B2", "B6", "F2", "F6"]:
+                if cell_position in ["B2", "F2", "B6", "F6"]:
+                    if cell_position == "B2": 
+                        city_id = city_ids[0]
+                    elif cell_position == "F2":
+                        city_id = city_ids[1]
+                    elif cell_position == "B6":
+                        city_id = city_ids[2]
+                    elif cell_position == "F6":
+                        city_id = city_ids[3]
                     buttons.append({
                         'text': '🏢',
                         'callback_data': callback_generator(
                             self.scene.__scene_name__, 
                             'city_select',
-                            city_ids[count_city]
+                            city_id
                         )
                     })
                     count_city += 1

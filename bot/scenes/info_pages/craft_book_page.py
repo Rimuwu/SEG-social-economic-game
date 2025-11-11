@@ -31,6 +31,7 @@ class CraftBookPage(Page):
         craft_material = craft_prod.materials
         craft_output = craft_prod.output
         craft_list = []
+        price = resource_data.basePrice
         for i in craft_material.keys():
             mat_res = RESOURCES.get_resource(i)
             craft_list.append(f"{craft_material[i]}× {mat_res.emoji} {mat_res.label}")
@@ -48,7 +49,8 @@ class CraftBookPage(Page):
         return self.content.format(
             resource=resorce_name,
             craft=craft_text,
-            resource_in_craft_with_count=resource_in_craft_with_count
+            resource_in_craft_with_count=resource_in_craft_with_count,
+            average_price=price
             )
     
     async def buttons_worker(self):
