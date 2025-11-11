@@ -131,6 +131,7 @@ class Session(BaseClass):
         elif new_stage == SessionStages.Game:
             from game.logistics import Logistics
             from game.item_price import ItemPrice
+            from game.contract import Contract
 
             if self.step == 0:
                 companies = await self.companies
@@ -195,10 +196,17 @@ class Session(BaseClass):
             for item_price in items_prices:
                 await item_price.on_new_game_step()
 
+            session_contracts = await just_db.find(
+                Contract.__tablename__, Contract,
+                session_id=self.session_id
+            )
+            for contract in session_contracts:
+                await contract.on_new_game_step()
+
             self.step += 1
             await self.execute_step_schedule(self.step)
 
-            # Доп проверка на тюрьму
+            # ===== Дополнительная проверка на тюрьму
             for company in await self.companies:
                 if company is None: continue
                 if not company.in_prison: continue
@@ -212,7 +220,6 @@ class Session(BaseClass):
                         await company.leave_prison()
 
         elif new_stage == SessionStages.ChangeTurn:
-            from game.company import Company
             from game.item_price import ItemPrice
 
             # Генерируем события каждые 5 этапов
@@ -221,8 +228,8 @@ class Session(BaseClass):
             companies = await self.companies
             for company in companies:
                 if company is None: continue
-                
-                if Settings.tax_autopay:
+
+                if settings.tax_autopay:
                     # Автоматическая уплата налогов
 
                     try:
